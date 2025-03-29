@@ -1,0 +1,1 @@
+GraphQL API has made as gateway for each request.
