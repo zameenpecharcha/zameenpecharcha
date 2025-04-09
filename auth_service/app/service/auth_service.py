@@ -14,7 +14,7 @@ from app.utils.redis_utils import store_otp, get_otp, delete_otp
 from app.utils.log_utils import log_msg
 
 # Load secret key from environment variables (ensure it's persistent)
-SECRET_KEY = os.getenv("SECRET_KEY", "hardcoded_fallback_secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 class AuthService(auth_pb2_grpc.AuthServiceServicer):
 
