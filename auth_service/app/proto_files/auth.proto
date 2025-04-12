@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc SendOTP(OTPRequest) returns (OTPResponse);
+  rpc VerifyOTP(VerifyOTPRequest) returns (VerifyOTPResponse);
+  rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+  rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message OTPRequest {
+  string phone_number = 1;
+}
+
+message OTPResponse {
+  bool success = 1;
+}
+
+message VerifyOTPRequest {
+  string phone_number = 1;
+  string otp_code = 2;
+}
+
+message VerifyOTPResponse {
+  string token = 1;
+}
+
+message ForgotPasswordRequest {
+  string email_or_phone = 1;
+}
+
+message ForgotPasswordResponse {
+  bool success = 1;
+}
+
+message ResetPasswordRequest {
+  string email_or_phone = 1;
+  string otp_code = 2;
+  string new_password = 3;
+}
+
+message ResetPasswordResponse {
+  bool success = 1;
+}
