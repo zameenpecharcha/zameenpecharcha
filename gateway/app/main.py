@@ -1,5 +1,6 @@
+
 from fastapi import FastAPI
-from app.api.user_api import user
+from gateway.app.api.user_api import user
 import uvicorn
 app = FastAPI()
 
@@ -11,4 +12,4 @@ def is_live():
 
 if __name__ == "__main__":
     # Run the FastAPI application using Uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("gateway.app.main:app", host="0.0.0.0", port=8000, reload=True)

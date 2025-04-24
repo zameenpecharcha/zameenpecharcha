@@ -1,7 +1,7 @@
 import grpc
 from concurrent import futures
-from app.proto_files import user_pb2, user_pb2_grpc
-from app.repository.user_repository import  get_user_by_id, create_user
+from ..proto_files import user_pb2, user_pb2_grpc
+from ..repository.user_repository import  get_user_by_id, create_user
 
 class UserService(user_pb2_grpc.UserServiceServicer):
     def GetUser(self, request, context):

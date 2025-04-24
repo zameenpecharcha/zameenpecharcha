@@ -1,5 +1,5 @@
 import grpc
-from app.proto_files.user import user_pb2, user_pb2_grpc
+from gateway.app.proto_files.user import user_pb2, user_pb2_grpc
 
 class UserServiceClient:
     def __init__(self):
