@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package property;
+
+// Property Type Enum
+enum PropertyType {
+    RESIDENTIAL = 0;
+    COMMERCIAL = 1;
+    LAND = 2;
+    INDUSTRIAL = 3;
+}
+
+// Property Status Enum
+enum PropertyStatus {
+    ACTIVE = 0;
+    INACTIVE = 1;
+    SOLD = 2;
+    RENTED = 3;
+}
+
+// Property Message
+message Property {
+    string property_id = 1;
+    string user_id = 2;
+    string title = 3;
+    string description = 4;
+    double price = 5;
+    string location = 6;
+    PropertyType property_type = 7;
+    PropertyStatus status = 8;
+    int32 bedrooms = 9;
+    int32 bathrooms = 10;
+    double area = 11;
+    repeated string images = 12;
+    repeated string amenities = 13;
+    int64 created_at = 14;
+    int64 updated_at = 15;
+    int32 view_count = 16;
+    double latitude = 17;
+    double longitude = 18;
+}
+
+// Property List Message
+message PropertyList {
+    repeated Property properties = 1;
+}
+
+// Property Request Message
+message PropertyRequest {
+    string property_id = 1;
+}
+
+// Property Search Request Message
+message PropertySearchRequest {
+    string query = 1;
+    PropertyType property_type = 2;
+    double min_price = 3;
+    double max_price = 4;
+    string location = 5;
+    int32 min_bedrooms = 6;
+    int32 min_bathrooms = 7;
+    double min_area = 8;
+    double max_area = 9;
+}
+
+// Property Response Message
+message PropertyResponse {
+    bool success = 1;
+    string message = 2;
+    Property property = 3;
+}
+
+// Property List Response Message
+message PropertyListResponse {
+    bool success = 1;
+    string message = 2;
+    PropertyList properties = 3;
+}
+
+// Property Service Definition
+service PropertyService {
+    rpc CreateProperty(Property) returns (PropertyResponse) {}
+    rpc GetProperty(PropertyRequest) returns (PropertyResponse) {}
+    rpc UpdateProperty(Property) returns (PropertyResponse) {}
+    rpc DeleteProperty(PropertyRequest) returns (PropertyResponse) {}
+    rpc SearchProperties(PropertySearchRequest) returns (PropertyListResponse) {}
+    rpc ListProperties(PropertyRequest) returns (PropertyListResponse) {}
+    rpc IncrementViewCount(PropertyRequest) returns (PropertyResponse) {}
+} 
