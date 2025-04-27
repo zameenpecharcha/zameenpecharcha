@@ -1,0 +1,94 @@
+syntax = "proto3";
+
+package posts;
+
+// Post represents a single post in the system
+message Post {
+    string id = 1;
+    string title = 2;
+    string content = 3;
+    string author_id = 4;
+    string created_at = 5;
+    string updated_at = 6;
+    repeated string tags = 7;
+    string status = 8;
+}
+
+// CreatePostRequest represents the request to create a new post
+message CreatePostRequest {
+    string title = 1;
+    string content = 2;
+    string author_id = 3;
+    repeated string tags = 4;
+}
+
+// CreatePostResponse represents the response after creating a post
+message CreatePostResponse {
+    Post post = 1;
+}
+
+// GetPostRequest represents the request to get a post by ID
+message GetPostRequest {
+    string post_id = 1;
+}
+
+// GetPostResponse represents the response containing the requested post
+message GetPostResponse {
+    Post post = 1;
+}
+
+// ListPostsRequest represents the request to list posts with optional filters
+message ListPostsRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+    string author_id = 3;
+    repeated string tags = 4;
+}
+
+// ListPostsResponse represents the response containing a list of posts
+message ListPostsResponse {
+    repeated Post posts = 1;
+    int32 total_count = 2;
+}
+
+// UpdatePostRequest represents the request to update an existing post
+message UpdatePostRequest {
+    string post_id = 1;
+    string title = 2;
+    string content = 3;
+    repeated string tags = 4;
+    string status = 5;
+}
+
+// UpdatePostResponse represents the response after updating a post
+message UpdatePostResponse {
+    Post post = 1;
+}
+
+// DeletePostRequest represents the request to delete a post
+message DeletePostRequest {
+    string post_id = 1;
+}
+
+// DeletePostResponse represents the response after deleting a post
+message DeletePostResponse {
+    bool success = 1;
+}
+
+// PostsService defines the service for managing posts
+service PostsService {
+    // Create a new post
+    rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {}
+    
+    // Get a post by ID
+    rpc GetPost(GetPostRequest) returns (GetPostResponse) {}
+    
+    // List posts with optional filters
+    rpc ListPosts(ListPostsRequest) returns (ListPostsResponse) {}
+    
+    // Update an existing post
+    rpc UpdatePost(UpdatePostRequest) returns (UpdatePostResponse) {}
+    
+    // Delete a post
+    rpc DeletePost(DeletePostRequest) returns (DeletePostResponse) {}
+} 
