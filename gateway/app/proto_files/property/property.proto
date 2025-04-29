@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package property;
+
+service PropertyService {
+  rpc CreateProperty(CreatePropertyRequest) returns (PropertyResponse);
+  rpc GetProperty(GetPropertyRequest) returns (PropertyResponse);
+  rpc GetUserProperties(GetUserPropertiesRequest) returns (PropertiesResponse);
+  rpc UpdateProperty(UpdatePropertyRequest) returns (PropertyResponse);
+  rpc DeleteProperty(DeletePropertyRequest) returns (DeletePropertyResponse);
+  rpc GetNearbyProperties(GetNearbyPropertiesRequest) returns (PropertiesResponse);
+}
+
+message CreatePropertyRequest {
+  int32 user_id = 1;
+  string title = 2;
+  string description = 3;
+  double price = 4;
+  string property_type = 5;
+  double latitude = 6;
+  double longitude = 7;
+  string location_name = 8;
+  repeated string images = 9;
+  repeated string amenities = 10;
+}
+
+message GetPropertyRequest {
+  int32 property_id = 1;
+}
+
+message GetUserPropertiesRequest {
+  int32 user_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message UpdatePropertyRequest {
+  int32 property_id = 1;
+  optional string title = 2;
+  optional string description = 3;
+  optional double price = 4;
+  optional string property_type = 5;
+  optional double latitude = 6;
+  optional double longitude = 7;
+  optional string location_name = 8;
+  repeated string images = 9;
+  repeated string amenities = 10;
+}
+
+message DeletePropertyRequest {
+  int32 property_id = 1;
+}
+
+message GetNearbyPropertiesRequest {
+  double latitude = 1;
+  double longitude = 2;
+  double radius_km = 3;
+  optional string property_type = 4;
+  optional double min_price = 5;
+  optional double max_price = 6;
+}
+
+message PropertyResponse {
+  int32 id = 1;
+  int32 user_id = 2;
+  string title = 3;
+  string description = 4;
+  double price = 5;
+  string property_type = 6;
+  double latitude = 7;
+  double longitude = 8;
+  string location_name = 9;
+  repeated string images = 10;
+  repeated string amenities = 11;
+  int32 views_count = 12;
+  string created_at = 13;
+  string updated_at = 14;
+}
+
+message PropertiesResponse {
+  repeated PropertyResponse properties = 1;
+  int32 total_count = 2;
+}
+
+message DeletePropertyResponse {
+  bool success = 1;
+} 
