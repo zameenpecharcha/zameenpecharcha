@@ -4,18 +4,18 @@ from typing import Optional, List
 from datetime import datetime
 
 class PropertyType(str, Enum):
-    APARTMENT = "apartment"
-    VILLA = "villa"
-    HOUSE = "house"
-    PLOT = "plot"
-    COMMERCIAL = "commercial"
-    LAND = "land"
+    APARTMENT = "APARTMENT"
+    VILLA = "VILLA"
+    HOUSE = "HOUSE"
+    PLOT = "PLOT"
+    COMMERCIAL = "COMMERCIAL"
+    LAND = "LAND"
 
 class PropertyStatus(str, Enum):
-    AVAILABLE = "available"
-    SOLD = "sold"
-    RENTED = "rented"
-    PENDING = "pending"
+    AVAILABLE = "AVAILABLE"
+    SOLD = "SOLD"
+    RENTED = "RENTED"
+    PENDING = "PENDING"
 
 class Property(BaseModel):
     property_id: Optional[int] = None
