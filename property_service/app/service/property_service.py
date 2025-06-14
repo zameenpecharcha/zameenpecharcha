@@ -14,15 +14,16 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
         if not property:
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("Property not found")
-            return property_pb2.PropertyResponse()
+            return property_pb2.PropertyResponse(success=False, message="Property not found")
 
         # Parse JSON strings back to lists
         images = json.loads(property.images) if property.images else []
         amenities = json.loads(property.amenities) if property.amenities else []
 
-        return property_pb2.PropertyResponse(
-            property_id=property.property_id,
-            user_id=property.user_id,
+        # Create Property message
+        property_message = property_pb2.Property(
+            property_id=str(property.property_id),
+            user_id=str(property.user_id),
             title=property.title,
             description=property.description,
             price=property.price,
@@ -45,32 +46,49 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             is_active=property.is_active
         )
 
+        return property_pb2.PropertyResponse(
+            success=True,
+            message="Property retrieved successfully",
+            property=property_message
+        )
+
     def CreateProperty(self, request, context):
-        property_data = {
-            'user_id': request.user_id,
-            'title': request.title,
-            'description': request.description,
-            'price': request.price,
-            'location': request.location,
-            'property_type': request.property_type,
-            'status': request.status,
-            'images': request.images,
-            'bedrooms': request.bedrooms,
-            'bathrooms': request.bathrooms,
-            'area': request.area,
-            'year_built': request.year_built,
-            'amenities': request.amenities,
-            'latitude': request.latitude,
-            'longitude': request.longitude,
-            'address': request.address,
-            'city': request.city,
-            'state': request.state,
-            'country': request.country,
-            'zip_code': request.zip_code
-        }
-        
-        property_id = create_property(property_data)
-        return self.GetProperty(property_pb2.PropertyRequest(property_id=property_id), context)
+        try:
+            # Convert protobuf message to dict
+            property_data = {
+                'user_id': request.user_id,
+                'title': request.title,
+                'description': request.description,
+                'price': request.price,
+                'location': request.location,
+                'property_type': request.property_type,
+                'status': request.status,
+                'bedrooms': request.bedrooms,
+                'bathrooms': request.bathrooms,
+                'area': request.area,
+                'year_built': request.year_built,
+                'images': request.images,
+                'amenities': request.amenities,
+                'latitude': request.latitude,
+                'longitude': request.longitude,
+                'address': request.address,
+                'city': request.city,
+                'state': request.state,
+                'country': request.country,
+                'zip_code': request.zip_code,
+                'is_active': request.is_active
+            }
+            
+            # Create property in database
+            property_id = create_property(property_data)
+            
+            # Return the created property
+            return self.GetProperty(property_pb2.PropertyRequest(property_id=str(property_id)), context)
+            
+        except Exception as e:
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(f"Exception calling application: {str(e)}")
+            return property_pb2.PropertyResponse(success=False, message=str(e))
 
     def UpdateProperty(self, request, context):
         property_data = {
@@ -123,7 +141,7 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     property_pb2_grpc.add_PropertyServiceServicer_to_server(PropertyService(), server)
-    server.add_insecure_port('[::]:50052')
+    server.add_insecure_port('[::]:50053')
     server.start()
     server.wait_for_termination()
 

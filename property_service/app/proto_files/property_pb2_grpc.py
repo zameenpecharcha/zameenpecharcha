@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import property_pb2 as property__pb2
+from . import property_pb2 as property__pb2
 
 
 class PropertyServiceStub(object):

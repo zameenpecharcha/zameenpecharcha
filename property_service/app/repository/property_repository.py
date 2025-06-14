@@ -1,9 +1,27 @@
-from property_service.app.entity.property_entity import properties
+from ..entity.property_entity import properties
 from sqlalchemy.orm import sessionmaker
-from property_service.app.utils.db_connection import get_db_engine
+from ..utils.db_connection import get_db_engine
 import json
+from ..models.property import PropertyType, PropertyStatus
+import uuid
 
 SessionLocal = sessionmaker(bind=get_db_engine())
+
+# Map proto enum int to Python Enum value
+proto_to_python_property_type = {
+    0: PropertyType.APARTMENT,
+    1: PropertyType.VILLA,
+    2: PropertyType.HOUSE,
+    3: PropertyType.LAND
+}
+
+# Map proto enum int to Python Enum value for status
+proto_to_python_property_status = {
+    0: PropertyStatus.AVAILABLE,  # ACTIVE in proto
+    1: PropertyStatus.PENDING,    # INACTIVE in proto
+    2: PropertyStatus.SOLD,       # SOLD in proto
+    3: PropertyStatus.RENTED      # RENTED in proto
+}
 
 def get_property_by_id(property_id):
     session = SessionLocal()
@@ -14,9 +32,15 @@ def get_property_by_id(property_id):
 
 def create_property(property_data):
     session = SessionLocal()
-    # Convert lists to JSON strings
-    property_data['images'] = json.dumps(property_data.get('images', []))
-    property_data['amenities'] = json.dumps(property_data.get('amenities', []))
+    # Convert RepeatedScalarContainer to list before JSON serialization
+    property_data['images'] = json.dumps(list(property_data.get('images', [])))
+    property_data['amenities'] = json.dumps(list(property_data.get('amenities', [])))
+    # Map proto enum int to Python Enum value
+    property_data['property_type'] = proto_to_python_property_type.get(property_data['property_type'], PropertyType.APARTMENT)
+    # Map proto enum int to Python Enum value for status
+    property_data['status'] = proto_to_python_property_status.get(property_data['status'], PropertyStatus.AVAILABLE)
+    # Convert string UUID to UUID object
+    property_data['user_id'] = uuid.UUID(property_data['user_id'])
     
     result = session.execute(
         properties.insert().returning(properties.c.property_id).values(**property_data)
