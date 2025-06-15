@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import post_pb2 as post__pb2
+from app.proto_files import post_pb2 as post__pb2
 
 
 class PostsServiceStub(object):
@@ -37,7 +37,7 @@ class PostsServiceStub(object):
                 )
         self.GetPostsByUser = channel.unary_unary(
                 '/posts.PostsService/GetPostsByUser',
-                request_serializer=post__pb2.PostRequest.SerializeToString,
+                request_serializer=post__pb2.GetPostsByUserRequest.SerializeToString,
                 response_deserializer=post__pb2.PostListResponse.FromString,
                 )
         self.LikePost = channel.unary_unary(
@@ -123,7 +123,7 @@ def add_PostsServiceServicer_to_server(servicer, server):
             ),
             'GetPostsByUser': grpc.unary_unary_rpc_method_handler(
                     servicer.GetPostsByUser,
-                    request_deserializer=post__pb2.PostRequest.FromString,
+                    request_deserializer=post__pb2.GetPostsByUserRequest.FromString,
                     response_serializer=post__pb2.PostListResponse.SerializeToString,
             ),
             'LikePost': grpc.unary_unary_rpc_method_handler(
@@ -227,7 +227,7 @@ class PostsService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/posts.PostsService/GetPostsByUser',
-            post__pb2.PostRequest.SerializeToString,
+            post__pb2.GetPostsByUserRequest.SerializeToString,
             post__pb2.PostListResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
