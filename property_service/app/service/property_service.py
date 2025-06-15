@@ -14,47 +14,47 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
     def GetProperty(self, request, context):
         try:
             # Convert string ID to UUID
-            property = get_property_by_id(request.property_id)
-            if not property:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Property not found")
-                return property_pb2.PropertyResponse(success=False, message="Property not found")
+        property = get_property_by_id(request.property_id)
+        if not property:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Property not found")
+            return property_pb2.PropertyResponse(success=False, message="Property not found")
 
-            # Parse JSON strings back to lists
-            images = json.loads(property.images) if property.images else []
-            amenities = json.loads(property.amenities) if property.amenities else []
+        # Parse JSON strings back to lists
+        images = json.loads(property.images) if property.images else []
+        amenities = json.loads(property.amenities) if property.amenities else []
 
-            # Create Property message
-            property_message = property_pb2.Property(
-                property_id=str(property.property_id),
-                user_id=str(property.user_id),
-                title=property.title,
-                description=property.description,
-                price=property.price,
-                location=property.location,
-                property_type=property.property_type,
-                status=property.status,
-                images=images,
-                bedrooms=property.bedrooms,
-                bathrooms=property.bathrooms,
-                area=property.area,
-                year_built=property.year_built,
-                amenities=amenities,
-                latitude=property.latitude,
-                longitude=property.longitude,
-                address=property.address,
-                city=property.city,
-                state=property.state,
-                country=property.country,
-                zip_code=property.zip_code,
-                is_active=property.is_active
-            )
+        # Create Property message
+        property_message = property_pb2.Property(
+            property_id=str(property.property_id),
+            user_id=str(property.user_id),
+            title=property.title,
+            description=property.description,
+            price=property.price,
+            location=property.location,
+            property_type=property.property_type,
+            status=property.status,
+            images=images,
+            bedrooms=property.bedrooms,
+            bathrooms=property.bathrooms,
+            area=property.area,
+            year_built=property.year_built,
+            amenities=amenities,
+            latitude=property.latitude,
+            longitude=property.longitude,
+            address=property.address,
+            city=property.city,
+            state=property.state,
+            country=property.country,
+            zip_code=property.zip_code,
+            is_active=property.is_active
+        )
 
-            return property_pb2.PropertyResponse(
-                success=True,
-                message="Property retrieved successfully",
-                property=property_message
-            )
+        return property_pb2.PropertyResponse(
+            success=True,
+            message="Property retrieved successfully",
+            property=property_message
+        )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
@@ -101,7 +101,7 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
 
     def UpdateProperty(self, request, context):
         try:
-            property_data = {
+        property_data = {
                 'user_id': request.user_id,
                 'title': request.title,
                 'description': request.description,
@@ -123,15 +123,15 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 'country': request.country,
                 'zip_code': request.zip_code,
                 'is_active': request.is_active
-            }
-            
-            success = update_property(request.property_id, property_data)
-            if not success:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Property not found")
+        }
+        
+        success = update_property(request.property_id, property_data)
+        if not success:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details("Property not found")
                 return property_pb2.PropertyResponse(success=False, message="Property not found")
-                
-            return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
+            
+        return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Exception calling application: {str(e)}")
@@ -139,7 +139,7 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
 
     def DeleteProperty(self, request, context):
         try:
-            success = delete_property(request.property_id)
+        success = delete_property(request.property_id)
             if not success:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("Property not found")
