@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from ..entity.comment_entity import Comment, comment_likes
 from typing import List, Optional
+import uuid
 
 class CommentRepository:
     def __init__(self, db: Session):
@@ -12,16 +13,16 @@ class CommentRepository:
         self.db.refresh(comment)
         return comment
 
-    def get_comment(self, comment_id: int) -> Optional[Comment]:
+    def get_comment(self, comment_id: uuid.UUID) -> Optional[Comment]:
         return self.db.query(Comment).filter(Comment.id == comment_id).first()
 
-    def get_comments_by_post(self, post_id: int) -> List[Comment]:
+    def get_comments_by_post(self, post_id: uuid.UUID) -> List[Comment]:
         return self.db.query(Comment).filter(Comment.post_id == post_id).all()
 
-    def get_replies(self, parent_comment_id: int) -> List[Comment]:
+    def get_replies(self, parent_comment_id: uuid.UUID) -> List[Comment]:
         return self.db.query(Comment).filter(Comment.parent_comment_id == parent_comment_id).all()
 
-    def update_comment(self, comment_id: int, content: str) -> Optional[Comment]:
+    def update_comment(self, comment_id: uuid.UUID, content: str) -> Optional[Comment]:
         comment = self.get_comment(comment_id)
         if comment:
             comment.content = content
@@ -29,7 +30,7 @@ class CommentRepository:
             self.db.refresh(comment)
         return comment
 
-    def delete_comment(self, comment_id: int) -> bool:
+    def delete_comment(self, comment_id: uuid.UUID) -> bool:
         comment = self.get_comment(comment_id)
         if comment:
             self.db.delete(comment)
@@ -37,7 +38,7 @@ class CommentRepository:
             return True
         return False
 
-    def like_comment(self, comment_id: int, user_id: int) -> Optional[Comment]:
+    def like_comment(self, comment_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Comment]:
         comment = self.get_comment(comment_id)
         if comment:
             # Check if user already liked the comment
@@ -60,7 +61,7 @@ class CommentRepository:
                 self.db.refresh(comment)
         return comment
 
-    def unlike_comment(self, comment_id: int, user_id: int) -> Optional[Comment]:
+    def unlike_comment(self, comment_id: uuid.UUID, user_id: uuid.UUID) -> Optional[Comment]:
         comment = self.get_comment(comment_id)
         if comment:
             # Check if user liked the comment
