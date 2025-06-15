@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import comments_pb2 as comments__pb2
+from . import comments_pb2 as comments__pb2
 
 
 class CommentsServiceStub(object):
@@ -37,7 +37,7 @@ class CommentsServiceStub(object):
                 )
         self.GetCommentsByPost = channel.unary_unary(
                 '/comments.CommentsService/GetCommentsByPost',
-                request_serializer=comments__pb2.CommentRequest.SerializeToString,
+                request_serializer=comments__pb2.PostCommentsRequest.SerializeToString,
                 response_deserializer=comments__pb2.CommentListResponse.FromString,
                 )
         self.GetReplies = channel.unary_unary(
@@ -134,7 +134,7 @@ def add_CommentsServiceServicer_to_server(servicer, server):
             ),
             'GetCommentsByPost': grpc.unary_unary_rpc_method_handler(
                     servicer.GetCommentsByPost,
-                    request_deserializer=comments__pb2.CommentRequest.FromString,
+                    request_deserializer=comments__pb2.PostCommentsRequest.FromString,
                     response_serializer=comments__pb2.CommentListResponse.SerializeToString,
             ),
             'GetReplies': grpc.unary_unary_rpc_method_handler(
@@ -243,7 +243,7 @@ class CommentsService(object):
             timeout=None,
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/comments.CommentsService/GetCommentsByPost',
-            comments__pb2.CommentRequest.SerializeToString,
+            comments__pb2.PostCommentsRequest.SerializeToString,
             comments__pb2.CommentListResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

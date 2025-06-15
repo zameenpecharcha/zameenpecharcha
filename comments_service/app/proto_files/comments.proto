@@ -24,6 +24,11 @@ message CommentRequest {
     string comment_id = 1;
 }
 
+// Post Comments Request Message
+message PostCommentsRequest {
+    string post_id = 1;
+}
+
 // Comment Create Request Message
 message CommentCreateRequest {
     string post_id = 1;
@@ -64,7 +69,7 @@ service CommentsService {
     rpc GetComment(CommentRequest) returns (CommentResponse) {}
     rpc UpdateComment(CommentUpdateRequest) returns (CommentResponse) {}
     rpc DeleteComment(CommentRequest) returns (CommentResponse) {}
-    rpc GetCommentsByPost(CommentRequest) returns (CommentListResponse) {}
+    rpc GetCommentsByPost(PostCommentsRequest) returns (CommentListResponse) {}
     rpc GetReplies(CommentRequest) returns (CommentListResponse) {}
     rpc LikeComment(LikeCommentRequest) returns (CommentResponse) {}
     rpc UnlikeComment(LikeCommentRequest) returns (CommentResponse) {}
