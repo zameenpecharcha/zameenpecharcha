@@ -1,6 +1,6 @@
-from posts_service.app.entity.post_entity import posts, post_likes
+from ..entity.post_entity import posts, post_likes
 from sqlalchemy.orm import sessionmaker, Session
-from posts_service.app.utils.db_connection import get_db_engine
+from ..utils.db_connection import get_db_engine
 from datetime import datetime
 from typing import List, Optional
 

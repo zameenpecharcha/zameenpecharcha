@@ -44,6 +44,11 @@ message LikePostRequest {
     string user_id = 2;
 }
 
+// Get Posts By User Request Message
+message GetPostsByUserRequest {
+    string user_id = 1;
+}
+
 // Post Response Message
 message PostResponse {
     bool success = 1;
@@ -64,7 +69,7 @@ service PostsService {
     rpc GetPost(PostRequest) returns (PostResponse) {}
     rpc UpdatePost(PostUpdateRequest) returns (PostResponse) {}
     rpc DeletePost(PostRequest) returns (PostResponse) {}
-    rpc GetPostsByUser(PostRequest) returns (PostListResponse) {}
+    rpc GetPostsByUser(GetPostsByUserRequest) returns (PostListResponse) {}
     rpc LikePost(LikePostRequest) returns (PostResponse) {}
     rpc UnlikePost(LikePostRequest) returns (PostResponse) {}
 } 

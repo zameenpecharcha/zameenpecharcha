@@ -1,6 +1,9 @@
 from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 import os
+
+Base = declarative_base()
 
 def get_db_engine():
     load_dotenv()
