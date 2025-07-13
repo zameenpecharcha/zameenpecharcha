@@ -1,5 +1,9 @@
-grpcio==1.60.0
-grpcio-tools==1.60.0
-SQLAlchemy==2.0.25
-psycopg2-binary==2.9.9
-python-dotenv==1.0.0 
+SQLAlchemy
+python-dotenv
+psycopg2
+grpcio
+protobuf
+grpcio-tools
+fastapi
+uvicorn
+pydantic 
