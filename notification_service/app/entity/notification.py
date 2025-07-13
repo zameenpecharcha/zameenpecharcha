@@ -1,12 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from app.database import Base
+from ..utils.database import Base
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        {'extend_existing': True}
+    )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False)
     type = Column(String, nullable=False)  # post_like, post_comment, comment_like, comment_reply, trending_post
     message = Column(String, nullable=False)
@@ -18,8 +21,11 @@ class Notification(Base):
 
 class LocationSubscription(Base):
     __tablename__ = "location_subscriptions"
+    __table_args__ = (
+        {'extend_existing': True}
+    )
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
