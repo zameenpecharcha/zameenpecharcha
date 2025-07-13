@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from gateway.app.schema.auth_schema import Mutation, Query
+from gateway.app.schema.notification_schema import Mutation, Query
 import strawberry
 from strawberry.asgi import GraphQL
 
