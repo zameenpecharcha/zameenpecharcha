@@ -21,7 +21,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 id=user.user_id,
                 name=user.name,
                 email=user.email,
-                phone=user.phone if user.phone else 0
+                phone=user.phone if user.phone else 0,
+                role=user.role if user.role else "",
+                location=user.location if user.location else ""
             )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -35,12 +37,33 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("Name and email are required")
                 return user_pb2.UserResponse()
 
-            user_id = create_user(request.name, request.email, request.phone, request.password)
+            # Validate location format (latitude,longitude)
+            if request.location:
+                try:
+                    lat, lon = request.location.split(',')
+                    float(lat.strip())
+                    float(lon.strip())
+                except ValueError:
+                    context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                    context.set_details("Location must be in format 'latitude,longitude'")
+                    return user_pb2.UserResponse()
+
+            user_id = create_user(
+                name=request.name,
+                email=request.email,
+                phone=request.phone,
+                password=request.password,
+                role=request.role,
+                location=request.location
+            )
+            
             return user_pb2.UserResponse(
                 id=user_id,
                 name=request.name,
                 email=request.email,
-                phone=request.phone
+                phone=request.phone,
+                role=request.role,
+                location=request.location
             )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
