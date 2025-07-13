@@ -5,6 +5,8 @@ from gateway.app.proto_files.comments import comments_pb2, comments_pb2_grpc
 from gateway.app.proto_files.search import search_pb2, search_pb2_grpc
 from gateway.app.proto_files.trending import trending_pb2, trending_pb2_grpc
 from gateway.app.proto_files.property import property_pb2, property_pb2_grpc
+from gateway.app.proto_files.auth import auth_pb2, auth_pb2_grpc
+from gateway.app.proto_files.notification import notification_pb2, notification_pb2_grpc
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):
@@ -257,6 +259,128 @@ class PropertyServiceClient:
         )
         return self.stub.GetNearbyProperties(request)
 
+class AuthServiceClient:
+    def __init__(self, host='localhost', port=50057):
+        self.channel = grpc.insecure_channel(f'{host}:{port}')
+        self.stub = auth_pb2_grpc.AuthServiceStub(self.channel)
+
+    def login(self, email, password):
+        request = auth_pb2.LoginRequest(email=email, password=password)
+        return self.stub.Login(request)
+
+    def send_otp(self, phone_number):
+        request = auth_pb2.OTPRequest(phone_number=phone_number)
+        return self.stub.SendOTP(request)
+
+    def verify_otp(self, phone_number, otp_code):
+        request = auth_pb2.VerifyOTPRequest(phone_number=phone_number, otp_code=otp_code)
+        return self.stub.VerifyOTP(request)
+
+    def forgot_password(self, email_or_phone):
+        request = auth_pb2.ForgotPasswordRequest(email_or_phone=email_or_phone)
+        return self.stub.ForgotPassword(request)
+
+    def reset_password(self, email_or_phone, otp_code, new_password):
+        request = auth_pb2.ResetPasswordRequest(
+            email_or_phone=email_or_phone,
+            otp_code=otp_code,
+            new_password=new_password
+        )
+        return self.stub.ResetPassword(request)
+
+class NotificationServiceClient:
+    def __init__(self, host='localhost', port=50058):
+        self.channel = grpc.insecure_channel(f'{host}:{port}')
+        self.stub = notification_pb2_grpc.NotificationServiceStub(self.channel)
+
+    def get_user_notifications(self, user_id: int, page: int = 1, page_size: int = 10, unread_only: bool = False):
+        request = notification_pb2.GetUserNotificationsRequest(
+            user_id=user_id,
+            page=page,
+            page_size=page_size,
+            unread_only=unread_only
+        )
+        return self.stub.GetUserNotifications(request)
+
+    def mark_notification_as_read(self, notification_id: int, user_id: int):
+        request = notification_pb2.MarkNotificationAsReadRequest(
+            notification_id=notification_id,
+            user_id=user_id
+        )
+        return self.stub.MarkNotificationAsRead(request)
+
+    def subscribe_to_location(self, user_id: int, latitude: float, longitude: float, radius_km: float):
+        request = notification_pb2.SubscribeToLocationRequest(
+            user_id=user_id,
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km
+        )
+        return self.stub.SubscribeToLocation(request)
+
+    def unsubscribe_from_location(self, subscription_id: int, user_id: int):
+        request = notification_pb2.UnsubscribeFromLocationRequest(
+            subscription_id=subscription_id,
+            user_id=user_id
+        )
+        return self.stub.UnsubscribeFromLocation(request)
+
+    def get_user_subscriptions(self, user_id: int):
+        request = notification_pb2.GetUserSubscriptionsRequest(user_id=user_id)
+        return self.stub.GetUserSubscriptions(request)
+
+    def create_post_like_notification(self, post_id: int, post_owner_id: int, liker_id: int):
+        request = notification_pb2.CreatePostLikeNotificationRequest(
+            post_id=post_id,
+            post_owner_id=post_owner_id,
+            liker_id=liker_id
+        )
+        return self.stub.CreatePostLikeNotification(request)
+
+    def create_post_comment_notification(self, post_id: int, post_owner_id: int, commenter_id: int, comment_text: str):
+        request = notification_pb2.CreatePostCommentNotificationRequest(
+            post_id=post_id,
+            post_owner_id=post_owner_id,
+            commenter_id=commenter_id,
+            comment_text=comment_text
+        )
+        return self.stub.CreatePostCommentNotification(request)
+
+    def create_comment_like_notification(self, comment_id: int, comment_owner_id: int, liker_id: int):
+        request = notification_pb2.CreateCommentLikeNotificationRequest(
+            comment_id=comment_id,
+            comment_owner_id=comment_owner_id,
+            liker_id=liker_id
+        )
+        return self.stub.CreateCommentLikeNotification(request)
+
+    def create_comment_reply_notification(self, comment_id: int, comment_owner_id: int, replier_id: int, reply_text: str):
+        request = notification_pb2.CreateCommentReplyNotificationRequest(
+            comment_id=comment_id,
+            comment_owner_id=comment_owner_id,
+            replier_id=replier_id,
+            reply_text=reply_text
+        )
+        return self.stub.CreateCommentReplyNotification(request)
+
+    def create_trending_post_notification(self, post_id: int, user_id: int, location_name: str):
+        request = notification_pb2.CreateTrendingPostNotificationRequest(
+            post_id=post_id,
+            user_id=user_id,
+            location_name=location_name
+        )
+        return self.stub.CreateTrendingPostNotification(request)
+
+    def notify_trending_posts(self, post_id: int, latitude: float, longitude: float, radius_km: float, location_name: str):
+        request = notification_pb2.NotifyTrendingPostsRequest(
+            post_id=post_id,
+            latitude=latitude,
+            longitude=longitude,
+            radius_km=radius_km,
+            location_name=location_name
+        )
+        return self.stub.NotifyTrendingPosts(request)
+
 # Create singleton instances
 user_client = UserServiceClient()
 feed_client = FeedServiceClient()
@@ -264,3 +388,5 @@ comments_client = CommentsServiceClient()
 search_client = SearchServiceClient()
 trending_client = TrendingServiceClient()
 property_client = PropertyServiceClient()
+auth_client = AuthServiceClient()
+notification_client = NotificationServiceClient()
