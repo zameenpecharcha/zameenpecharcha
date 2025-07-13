@@ -1,6 +1,0 @@
-SQLAlchemy
-python-dotenv
-psycopg2
-grpcio
-protobuf
-grpcio-tools
