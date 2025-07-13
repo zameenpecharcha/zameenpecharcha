@@ -8,7 +8,7 @@ service UserService {
 }
 
 message UserRequest {
-  int32 id = 1;
+  string id = 1;  // UUID string
 }
 
 message CreateUserRequest {
@@ -16,15 +16,33 @@ message CreateUserRequest {
   string email = 2;
   int32 phone = 3;
   string password = 4;
-  string role = 5;  // profession/role of the user
-  string location = 6;  // Google Maps location (latitude,longitude)
+  string role = 5;
+  string location = 6;
+  string profile_photo = 7;
+  string bio = 8;
+  string created_by = 9;  // UUID string
 }
 
 message UserResponse {
-  int32 id = 1;
+  bool success = 1;
+  string message = 2;
+  UserData user = 3;
+}
+
+message UserData {
+  string id = 1;  // UUID string
   string name = 2;
   string email = 3;
   int32 phone = 4;
   string role = 5;
   string location = 6;
+  string profile_photo = 7;
+  string bio = 8;
+  string created_at = 9;
+  string updated_at = 10;
+  bool is_active = 11;
+  bool is_deleted = 12;
+  string deleted_at = 13;
+  string created_by = 14;  // UUID string
+  string updated_by = 15;  // UUID string
 }
