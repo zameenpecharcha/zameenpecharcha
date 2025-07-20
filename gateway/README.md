@@ -660,3 +660,238 @@ curl -X POST http://localhost:8000/api/v1/posts/graphql \
   "query": "your_query_or_mutation_here"
 }
 ```
+
+## Property Service Endpoints
+
+### 1. Create Property
+Creates a new property listing.
+
+**Mutation:**
+```graphql
+mutation {
+  createProperty(
+    userId: "5807b553-ff97-48ba-88a9-6f3f69395667",
+    title: "Modern Villa with Pool",
+    description: "Beautiful modern villa with swimming pool",
+    price: 750000.0,
+    location: "Miami Beach",
+    propertyType: VILLA,
+    status: ACTIVE,
+    bedrooms: 4,
+    bathrooms: 3,
+    area: 3000.0,
+    yearBuilt: 2022,
+    images: ["image1.jpg", "image2.jpg"],
+    amenities: ["Pool", "Garden", "Garage"],
+    latitude: 25.7617,
+    longitude: -80.1918,
+    address: "123 Palm Avenue",
+    city: "Miami",
+    state: "Florida",
+    country: "USA",
+    zipCode: "33139"
+  ) {
+    propertyId
+    title
+    price
+    location
+    propertyType
+    status
+    bedrooms
+    bathrooms
+    area
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "createProperty": {
+      "propertyId": "123e4567-e89b-12d3-a456-426614174000",
+      "title": "Modern Villa with Pool",
+      "price": 750000.0,
+      "location": "Miami Beach",
+      "propertyType": "VILLA",
+      "status": "ACTIVE",
+      "bedrooms": 4,
+      "bathrooms": 3,
+      "area": 3000.0
+    }
+  }
+}
+```
+
+### 2. Get Property
+Retrieves a specific property by ID.
+
+**Query:**
+```graphql
+query {
+  property(propertyId: "123e4567-e89b-12d3-a456-426614174000") {
+    propertyId
+    userId
+    title
+    description
+    price
+    location
+    propertyType
+    status
+    bedrooms
+    bathrooms
+    area
+    yearBuilt
+    images
+    amenities
+    createdAt
+    updatedAt
+    viewCount
+    latitude
+    longitude
+    address
+    city
+    state
+    country
+    zipCode
+  }
+}
+```
+
+### 3. Search Properties
+Search properties with various filters.
+
+**Query:**
+```graphql
+query {
+  searchProperties(
+    query: "beach view",
+    propertyType: VILLA,
+    minPrice: 500000,
+    maxPrice: 1000000,
+    location: "Miami",
+    minBedrooms: 3,
+    minBathrooms: 2,
+    minArea: 2000,
+    maxArea: 5000
+  ) {
+    propertyId
+    title
+    price
+    location
+    propertyType
+    bedrooms
+    bathrooms
+    area
+  }
+}
+```
+
+### 4. Update Property
+Updates an existing property.
+
+**Mutation:**
+```graphql
+mutation {
+  updateProperty(
+    propertyId: "123e4567-e89b-12d3-a456-426614174000",
+    title: "Updated Villa Title",
+    description: "Updated description",
+    price: 800000.0,
+    status: ACTIVE
+  ) {
+    propertyId
+    title
+    description
+    price
+    status
+    updatedAt
+  }
+}
+```
+
+### 5. Delete Property
+Deletes a specific property.
+
+**Mutation:**
+```graphql
+mutation {
+  deleteProperty(propertyId: "123e4567-e89b-12d3-a456-426614174000")
+}
+```
+
+### 6. Increment View Count
+Increments the view count of a property.
+
+**Mutation:**
+```graphql
+mutation {
+  incrementViewCount(propertyId: "123e4567-e89b-12d3-a456-426614174000") {
+    propertyId
+    viewCount
+  }
+}
+```
+
+### Property Service Enums
+
+1. **PropertyType**:
+   - `APARTMENT`
+   - `VILLA`
+   - `HOUSE`
+   - `LAND`
+
+2. **PropertyStatus**:
+   - `ACTIVE`
+   - `INACTIVE`
+   - `SOLD`
+   - `RENTED`
+
+### Property Service Error Types
+
+- `PROPERTY_NOT_FOUND`: The requested property doesn't exist
+- `PROPERTY_CREATION_FAILED`: Failed to create the property
+- `PROPERTY_UPDATE_FAILED`: Failed to update the property
+- `PROPERTY_DELETION_FAILED`: Failed to delete the property
+- `PROPERTY_SEARCH_FAILED`: Failed to search properties
+- `VIEW_COUNT_UPDATE_FAILED`: Failed to update view count
+
+### Testing Property Service
+
+You can test the property service endpoints using:
+
+1. GraphQL Playground at `http://localhost:8000/api/v1/properties/graphql`
+2. cURL:
+```bash
+# Create Property
+curl -X POST http://localhost:8000/api/v1/properties/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { createProperty(userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\", title: \"Modern Villa with Pool\", description: \"Beautiful modern villa with swimming pool\", price: 750000.0, location: \"Miami Beach\", propertyType: VILLA, status: ACTIVE, bedrooms: 4, bathrooms: 3, area: 3000.0, yearBuilt: 2022, images: [\"image1.jpg\"], amenities: [\"Pool\"], latitude: 25.7617, longitude: -80.1918, address: \"123 Palm Avenue\", city: \"Miami\", state: \"Florida\", country: \"USA\", zipCode: \"33139\") { propertyId title price location } }"
+}'
+
+# Get Property
+curl -X POST http://localhost:8000/api/v1/properties/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { property(propertyId: \"123e4567-e89b-12d3-a456-426614174000\") { propertyId title price location } }"
+}'
+```
+
+3. Postman or any API client:
+- URL: `http://localhost:8000/api/v1/properties/graphql`
+- Method: POST
+- Headers: `Content-Type: application/json`
+- Body (raw JSON): Include the query/mutation in the format:
+```json
+{
+  "query": "your_query_or_mutation_here"
+}
+```
+
+### Property Service Dependencies
+
+The property service must be running on port 50053 for these endpoints to work. Make sure to:
+1. Initialize the database tables
+2. Start the property service
+3. Have proper environment variables set for database connection
