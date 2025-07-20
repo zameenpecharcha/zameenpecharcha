@@ -6,12 +6,12 @@ import os
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from app.entity.user_entity import SessionLocal, User
-import app.proto_files.auth_pb2 as auth_pb2
-import app.proto_files.auth_pb2_grpc as auth_pb2_grpc
-from app.utils.otp_utils import send_otp_email, send_otp_sms
-from app.utils.redis_utils import store_otp, get_otp, delete_otp
-from app.utils.log_utils import log_msg
+from entity.user_entity import SessionLocal, User
+import proto_files.auth_pb2 as auth_pb2
+import proto_files.auth_pb2_grpc as auth_pb2_grpc
+from utils.otp_utils import send_otp_email, send_otp_sms
+from utils.redis_utils import store_otp, get_otp, delete_otp
+from utils.log_utils import log_msg
 
 # Load secret key from environment variables (ensure it's persistent)
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -47,7 +47,10 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
         try:
             otp_code = str(random.randint(100000, 999999))
             store_otp(request.phone_number, otp_code)
-            send_otp_sms(request.phone_number, otp_code)
+            if "@" in request.phone_number:
+                send_otp_email(request.phone_number, otp_code)
+            else:
+                send_otp_sms(request.phone_number, otp_code)
 
             log_msg("info", f"OTP sent successfully", user_id=request.phone_number, correlation_id=correlation_id)
             return auth_pb2.OTPResponse(success=True)
@@ -67,7 +70,7 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
                 context.set_details("Invalid OTP")
                 return auth_pb2.VerifyOTPResponse()
 
-            token = jwt.encode({"email": request.email, "exp": datetime.utcnow() + timedelta(hours=1)}, SECRET_KEY,
+            token = jwt.encode({"email": request.phone_number, "exp": datetime.utcnow() + timedelta(hours=1)}, SECRET_KEY,
                                algorithm="HS256")
             delete_otp(request.phone_number)
 
