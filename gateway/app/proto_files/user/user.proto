@@ -16,6 +16,8 @@ message CreateUserRequest {
   string email = 2;
   int32 phone = 3;
   string password = 4;
+  string role = 5;  // profession/role of the user
+  string location = 6;  // Google Maps location (latitude,longitude)
 }
 
 message UserResponse {
@@ -23,4 +25,6 @@ message UserResponse {
   string name = 2;
   string email = 3;
   int32 phone = 4;
+  string role = 5;
+  string location = 6;
 }

@@ -1,12 +1,16 @@
 import grpc
-from gateway.app.proto_files.user import user_pb2, user_pb2_grpc
-from gateway.app.proto_files.feed import feed_pb2, feed_pb2_grpc
-from gateway.app.proto_files.comments import comments_pb2, comments_pb2_grpc
-from gateway.app.proto_files.search import search_pb2, search_pb2_grpc
-from gateway.app.proto_files.trending import trending_pb2, trending_pb2_grpc
-from gateway.app.proto_files.property import property_pb2, property_pb2_grpc
-from gateway.app.proto_files.auth import auth_pb2, auth_pb2_grpc
-from gateway.app.proto_files.notification import notification_pb2, notification_pb2_grpc
+import sys
+import os
+from pathlib import Path
+
+# Add the project root to Python path
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from app.proto_files.user import user_pb2, user_pb2_grpc
+import app.proto_files.comments.comments_pb2 as comments_pb2
+import app.proto_files.comments.comments_pb2_grpc as comments_pb2_grpc
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):
@@ -17,376 +21,68 @@ class UserServiceClient:
         request = user_pb2.UserRequest(id=user_id)
         return self.stub.GetUser(request)
 
-    def create_user(self, name, email, phone, password):
-        request = user_pb2.CreateUserRequest(name=name, email=email, phone=phone, password=password)
+    def create_user(self, name, email, phone, password, role, location):
+        request = user_pb2.CreateUserRequest(
+            name=name,
+            email=email,
+            phone=phone,
+            password=password,
+            role=role,
+            location=location
+        )
         return self.stub.CreateUser(request)
-
-class FeedServiceClient:
-    def __init__(self, host='localhost', port=50052):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = feed_pb2_grpc.FeedServiceStub(self.channel)
-
-    def create_post(self, user_id, content, latitude, longitude, location_name):
-        request = feed_pb2.CreatePostRequest(
-            user_id=user_id,
-            content=content,
-            latitude=latitude,
-            longitude=longitude,
-            location_name=location_name
-        )
-        return self.stub.CreatePost(request)
-
-    def get_post(self, post_id):
-        request = feed_pb2.GetPostRequest(post_id=post_id)
-        return self.stub.GetPost(request)
-
-    def get_user_posts(self, user_id):
-        request = feed_pb2.GetUserPostsRequest(user_id=user_id)
-        return self.stub.GetUserPosts(request)
-
-    def get_nearby_posts(self, latitude, longitude, radius_km=10.0):
-        request = feed_pb2.GetNearbyPostsRequest(
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.GetNearbyPosts(request)
-
-    def update_post(self, post_id, content, latitude=None, longitude=None, location_name=None):
-        request = feed_pb2.UpdatePostRequest(
-            post_id=post_id,
-            content=content,
-            latitude=latitude,
-            longitude=longitude,
-            location_name=location_name
-        )
-        return self.stub.UpdatePost(request)
-
-    def delete_post(self, post_id):
-        request = feed_pb2.DeletePostRequest(post_id=post_id)
-        return self.stub.DeletePost(request)
-
-    def like_post(self, post_id, user_id):
-        request = feed_pb2.LikePostRequest(post_id=post_id, user_id=user_id)
-        return self.stub.LikePost(request)
-
-    def unlike_post(self, post_id, user_id):
-        request = feed_pb2.UnlikePostRequest(post_id=post_id, user_id=user_id)
-        return self.stub.UnlikePost(request)
 
 class CommentsServiceClient:
     def __init__(self, host='localhost', port=50053):
         self.channel = grpc.insecure_channel(f'{host}:{port}')
         self.stub = comments_pb2_grpc.CommentsServiceStub(self.channel)
 
-    def create_comment(self, post_id, user_id, content):
-        request = comments_pb2.CreateCommentRequest(
+    def create_comment(self, post_id: str, user_id: str, content: str, parent_comment_id: str = None):
+        request = comments_pb2.CommentCreateRequest(
             post_id=post_id,
             user_id=user_id,
-            content=content
+            content=content,
+            parent_comment_id=parent_comment_id if parent_comment_id else ""
         )
         return self.stub.CreateComment(request)
 
-    def get_comment(self, comment_id):
-        request = comments_pb2.GetCommentRequest(comment_id=comment_id)
+    def get_comment(self, comment_id: str):
+        request = comments_pb2.CommentRequest(comment_id=comment_id)
         return self.stub.GetComment(request)
 
-    def get_post_comments(self, post_id, page=1, page_size=10):
-        request = comments_pb2.GetPostCommentsRequest(
-            post_id=post_id,
-            page=page,
-            page_size=page_size
-        )
-        return self.stub.GetPostComments(request)
+    def get_comments_by_post(self, post_id: str):
+        request = comments_pb2.PostCommentsRequest(post_id=post_id)
+        return self.stub.GetCommentsByPost(request)
 
-    def update_comment(self, comment_id, content):
-        request = comments_pb2.UpdateCommentRequest(
+    def get_replies(self, comment_id: str):
+        request = comments_pb2.CommentRequest(comment_id=comment_id)
+        return self.stub.GetReplies(request)
+
+    def update_comment(self, comment_id: str, content: str):
+        request = comments_pb2.CommentUpdateRequest(
             comment_id=comment_id,
             content=content
         )
         return self.stub.UpdateComment(request)
 
-    def delete_comment(self, comment_id):
-        request = comments_pb2.DeleteCommentRequest(comment_id=comment_id)
+    def delete_comment(self, comment_id: str):
+        request = comments_pb2.CommentRequest(comment_id=comment_id)
         return self.stub.DeleteComment(request)
 
-    def like_comment(self, comment_id, user_id):
-        request = comments_pb2.LikeCommentRequest(comment_id=comment_id, user_id=user_id)
+    def like_comment(self, comment_id: str, user_id: str):
+        request = comments_pb2.LikeCommentRequest(
+            comment_id=comment_id,
+            user_id=user_id
+        )
         return self.stub.LikeComment(request)
 
-    def unlike_comment(self, comment_id, user_id):
-        request = comments_pb2.UnlikeCommentRequest(comment_id=comment_id, user_id=user_id)
+    def unlike_comment(self, comment_id: str, user_id: str):
+        request = comments_pb2.UnlikeCommentRequest(
+            comment_id=comment_id,
+            user_id=user_id
+        )
         return self.stub.UnlikeComment(request)
-
-class SearchServiceClient:
-    def __init__(self, host='localhost', port=50054):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = search_pb2_grpc.SearchServiceStub(self.channel)
-
-    def search_posts(self, query, page=1, page_size=10, latitude=None, longitude=None, radius_km=None):
-        request = search_pb2.SearchPostsRequest(
-            query=query,
-            page=page,
-            page_size=page_size,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.SearchPosts(request)
-
-    def search_users(self, query, page=1, page_size=10):
-        request = search_pb2.SearchUsersRequest(
-            query=query,
-            page=page,
-            page_size=page_size
-        )
-        return self.stub.SearchUsers(request)
-
-    def search_properties(self, query, page=1, page_size=10, min_price=None, max_price=None,
-                         property_type=None, latitude=None, longitude=None, radius_km=None):
-        request = search_pb2.SearchPropertiesRequest(
-            query=query,
-            page=page,
-            page_size=page_size,
-            min_price=min_price,
-            max_price=max_price,
-            property_type=property_type,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.SearchProperties(request)
-
-class TrendingServiceClient:
-    def __init__(self, host='localhost', port=50055):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = trending_pb2_grpc.TrendingServiceStub(self.channel)
-
-    def get_trending_posts(self, limit=10, latitude=None, longitude=None, radius_km=None):
-        request = trending_pb2.GetTrendingPostsRequest(
-            limit=limit,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.GetTrendingPosts(request)
-
-    def get_trending_properties(self, limit=10, property_type=None, min_price=None, max_price=None,
-                              latitude=None, longitude=None, radius_km=None):
-        request = trending_pb2.GetTrendingPropertiesRequest(
-            limit=limit,
-            property_type=property_type,
-            min_price=min_price,
-            max_price=max_price,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.GetTrendingProperties(request)
-
-    def get_trending_locations(self, limit=10, latitude=None, longitude=None, radius_km=None):
-        request = trending_pb2.GetTrendingLocationsRequest(
-            limit=limit,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.GetTrendingLocations(request)
-
-class PropertyServiceClient:
-    def __init__(self, host='localhost', port=50056):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = property_pb2_grpc.PropertyServiceStub(self.channel)
-
-    def create_property(self, user_id, title, description, price, property_type,
-                       latitude, longitude, location_name, images=None, amenities=None):
-        request = property_pb2.CreatePropertyRequest(
-            user_id=user_id,
-            title=title,
-            description=description,
-            price=price,
-            property_type=property_type,
-            latitude=latitude,
-            longitude=longitude,
-            location_name=location_name,
-            images=images or [],
-            amenities=amenities or []
-        )
-        return self.stub.CreateProperty(request)
-
-    def get_property(self, property_id):
-        request = property_pb2.GetPropertyRequest(property_id=property_id)
-        return self.stub.GetProperty(request)
-
-    def get_user_properties(self, user_id, page=1, page_size=10):
-        request = property_pb2.GetUserPropertiesRequest(
-            user_id=user_id,
-            page=page,
-            page_size=page_size
-        )
-        return self.stub.GetUserProperties(request)
-
-    def update_property(self, property_id, title=None, description=None, price=None,
-                       property_type=None, latitude=None, longitude=None, location_name=None,
-                       images=None, amenities=None):
-        request = property_pb2.UpdatePropertyRequest(
-            property_id=property_id,
-            title=title,
-            description=description,
-            price=price,
-            property_type=property_type,
-            latitude=latitude,
-            longitude=longitude,
-            location_name=location_name,
-            images=images or [],
-            amenities=amenities or []
-        )
-        return self.stub.UpdateProperty(request)
-
-    def delete_property(self, property_id):
-        request = property_pb2.DeletePropertyRequest(property_id=property_id)
-        return self.stub.DeleteProperty(request)
-
-    def get_nearby_properties(self, latitude, longitude, radius_km=10.0,
-                            property_type=None, min_price=None, max_price=None):
-        request = property_pb2.GetNearbyPropertiesRequest(
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km,
-            property_type=property_type,
-            min_price=min_price,
-            max_price=max_price
-        )
-        return self.stub.GetNearbyProperties(request)
-
-class AuthServiceClient:
-    def __init__(self, host='localhost', port=50057):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = auth_pb2_grpc.AuthServiceStub(self.channel)
-
-    def login(self, email, password):
-        request = auth_pb2.LoginRequest(email=email, password=password)
-        return self.stub.Login(request)
-
-    def send_otp(self, phone_number):
-        request = auth_pb2.OTPRequest(phone_number=phone_number)
-        return self.stub.SendOTP(request)
-
-    def verify_otp(self, phone_number, otp_code):
-        request = auth_pb2.VerifyOTPRequest(phone_number=phone_number, otp_code=otp_code)
-        return self.stub.VerifyOTP(request)
-
-    def forgot_password(self, email_or_phone):
-        request = auth_pb2.ForgotPasswordRequest(email_or_phone=email_or_phone)
-        return self.stub.ForgotPassword(request)
-
-    def reset_password(self, email_or_phone, otp_code, new_password):
-        request = auth_pb2.ResetPasswordRequest(
-            email_or_phone=email_or_phone,
-            otp_code=otp_code,
-            new_password=new_password
-        )
-        return self.stub.ResetPassword(request)
-
-class NotificationServiceClient:
-    def __init__(self, host='localhost', port=50058):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
-        self.stub = notification_pb2_grpc.NotificationServiceStub(self.channel)
-
-    def get_user_notifications(self, user_id: int, page: int = 1, page_size: int = 10, unread_only: bool = False):
-        request = notification_pb2.GetUserNotificationsRequest(
-            user_id=user_id,
-            page=page,
-            page_size=page_size,
-            unread_only=unread_only
-        )
-        return self.stub.GetUserNotifications(request)
-
-    def mark_notification_as_read(self, notification_id: int, user_id: int):
-        request = notification_pb2.MarkNotificationAsReadRequest(
-            notification_id=notification_id,
-            user_id=user_id
-        )
-        return self.stub.MarkNotificationAsRead(request)
-
-    def subscribe_to_location(self, user_id: int, latitude: float, longitude: float, radius_km: float):
-        request = notification_pb2.SubscribeToLocationRequest(
-            user_id=user_id,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km
-        )
-        return self.stub.SubscribeToLocation(request)
-
-    def unsubscribe_from_location(self, subscription_id: int, user_id: int):
-        request = notification_pb2.UnsubscribeFromLocationRequest(
-            subscription_id=subscription_id,
-            user_id=user_id
-        )
-        return self.stub.UnsubscribeFromLocation(request)
-
-    def get_user_subscriptions(self, user_id: int):
-        request = notification_pb2.GetUserSubscriptionsRequest(user_id=user_id)
-        return self.stub.GetUserSubscriptions(request)
-
-    def create_post_like_notification(self, post_id: int, post_owner_id: int, liker_id: int):
-        request = notification_pb2.CreatePostLikeNotificationRequest(
-            post_id=post_id,
-            post_owner_id=post_owner_id,
-            liker_id=liker_id
-        )
-        return self.stub.CreatePostLikeNotification(request)
-
-    def create_post_comment_notification(self, post_id: int, post_owner_id: int, commenter_id: int, comment_text: str):
-        request = notification_pb2.CreatePostCommentNotificationRequest(
-            post_id=post_id,
-            post_owner_id=post_owner_id,
-            commenter_id=commenter_id,
-            comment_text=comment_text
-        )
-        return self.stub.CreatePostCommentNotification(request)
-
-    def create_comment_like_notification(self, comment_id: int, comment_owner_id: int, liker_id: int):
-        request = notification_pb2.CreateCommentLikeNotificationRequest(
-            comment_id=comment_id,
-            comment_owner_id=comment_owner_id,
-            liker_id=liker_id
-        )
-        return self.stub.CreateCommentLikeNotification(request)
-
-    def create_comment_reply_notification(self, comment_id: int, comment_owner_id: int, replier_id: int, reply_text: str):
-        request = notification_pb2.CreateCommentReplyNotificationRequest(
-            comment_id=comment_id,
-            comment_owner_id=comment_owner_id,
-            replier_id=replier_id,
-            reply_text=reply_text
-        )
-        return self.stub.CreateCommentReplyNotification(request)
-
-    def create_trending_post_notification(self, post_id: int, user_id: int, location_name: str):
-        request = notification_pb2.CreateTrendingPostNotificationRequest(
-            post_id=post_id,
-            user_id=user_id,
-            location_name=location_name
-        )
-        return self.stub.CreateTrendingPostNotification(request)
-
-    def notify_trending_posts(self, post_id: int, latitude: float, longitude: float, radius_km: float, location_name: str):
-        request = notification_pb2.NotifyTrendingPostsRequest(
-            post_id=post_id,
-            latitude=latitude,
-            longitude=longitude,
-            radius_km=radius_km,
-            location_name=location_name
-        )
-        return self.stub.NotifyTrendingPosts(request)
 
 # Create singleton instances
 user_client = UserServiceClient()
-feed_client = FeedServiceClient()
 comments_client = CommentsServiceClient()
-search_client = SearchServiceClient()
-trending_client = TrendingServiceClient()
-property_client = PropertyServiceClient()
-auth_client = AuthServiceClient()
-notification_client = NotificationServiceClient()

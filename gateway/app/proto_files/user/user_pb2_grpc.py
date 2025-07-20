@@ -3,9 +3,9 @@
 import grpc
 import warnings
 
-from gateway.app.proto_files.user import user_pb2 as proto__files_dot_user__pb2
+from app.proto_files.user import user_pb2 as app_dot_proto__files_dot_user_dot_user__pb2
 
-GRPC_GENERATED_VERSION = '1.71.0'
+GRPC_GENERATED_VERSION = '1.73.1'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in proto_files/user_pb2_grpc.py depends on'
+        + f' but the generated code in app/proto_files/user/user_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,13 +36,13 @@ class UserServiceStub(object):
         """
         self.GetUser = channel.unary_unary(
                 '/user.UserService/GetUser',
-                request_serializer=proto__files_dot_user__pb2.UserRequest.SerializeToString,
-                response_deserializer=proto__files_dot_user__pb2.UserResponse.FromString,
+                request_serializer=app_dot_proto__files_dot_user_dot_user__pb2.UserRequest.SerializeToString,
+                response_deserializer=app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.FromString,
                 _registered_method=True)
         self.CreateUser = channel.unary_unary(
                 '/user.UserService/CreateUser',
-                request_serializer=proto__files_dot_user__pb2.CreateUserRequest.SerializeToString,
-                response_deserializer=proto__files_dot_user__pb2.UserResponse.FromString,
+                request_serializer=app_dot_proto__files_dot_user_dot_user__pb2.CreateUserRequest.SerializeToString,
+                response_deserializer=app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.FromString,
                 _registered_method=True)
 
 
@@ -66,13 +66,13 @@ def add_UserServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'GetUser': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUser,
-                    request_deserializer=proto__files_dot_user__pb2.UserRequest.FromString,
-                    response_serializer=proto__files_dot_user__pb2.UserResponse.SerializeToString,
+                    request_deserializer=app_dot_proto__files_dot_user_dot_user__pb2.UserRequest.FromString,
+                    response_serializer=app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.SerializeToString,
             ),
             'CreateUser': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateUser,
-                    request_deserializer=proto__files_dot_user__pb2.CreateUserRequest.FromString,
-                    response_serializer=proto__files_dot_user__pb2.UserResponse.SerializeToString,
+                    request_deserializer=app_dot_proto__files_dot_user_dot_user__pb2.CreateUserRequest.FromString,
+                    response_serializer=app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -100,8 +100,8 @@ class UserService(object):
             request,
             target,
             '/user.UserService/GetUser',
-            proto__files_dot_user__pb2.UserRequest.SerializeToString,
-            proto__files_dot_user__pb2.UserResponse.FromString,
+            app_dot_proto__files_dot_user_dot_user__pb2.UserRequest.SerializeToString,
+            app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -127,8 +127,8 @@ class UserService(object):
             request,
             target,
             '/user.UserService/CreateUser',
-            proto__files_dot_user__pb2.CreateUserRequest.SerializeToString,
-            proto__files_dot_user__pb2.UserResponse.FromString,
+            app_dot_proto__files_dot_user_dot_user__pb2.CreateUserRequest.SerializeToString,
+            app_dot_proto__files_dot_user_dot_user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
