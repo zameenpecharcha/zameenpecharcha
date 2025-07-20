@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.user_api import user_router
 from app.api.comments_api import comments_router
 from app.api.posts_api import posts_router
+from app.api.property_api import property_router
 
 app = FastAPI()
 
@@ -24,6 +25,7 @@ def health_check():
 app.include_router(user_router, prefix="/api/v1/users", tags=["users"])
 app.include_router(comments_router, prefix="/api/v1/comments", tags=["comments"])
 app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"])
+app.include_router(property_router, prefix="/api/v1/properties", tags=["properties"])
 
 if __name__ == "__main__":
     import uvicorn

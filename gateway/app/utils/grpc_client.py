@@ -13,6 +13,7 @@ import app.proto_files.comments.comments_pb2 as comments_pb2
 import app.proto_files.comments.comments_pb2_grpc as comments_pb2_grpc
 import app.proto_files.posts.post_pb2 as post_pb2
 import app.proto_files.posts.post_pb2_grpc as post_pb2_grpc
+from app.proto_files.property import property_pb2, property_pb2_grpc
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):
@@ -132,7 +133,42 @@ class PostsServiceClient:
         )
         return self.stub.UnlikePost(request)
 
+class PropertyServiceClient:
+    def __init__(self, host='localhost', port=50053):
+        self.channel = grpc.insecure_channel(f'{host}:{port}')
+        self.stub = property_pb2_grpc.PropertyServiceStub(self.channel)
+
+    def create_property(self, **property_data):
+        request = property_pb2.Property(**property_data)
+        return self.stub.CreateProperty(request)
+
+    def get_property(self, property_id: str):
+        request = property_pb2.PropertyRequest(property_id=property_id)
+        return self.stub.GetProperty(request)
+
+    def update_property(self, property_id: str, **property_data):
+        property_data['property_id'] = property_id
+        request = property_pb2.Property(**property_data)
+        return self.stub.UpdateProperty(request)
+
+    def delete_property(self, property_id: str):
+        request = property_pb2.PropertyRequest(property_id=property_id)
+        return self.stub.DeleteProperty(request)
+
+    def search_properties(self, **search_params):
+        request = property_pb2.PropertySearchRequest(**search_params)
+        return self.stub.SearchProperties(request)
+
+    def list_properties(self):
+        request = property_pb2.PropertyRequest()
+        return self.stub.ListProperties(request)
+
+    def increment_view_count(self, property_id: str):
+        request = property_pb2.PropertyRequest(property_id=property_id)
+        return self.stub.IncrementViewCount(request)
+
 # Create singleton instances
 user_client = UserServiceClient()
 comments_client = CommentsServiceClient()
 posts_client = PostsServiceClient()
+property_client = PropertyServiceClient()
