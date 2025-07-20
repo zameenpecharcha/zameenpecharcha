@@ -374,3 +374,289 @@ Common error types:
 - `COMMENT_DELETION_FAILED`: Failed to delete the comment
 - `COMMENT_LIKE_FAILED`: Failed to like the comment
 - `COMMENT_UNLIKE_FAILED`: Failed to unlike the comment
+
+## Posts Service Endpoints
+
+### 1. Create Post
+Creates a new post.
+
+**Mutation:**
+```graphql
+mutation {
+  createPost(
+    userId: "5807b553-ff97-48ba-88a9-6f3f69395667",
+    title: "My First Post",
+    content: "This is the content of my first post"
+  ) {
+    postId
+    userId
+    title
+    content
+    createdAt
+    updatedAt
+    likeCount
+    commentCount
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "createPost": {
+      "postId": "1",
+      "userId": "5807b553-ff97-48ba-88a9-6f3f69395667",
+      "title": "My First Post",
+      "content": "This is the content of my first post",
+      "createdAt": 1753009257,
+      "updatedAt": 1753009257,
+      "likeCount": 0,
+      "commentCount": 0
+    }
+  }
+}
+```
+
+### 2. Get Post
+Retrieves a specific post by ID.
+
+**Query:**
+```graphql
+query {
+  post(postId: "1") {
+    postId
+    userId
+    title
+    content
+    createdAt
+    updatedAt
+    likeCount
+    commentCount
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "post": {
+      "postId": "1",
+      "userId": "5807b553-ff97-48ba-88a9-6f3f69395667",
+      "title": "My First Post",
+      "content": "This is the content of my first post",
+      "createdAt": 1753009257,
+      "updatedAt": 1753009257,
+      "likeCount": 0,
+      "commentCount": 0
+    }
+  }
+}
+```
+
+### 3. Get Posts by User
+Retrieves all posts by a specific user.
+
+**Query:**
+```graphql
+query {
+  postsByUser(userId: "5807b553-ff97-48ba-88a9-6f3f69395667") {
+    postId
+    userId
+    title
+    content
+    createdAt
+    updatedAt
+    likeCount
+    commentCount
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "postsByUser": [
+      {
+        "postId": "1",
+        "userId": "5807b553-ff97-48ba-88a9-6f3f69395667",
+        "title": "My First Post",
+        "content": "This is the content of my first post",
+        "createdAt": 1753009257,
+        "updatedAt": 1753009257,
+        "likeCount": 0,
+        "commentCount": 0
+      }
+      // ... more posts
+    ]
+  }
+}
+```
+
+### 4. Update Post
+Updates an existing post.
+
+**Mutation:**
+```graphql
+mutation {
+  updatePost(
+    postId: "1",
+    title: "Updated Title",
+    content: "Updated content for my post"
+  ) {
+    postId
+    title
+    content
+    updatedAt
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "updatePost": {
+      "postId": "1",
+      "title": "Updated Title",
+      "content": "Updated content for my post",
+      "updatedAt": 1753009300
+    }
+  }
+}
+```
+
+### 5. Delete Post
+Deletes a specific post.
+
+**Mutation:**
+```graphql
+mutation {
+  deletePost(postId: "1")
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "deletePost": true
+  }
+}
+```
+
+### 6. Like Post
+Adds a like to a post.
+
+**Mutation:**
+```graphql
+mutation {
+  likePost(
+    postId: "1",
+    userId: "5807b553-ff97-48ba-88a9-6f3f69395667"
+  ) {
+    postId
+    likeCount
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "likePost": {
+      "postId": "1",
+      "likeCount": 1
+    }
+  }
+}
+```
+
+### 7. Unlike Post
+Removes a like from a post.
+
+**Mutation:**
+```graphql
+mutation {
+  unlikePost(
+    postId: "1",
+    userId: "5807b553-ff97-48ba-88a9-6f3f69395667"
+  ) {
+    postId
+    likeCount
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "unlikePost": {
+      "postId": "1",
+      "likeCount": 0
+    }
+  }
+}
+```
+
+### Posts Service Error Responses
+
+Common error responses for the posts service:
+
+```json
+{
+  "errors": [
+    {
+      "message": "POST_NOT_FOUND: Post does not exist",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["post"]
+    }
+  ],
+  "data": null
+}
+```
+
+Error types:
+- `POST_NOT_FOUND`: The requested post doesn't exist
+- `POST_CREATION_FAILED`: Failed to create the post
+- `POST_UPDATE_FAILED`: Failed to update the post
+- `POST_DELETION_FAILED`: Failed to delete the post
+- `POST_LIKE_FAILED`: Failed to like the post
+- `POST_UNLIKE_FAILED`: Failed to unlike the post
+
+### Testing Posts Service
+
+You can test the posts service endpoints using:
+
+1. GraphQL Playground at `http://localhost:8000/api/v1/posts/graphql`
+2. cURL:
+```bash
+# Create Post
+curl -X POST http://localhost:8000/api/v1/posts/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { createPost(userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\", title: \"My First Post\", content: \"This is the content\") { postId title content } }"
+}'
+
+# Get Post
+curl -X POST http://localhost:8000/api/v1/posts/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query { post(postId: \"1\") { postId title content } }"
+}'
+```
+
+3. Postman or any API client:
+- URL: `http://localhost:8000/api/v1/posts/graphql`
+- Method: POST
+- Headers: `Content-Type: application/json`
+- Body (raw JSON): Include the query/mutation in the format:
+```json
+{
+  "query": "your_query_or_mutation_here"
+}
+```

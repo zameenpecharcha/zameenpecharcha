@@ -11,6 +11,8 @@ if project_root not in sys.path:
 from app.proto_files.user import user_pb2, user_pb2_grpc
 import app.proto_files.comments.comments_pb2 as comments_pb2
 import app.proto_files.comments.comments_pb2_grpc as comments_pb2_grpc
+import app.proto_files.posts.post_pb2 as post_pb2
+import app.proto_files.posts.post_pb2_grpc as post_pb2_grpc
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):
@@ -83,6 +85,54 @@ class CommentsServiceClient:
         )
         return self.stub.UnlikeComment(request)
 
+class PostsServiceClient:
+    def __init__(self, host='localhost', port=50052):
+        self.channel = grpc.insecure_channel(f'{host}:{port}')
+        self.stub = post_pb2_grpc.PostsServiceStub(self.channel)
+
+    def create_post(self, user_id: str, title: str, content: str):
+        request = post_pb2.PostCreateRequest(
+            user_id=user_id,
+            title=title,
+            content=content
+        )
+        return self.stub.CreatePost(request)
+
+    def get_post(self, post_id: str):
+        request = post_pb2.PostRequest(post_id=post_id)
+        return self.stub.GetPost(request)
+
+    def update_post(self, post_id: str, title: str, content: str):
+        request = post_pb2.PostUpdateRequest(
+            post_id=post_id,
+            title=title,
+            content=content
+        )
+        return self.stub.UpdatePost(request)
+
+    def delete_post(self, post_id: str):
+        request = post_pb2.PostRequest(post_id=post_id)
+        return self.stub.DeletePost(request)
+
+    def get_posts_by_user(self, user_id: str):
+        request = post_pb2.GetPostsByUserRequest(user_id=user_id)
+        return self.stub.GetPostsByUser(request)
+
+    def like_post(self, post_id: str, user_id: str):
+        request = post_pb2.LikePostRequest(
+            post_id=post_id,
+            user_id=user_id
+        )
+        return self.stub.LikePost(request)
+
+    def unlike_post(self, post_id: str, user_id: str):
+        request = post_pb2.LikePostRequest(
+            post_id=post_id,
+            user_id=user_id
+        )
+        return self.stub.UnlikePost(request)
+
 # Create singleton instances
 user_client = UserServiceClient()
 comments_client = CommentsServiceClient()
+posts_client = PostsServiceClient()

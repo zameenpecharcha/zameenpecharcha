@@ -1,8 +1,10 @@
 from fastapi import FastAPI
-from app.api import user_api, comments_api
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.user_api import user_router
+from app.api.comments_api import comments_router
+from app.api.posts_api import posts_router
 
-app = FastAPI(title="Gateway Service")
+app = FastAPI()
 
 # Configure CORS
 app.add_middleware(
@@ -13,13 +15,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(user_api.router, prefix="/api/v1/users", tags=["users"])
-app.include_router(comments_api.router, prefix="/api/v1/comments", tags=["comments"])
-
+# Health check endpoint
 @app.get("/health")
-async def health_check():
+def health_check():
     return {"status": "healthy"}
+
+# API routes
+app.include_router(user_router, prefix="/api/v1/users", tags=["users"])
+app.include_router(comments_router, prefix="/api/v1/comments", tags=["comments"])
+app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"])
 
 if __name__ == "__main__":
     import uvicorn
