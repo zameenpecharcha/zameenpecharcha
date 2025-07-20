@@ -5,6 +5,9 @@ from ..proto_files import comments_pb2, comments_pb2_grpc
 from .comment_service import CommentService
 from ..utils.db_connection import get_db
 
+def convert_timestamp(dt):
+    return int(dt.timestamp()) if dt else 0
+
 class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
     def __init__(self):
         self.db = next(get_db())
@@ -13,10 +16,10 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
     def CreateComment(self, request, context):
         try:
             comment = self.service.create_comment(
-                post_id=int(request.post_id),
-                user_id=int(request.user_id),
+                post_id=request.post_id,
+                user_id=request.user_id,
                 content=request.content,
-                parent_comment_id=int(request.parent_comment_id) if request.parent_comment_id else None
+                parent_comment_id=request.parent_comment_id if request.parent_comment_id else None
             )
             return comments_pb2.CommentResponse(
                 success=True,
@@ -27,8 +30,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                     user_id=str(comment.user_id),
                     content=comment.content,
                     parent_comment_id=str(comment.parent_comment_id) if comment.parent_comment_id else "",
-                    created_at=comment.created_at.timestamp(),
-                    updated_at=comment.updated_at.timestamp(),
+                    created_at=convert_timestamp(comment.created_at),
+                    updated_at=convert_timestamp(comment.updated_at),
                     like_count=comment.like_count
                 )
             )
@@ -39,7 +42,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def GetComment(self, request, context):
         try:
-            comment = self.service.get_comment(int(request.comment_id))
+            comment = self.service.get_comment(request.comment_id)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return comments_pb2.CommentResponse(success=False, message="Comment not found")
@@ -53,8 +56,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                     user_id=str(comment.user_id),
                     content=comment.content,
                     parent_comment_id=str(comment.parent_comment_id) if comment.parent_comment_id else "",
-                    created_at=comment.created_at.timestamp(),
-                    updated_at=comment.updated_at.timestamp(),
+                    created_at=convert_timestamp(comment.created_at),
+                    updated_at=convert_timestamp(comment.updated_at),
                     like_count=comment.like_count
                 )
             )
@@ -65,7 +68,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def UpdateComment(self, request, context):
         try:
-            comment = self.service.update_comment(int(request.comment_id), request.content)
+            comment = self.service.update_comment(request.comment_id, request.content)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return comments_pb2.CommentResponse(success=False, message="Comment not found")
@@ -79,8 +82,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                     user_id=str(comment.user_id),
                     content=comment.content,
                     parent_comment_id=str(comment.parent_comment_id) if comment.parent_comment_id else "",
-                    created_at=comment.created_at.timestamp(),
-                    updated_at=comment.updated_at.timestamp(),
+                    created_at=convert_timestamp(comment.created_at),
+                    updated_at=convert_timestamp(comment.updated_at),
                     like_count=comment.like_count
                 )
             )
@@ -91,7 +94,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def DeleteComment(self, request, context):
         try:
-            success = self.service.delete_comment(int(request.comment_id))
+            success = self.service.delete_comment(request.comment_id)
             if not success:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return comments_pb2.CommentResponse(success=False, message="Comment not found")
@@ -104,7 +107,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def GetCommentsByPost(self, request, context):
         try:
-            comments = self.service.get_comments_by_post(int(request.comment_id))
+            comments = self.service.get_comments_by_post(request.post_id)
             return comments_pb2.CommentListResponse(
                 success=True,
                 message="Comments retrieved successfully",
@@ -116,8 +119,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                             user_id=str(c.user_id),
                             content=c.content,
                             parent_comment_id=str(c.parent_comment_id) if c.parent_comment_id else "",
-                            created_at=c.created_at.timestamp(),
-                            updated_at=c.updated_at.timestamp(),
+                            created_at=convert_timestamp(c.created_at),
+                            updated_at=convert_timestamp(c.updated_at),
                             like_count=c.like_count
                         ) for c in comments
                     ]
@@ -130,7 +133,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def GetReplies(self, request, context):
         try:
-            replies = self.service.get_replies(int(request.comment_id))
+            replies = self.service.get_replies(request.comment_id)
             return comments_pb2.CommentListResponse(
                 success=True,
                 message="Replies retrieved successfully",
@@ -142,8 +145,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                             user_id=str(c.user_id),
                             content=c.content,
                             parent_comment_id=str(c.parent_comment_id) if c.parent_comment_id else "",
-                            created_at=c.created_at.timestamp(),
-                            updated_at=c.updated_at.timestamp(),
+                            created_at=convert_timestamp(c.created_at),
+                            updated_at=convert_timestamp(c.updated_at),
                             like_count=c.like_count
                         ) for c in replies
                     ]
@@ -156,7 +159,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def LikeComment(self, request, context):
         try:
-            comment = self.service.like_comment(int(request.comment_id), int(request.user_id))
+            comment = self.service.like_comment(request.comment_id, request.user_id)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return comments_pb2.CommentResponse(success=False, message="Comment not found")
@@ -170,8 +173,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                     user_id=str(comment.user_id),
                     content=comment.content,
                     parent_comment_id=str(comment.parent_comment_id) if comment.parent_comment_id else "",
-                    created_at=comment.created_at.timestamp(),
-                    updated_at=comment.updated_at.timestamp(),
+                    created_at=convert_timestamp(comment.created_at),
+                    updated_at=convert_timestamp(comment.updated_at),
                     like_count=comment.like_count
                 )
             )
@@ -182,7 +185,7 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
 
     def UnlikeComment(self, request, context):
         try:
-            comment = self.service.unlike_comment(int(request.comment_id), int(request.user_id))
+            comment = self.service.unlike_comment(request.comment_id, request.user_id)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 return comments_pb2.CommentResponse(success=False, message="Comment not found")
@@ -196,8 +199,8 @@ class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):
                     user_id=str(comment.user_id),
                     content=comment.content,
                     parent_comment_id=str(comment.parent_comment_id) if comment.parent_comment_id else "",
-                    created_at=comment.created_at.timestamp(),
-                    updated_at=comment.updated_at.timestamp(),
+                    created_at=convert_timestamp(comment.created_at),
+                    updated_at=convert_timestamp(comment.updated_at),
                     like_count=comment.like_count
                 )
             )
