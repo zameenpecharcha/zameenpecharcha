@@ -2,76 +2,75 @@ syntax = "proto3";
 
 package comments;
 
-service CommentsService {
-  rpc CreateComment(CreateCommentRequest) returns (CommentResponse);
-  rpc GetComment(GetCommentRequest) returns (CommentResponse);
-  rpc GetPostComments(GetPostCommentsRequest) returns (CommentsResponse);
-  rpc UpdateComment(UpdateCommentRequest) returns (CommentResponse);
-  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
-  rpc LikeComment(LikeCommentRequest) returns (LikeCommentResponse);
-  rpc UnlikeComment(UnlikeCommentRequest) returns (UnlikeCommentResponse);
+// Comment Message
+message Comment {
+    string comment_id = 1;
+    string post_id = 2;
+    string user_id = 3;
+    string content = 4;
+    string parent_comment_id = 5;
+    int64 created_at = 6;
+    int64 updated_at = 7;
+    int32 like_count = 8;
 }
 
-message CreateCommentRequest {
-  int32 post_id = 1;
-  int32 user_id = 2;
-  string content = 3;
+// Comment List Message
+message CommentList {
+    repeated Comment comments = 1;
 }
 
-message GetCommentRequest {
-  int32 comment_id = 1;
+// Comment Request Message
+message CommentRequest {
+    string comment_id = 1;
 }
 
-message GetPostCommentsRequest {
-  int32 post_id = 1;
-  int32 page = 2;
-  int32 page_size = 3;
+// Post Comments Request Message
+message PostCommentsRequest {
+    string post_id = 1;
 }
 
-message UpdateCommentRequest {
-  int32 comment_id = 1;
-  string content = 2;
+// Comment Create Request Message
+message CommentCreateRequest {
+    string post_id = 1;
+    string user_id = 2;
+    string content = 3;
+    string parent_comment_id = 4;
 }
 
-message DeleteCommentRequest {
-  int32 comment_id = 1;
+// Comment Update Request Message
+message CommentUpdateRequest {
+    string comment_id = 1;
+    string content = 2;
 }
 
+// Like Comment Request Message
 message LikeCommentRequest {
-  int32 comment_id = 1;
-  int32 user_id = 2;
+    string comment_id = 1;
+    string user_id = 2;
 }
 
-message UnlikeCommentRequest {
-  int32 comment_id = 1;
-  int32 user_id = 2;
-}
-
+// Comment Response Message
 message CommentResponse {
-  int32 id = 1;
-  int32 post_id = 2;
-  int32 user_id = 3;
-  string content = 4;
-  int32 likes_count = 5;
-  string created_at = 6;
-  string updated_at = 7;
+    bool success = 1;
+    string message = 2;
+    Comment comment = 3;
 }
 
-message CommentsResponse {
-  repeated CommentResponse comments = 1;
-  int32 total_count = 2;
+// Comment List Response Message
+message CommentListResponse {
+    bool success = 1;
+    string message = 2;
+    CommentList comments = 3;
 }
 
-message DeleteCommentResponse {
-  bool success = 1;
-}
-
-message LikeCommentResponse {
-  bool success = 1;
-  int32 likes_count = 2;
-}
-
-message UnlikeCommentResponse {
-  bool success = 1;
-  int32 likes_count = 2;
+// Comments Service Definition
+service CommentsService {
+    rpc CreateComment(CommentCreateRequest) returns (CommentResponse) {}
+    rpc GetComment(CommentRequest) returns (CommentResponse) {}
+    rpc UpdateComment(CommentUpdateRequest) returns (CommentResponse) {}
+    rpc DeleteComment(CommentRequest) returns (CommentResponse) {}
+    rpc GetCommentsByPost(PostCommentsRequest) returns (CommentListResponse) {}
+    rpc GetReplies(CommentRequest) returns (CommentListResponse) {}
+    rpc LikeComment(LikeCommentRequest) returns (CommentResponse) {}
+    rpc UnlikeComment(LikeCommentRequest) returns (CommentResponse) {}
 } 

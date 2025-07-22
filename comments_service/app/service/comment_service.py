@@ -33,13 +33,14 @@ class CommentService:
             if not parent_comment:
                 raise ValueError(f"Parent comment with ID {parent_comment_id} does not exist")
 
+        now = datetime.utcnow()
         comment = Comment(
             post_id=uuid.UUID(post_id),
             user_id=uuid.UUID(user_id),
             content=content,
             parent_comment_id=uuid.UUID(parent_comment_id) if parent_comment_id else None,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=now,
+            updated_at=now,
             like_count=0
         )
         return self.repository.create_comment(comment)

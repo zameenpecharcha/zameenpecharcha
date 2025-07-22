@@ -1,8 +1,11 @@
 from fastapi import FastAPI
-from .api import user_api, feed_api, comments_api, search_api, trending_api, property_api, auth_api, notification_api
 from fastapi.middleware.cors import CORSMiddleware
+from app.api.user_api import user_router
+from app.api.comments_api import comments_router
+from app.api.posts_api import posts_router
+from app.api.property_api import property_router
 
-app = FastAPI(title="Gateway Service")
+app = FastAPI()
 
 # Configure CORS
 app.add_middleware(
@@ -13,19 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth_api.router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(user_api.router, prefix="/api/v1/users", tags=["users"])
-app.include_router(feed_api.router, prefix="/api/v1/feed", tags=["feed"])
-app.include_router(comments_api.router, prefix="/api/v1/comments", tags=["comments"])
-app.include_router(search_api.router, prefix="/api/v1/search", tags=["search"])
-app.include_router(trending_api.router, prefix="/api/v1/trending", tags=["trending"])
-app.include_router(property_api.router, prefix="/api/v1/properties", tags=["properties"])
-app.include_router(notification_api.router, prefix="/api/v1/notifications", tags=["notifications"])
-
+# Health check endpoint
 @app.get("/health")
-async def health_check():
+def health_check():
     return {"status": "healthy"}
+
+# API routes
+app.include_router(user_router, prefix="/api/v1/users", tags=["users"])
+app.include_router(comments_router, prefix="/api/v1/comments", tags=["comments"])
+app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"])
+app.include_router(property_router, prefix="/api/v1/properties", tags=["properties"])
 
 if __name__ == "__main__":
     import uvicorn
