@@ -1,7 +1,11 @@
 import grpc
 from concurrent import futures
-from app.service.auth_service import AuthService
-import app.proto_files.auth_pb2_grpc as auth_pb2_grpc
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from service.auth_service import AuthService
+import proto_files.auth_pb2_grpc as auth_pb2_grpc
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

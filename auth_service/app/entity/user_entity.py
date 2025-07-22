@@ -1,6 +1,6 @@
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import Column, Integer, String, TIMESTAMP
-from app.utils.db_connection import get_db_engine
+from utils.db_connection import get_db_engine
 
 Base = declarative_base()
 

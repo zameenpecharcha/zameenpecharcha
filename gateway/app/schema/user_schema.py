@@ -1,9 +1,9 @@
 import typing
 from datetime import datetime
 import strawberry
-from app.exception.UserException import REException
-from app.utils.log_utils import log_msg
-from app.utils.grpc_client import UserServiceClient
+from gateway.app.exception.UserException import REException
+from gateway.app.utils.log_utils import log_msg
+from gateway.app.utils.grpc_client import UserServiceClient
 from typing import Optional
 client = UserServiceClient()
 
