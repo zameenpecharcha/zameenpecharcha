@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package trending;
+
+// Trending Post Message
+message TrendingPost {
+    int32 id = 1;
+    int32 post_id = 2;
+    float score = 3;
+    int32 rank = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+// Trending Post List Message
+message TrendingPostList {
+    repeated TrendingPost trending_posts = 1;
+}
+
+// Update Post Metrics Request Message
+message UpdatePostMetricsRequest {
+    int32 post_id = 1;
+    int32 like_count = 2;
+    int32 comment_count = 3;
+}
+
+// Get Trending Posts Request Message
+message GetTrendingRequest {
+    int32 limit = 1;
+    int32 offset = 2;
+}
+
+// Get Post Rank Request Message
+message GetPostRankRequest {
+    int32 post_id = 1;
+}
+
+// Trending Response Message
+message TrendingResponse {
+    bool success = 1;
+    string message = 2;
+    TrendingPost trending_post = 3;
+}
+
+// Get Trending Response Message
+message GetTrendingResponse {
+    bool success = 1;
+    string message = 2;
+    TrendingPostList trending_posts = 3;
+}
+
+// Rank Response Message
+message RankResponse {
+    bool success = 1;
+    string message = 2;
+    int32 rank = 3;
+}
+
+// Trending Service Definition
+service TrendingService {
+    rpc UpdatePostMetrics(UpdatePostMetricsRequest) returns (TrendingResponse) {}
+    rpc GetTrendingPosts(GetTrendingRequest) returns (GetTrendingResponse) {}
+    rpc GetPostRank(GetPostRankRequest) returns (RankResponse) {}
+} 

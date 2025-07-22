@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package comments;
+
+// Comment Message
+message Comment {
+    string comment_id = 1;
+    string post_id = 2;
+    string user_id = 3;
+    string content = 4;
+    string parent_comment_id = 5;
+    int64 created_at = 6;
+    int64 updated_at = 7;
+    int32 like_count = 8;
+}
+
+// Comment List Message
+message CommentList {
+    repeated Comment comments = 1;
+}
+
+// Comment Request Message
+message CommentRequest {
+    string comment_id = 1;
+}
+
+// Post Comments Request Message
+message PostCommentsRequest {
+    string post_id = 1;
+}
+
+// Comment Create Request Message
+message CommentCreateRequest {
+    string post_id = 1;
+    string user_id = 2;
+    string content = 3;
+    string parent_comment_id = 4;
+}
+
+// Comment Update Request Message
+message CommentUpdateRequest {
+    string comment_id = 1;
+    string content = 2;
+}
+
+// Like Comment Request Message
+message LikeCommentRequest {
+    string comment_id = 1;
+    string user_id = 2;
+}
+
+// Comment Response Message
+message CommentResponse {
+    bool success = 1;
+    string message = 2;
+    Comment comment = 3;
+}
+
+// Comment List Response Message
+message CommentListResponse {
+    bool success = 1;
+    string message = 2;
+    CommentList comments = 3;
+}
+
+// Comments Service Definition
+service CommentsService {
+    rpc CreateComment(CommentCreateRequest) returns (CommentResponse) {}
+    rpc GetComment(CommentRequest) returns (CommentResponse) {}
+    rpc UpdateComment(CommentUpdateRequest) returns (CommentResponse) {}
+    rpc DeleteComment(CommentRequest) returns (CommentResponse) {}
+    rpc GetCommentsByPost(PostCommentsRequest) returns (CommentListResponse) {}
+    rpc GetReplies(CommentRequest) returns (CommentListResponse) {}
+    rpc LikeComment(LikeCommentRequest) returns (CommentResponse) {}
+    rpc UnlikeComment(LikeCommentRequest) returns (CommentResponse) {}
+} 
