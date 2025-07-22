@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package comments;
+
+service CommentsService {
+  rpc CreateComment(CreateCommentRequest) returns (CommentResponse);
+  rpc GetComment(GetCommentRequest) returns (CommentResponse);
+  rpc GetPostComments(GetPostCommentsRequest) returns (CommentsResponse);
+  rpc UpdateComment(UpdateCommentRequest) returns (CommentResponse);
+  rpc DeleteComment(DeleteCommentRequest) returns (DeleteCommentResponse);
+  rpc LikeComment(LikeCommentRequest) returns (LikeCommentResponse);
+  rpc UnlikeComment(UnlikeCommentRequest) returns (UnlikeCommentResponse);
+}
+
+message CreateCommentRequest {
+  int32 post_id = 1;
+  int32 user_id = 2;
+  string content = 3;
+}
+
+message GetCommentRequest {
+  int32 comment_id = 1;
+}
+
+message GetPostCommentsRequest {
+  int32 post_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message UpdateCommentRequest {
+  int32 comment_id = 1;
+  string content = 2;
+}
+
+message DeleteCommentRequest {
+  int32 comment_id = 1;
+}
+
+message LikeCommentRequest {
+  int32 comment_id = 1;
+  int32 user_id = 2;
+}
+
+message UnlikeCommentRequest {
+  int32 comment_id = 1;
+  int32 user_id = 2;
+}
+
+message CommentResponse {
+  int32 id = 1;
+  int32 post_id = 2;
+  int32 user_id = 3;
+  string content = 4;
+  int32 likes_count = 5;
+  string created_at = 6;
+  string updated_at = 7;
+}
+
+message CommentsResponse {
+  repeated CommentResponse comments = 1;
+  int32 total_count = 2;
+}
+
+message DeleteCommentResponse {
+  bool success = 1;
+}
+
+message LikeCommentResponse {
+  bool success = 1;
+  int32 likes_count = 2;
+}
+
+message UnlikeCommentResponse {
+  bool success = 1;
+  int32 likes_count = 2;
+} 
