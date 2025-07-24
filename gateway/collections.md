@@ -2,6 +2,53 @@
 
 This document contains all the API endpoints organized by service. Each request includes a cURL command that can be imported into Postman.
 
+## Auth Service Collection
+
+### Login
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { login(email: \"Hello\", password: \"Hello\") { success token refreshToken message } }"
+}'
+```
+
+### Send OTP
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { sendOtp(email: \"Hello\") { success message } }"
+}'
+```
+
+### Verify OTP
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { verifyOtp(email: \"Hello\", otpCode: \"123456\") { success token message } }"
+}'
+```
+
+### Forgot Password
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { forgotPassword(emailOrPhone: \"Hello\") { success message } }"
+}'
+```
+
+### Reset Password
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { resetPassword(emailOrPhone: \"Hello\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
+}'
+```
+
 ## User Service Collection
 
 ### Create User
