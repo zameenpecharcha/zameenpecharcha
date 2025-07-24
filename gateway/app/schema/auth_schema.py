@@ -1,79 +1,104 @@
 import typing
-from datetime import datetime
 import strawberry
-from gateway.app.exception.UserException import REException
-from gateway.app.utils.log_utils import log_msg
-from gateway.app.utils.grpc_client import AuthServiceClient
-from typing import Optional
-
-client = AuthServiceClient()
+from app.utils.grpc_client import auth_client
+from app.utils.log_utils import log_msg
+import grpc
 
 @strawberry.type
 class AuthResponse:
-    token: str
-    refresh_token: Optional[str] = None
-
-@strawberry.type
-class OTPResponse:
     success: bool
-    message: Optional[str] = None
+    token: typing.Optional[str] = None
+    refresh_token: typing.Optional[str] = None
+    message: typing.Optional[str] = None
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def verify_token(self, token: str) -> bool:
-        try:
-            response = client.verify_token(token)
-            return response.is_valid
-        except Exception as e:
-            log_msg("error", f"Error verifying token: {str(e)}")
-            raise REException("TOKEN_VERIFICATION_FAILED", "Failed to verify token", str(e)).to_graphql_error()
+    def hello(self) -> str:
+        return "Hello from Auth Service!"
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
     async def login(self, email: str, password: str) -> AuthResponse:
         try:
-            response = client.login(email, password)
+            log_msg("info", f"Login attempt for {email}")
+            response = auth_client.login(email, password)
             return AuthResponse(
+                success=True,
                 token=response.token,
-                refresh_token=response.refresh_token
+                refresh_token=response.refresh_token,
+                message="Login successful"
             )
-        except Exception as e:
-            log_msg("error", f"Login failed for email {email}: {str(e)}")
-            raise REException("LOGIN_FAILED", "Invalid credentials", str(e)).to_graphql_error()
+        except grpc.RpcError as e:
+            log_msg("error", f"Login error for {email}: {str(e)}")
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                return AuthResponse(success=False, message="Invalid credentials")
+            return AuthResponse(success=False, message="Internal server error")
 
     @strawberry.mutation
-    async def send_otp(self, phone_number: str) -> OTPResponse:
+    async def send_otp(self, email: str) -> AuthResponse:
         try:
-            response = client.send_otp(phone_number)
-            return OTPResponse(
-                success=response.success,
-                message="OTP sent successfully"
-            )
-        except Exception as e:
-            log_msg("error", f"Failed to send OTP to {phone_number}: {str(e)}")
-            raise REException("OTP_SEND_FAILED", "Failed to send OTP", str(e)).to_graphql_error()
-
-    @strawberry.mutation
-    async def verify_otp(self, phone_number: str, otp_code: str) -> AuthResponse:
-        try:
-            response = client.verify_otp(phone_number, otp_code)
+            log_msg("info", f"Sending OTP to {email}")
+            response = auth_client.send_otp(email)
             return AuthResponse(
-                token=response.token
+                success=response.success,
+                message="OTP sent successfully" if response.success else "Failed to send OTP"
             )
-        except Exception as e:
-            log_msg("error", f"OTP verification failed for {phone_number}: {str(e)}")
-            raise REException("OTP_VERIFICATION_FAILED", "Invalid OTP", str(e)).to_graphql_error()
+        except grpc.RpcError as e:
+            log_msg("error", f"SendOTP error for {email}: {str(e)}")
+            return AuthResponse(success=False, message="Failed to send OTP")
 
     @strawberry.mutation
-    async def forgot_password(self, email_or_phone: str) -> OTPResponse:
+    async def verify_otp(self, email: str, otp_code: str) -> AuthResponse:
         try:
-            response = client.forgot_password(email_or_phone)
-            return OTPResponse(
+            log_msg("info", f"Verifying OTP for {email}")
+            response = auth_client.verify_otp(email, otp_code)
+            if response.token:
+                return AuthResponse(
+                    success=True,
+                    token=response.token,
+                    message="OTP verified successfully"
+                )
+            return AuthResponse(success=False, message="Invalid OTP")
+        except grpc.RpcError as e:
+            log_msg("error", f"VerifyOTP error for {email}: {str(e)}")
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                return AuthResponse(success=False, message="Invalid OTP")
+            return AuthResponse(success=False, message="Failed to verify OTP")
+
+    @strawberry.mutation
+    async def forgot_password(self, email_or_phone: str) -> AuthResponse:
+        try:
+            log_msg("info", f"Forgot password request for {email_or_phone}")
+            response = auth_client.forgot_password(email_or_phone)
+            return AuthResponse(
                 success=response.success,
-                message="Password reset instructions sent"
+                message="Password reset OTP sent" if response.success else "Failed to send OTP"
             )
-        except Exception as e:
-            log_msg("error", f"Forgot password failed for {email_or_phone}: {str(e)}")
-            raise REException("PASSWORD_RESET_FAILED", "Failed to process request", str(e)).to_graphql_error() 
+        except grpc.RpcError as e:
+            log_msg("error", f"ForgotPassword error for {email_or_phone}: {str(e)}")
+            return AuthResponse(success=False, message="Failed to process forgot password request")
+
+    @strawberry.mutation
+    async def reset_password(
+        self, email_or_phone: str, otp_code: str, new_password: str
+    ) -> AuthResponse:
+        try:
+            log_msg("info", f"Reset password request for {email_or_phone}")
+            response = auth_client.reset_password(
+                email_or_phone,
+                otp_code,
+                new_password
+            )
+            return AuthResponse(
+                success=response.success,
+                message="Password reset successful" if response.success else "Failed to reset password"
+            )
+        except grpc.RpcError as e:
+            log_msg("error", f"ResetPassword error for {email_or_phone}: {str(e)}")
+            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
+                return AuthResponse(success=False, message="Invalid OTP")
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                return AuthResponse(success=False, message="User not found")
+            return AuthResponse(success=False, message="Failed to reset password") 
