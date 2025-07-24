@@ -21,7 +21,7 @@ message LoginResponse {
 }
 
 message OTPRequest {
-  string email = 1;  // Changed from phone_number to email
+  string email = 1;
 }
 
 message OTPResponse {
@@ -29,7 +29,7 @@ message OTPResponse {
 }
 
 message VerifyOTPRequest {
-  string email = 1;  // Changed from phone_number to email
+  string email = 1;
   string otp_code = 2;
 }
 
@@ -38,7 +38,7 @@ message VerifyOTPResponse {
 }
 
 message ForgotPasswordRequest {
-  string email_or_phone = 1;
+  string email = 1;
 }
 
 message ForgotPasswordResponse {
@@ -46,7 +46,7 @@ message ForgotPasswordResponse {
 }
 
 message ResetPasswordRequest {
-  string email_or_phone = 1;
+  string email = 1;
   string otp_code = 2;
   string new_password = 3;
 }

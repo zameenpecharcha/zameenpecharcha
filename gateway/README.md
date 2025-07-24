@@ -148,16 +148,16 @@ Expected Response:
 Use this mutation to reset password:
 
 ```graphql
-mutation {
-  resetPassword(
-    emailOrPhone: "Hello"
-    otpCode: "123456"
-    newPassword: "newpassword123"
-  ) {
-    success
-    message
+  mutation {
+    resetPassword(
+      emailOrPhone: "Hello"
+      otpCode: "123456"
+      newPassword: "newpassword123"
+    ) {
+      success
+      message
+    }
   }
-}
 ```
 
 Expected Response:
