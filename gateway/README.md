@@ -43,7 +43,7 @@ Use this mutation to login:
 
 ```graphql
 mutation {
-  login(email: "Hello", password: "Hello") {
+  login(email: "user@example.com", password: "yourpassword") {
     success
     token
     refreshToken
@@ -72,7 +72,7 @@ Use this mutation to send OTP:
 
 ```graphql
 mutation {
-  sendOtp(email: "Hello") {
+  sendOtp(email: "user@example.com") {
     success
     message
   }
@@ -97,7 +97,7 @@ Use this mutation to verify OTP:
 
 ```graphql
 mutation {
-  verifyOtp(email: "Hello", otpCode: "123456") {
+  verifyOtp(email: "user@example.com", otpCode: "123456") {
     success
     token
     message
@@ -124,7 +124,7 @@ Use this mutation to initiate password reset:
 
 ```graphql
 mutation {
-  forgotPassword(emailOrPhone: "Hello") {
+  forgotPassword(email: "user@example.com") {
     success
     message
   }
@@ -137,7 +137,7 @@ Expected Response:
   "data": {
     "forgotPassword": {
       "success": true,
-      "message": "Password reset OTP sent"
+      "message": "OTP sent successfully"
     }
   }
 }
@@ -150,7 +150,7 @@ Use this mutation to reset password:
 ```graphql
 mutation {
   resetPassword(
-    emailOrPhone: "Hello"
+    email: "user@example.com"
     otpCode: "123456"
     newPassword: "newpassword123"
   ) {
@@ -166,8 +166,65 @@ Expected Response:
   "data": {
     "resetPassword": {
       "success": true,
-      "message": "Password reset successful"
+      "message": "Password reset successfully"
     }
+  }
+}
+```
+
+### Password Reset Flow
+
+To reset a password, follow these steps:
+
+1. Call `forgotPassword` mutation with the user's email:
+```graphql
+mutation {
+  forgotPassword(email: "user@example.com") {
+    success
+    message
+  }
+}
+```
+
+2. User will receive an OTP (in development, check the auth service logs)
+
+3. Use the OTP to reset the password with `resetPassword` mutation:
+```graphql
+mutation {
+  resetPassword(
+    email: "user@example.com"
+    otpCode: "123456"  # Use the OTP received
+    newPassword: "newpassword123"
+  ) {
+    success
+    message
+  }
+}
+```
+
+Note: The OTP is valid for 5 minutes. Make sure to use the same email in both steps.
+
+### Auth Service Error Types
+
+Common error responses:
+- `INVALID_CREDENTIALS`: Email or password is incorrect
+- `USER_NOT_FOUND`: User does not exist
+- `INVALID_OTP`: OTP is incorrect or expired
+- `OTP_SEND_FAILED`: Failed to send OTP
+- `PASSWORD_RESET_FAILED`: Failed to reset password
+
+Example error response:
+```json
+{
+  "errors": [
+    {
+      "message": "Invalid credentials",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["login"]
+    }
+  ],
+  "data": {
+    "login": null
   }
 }
 ```

@@ -68,37 +68,33 @@ class Mutation:
             return AuthResponse(success=False, message="Failed to verify OTP")
 
     @strawberry.mutation
-    async def forgot_password(self, email_or_phone: str) -> AuthResponse:
+    async def forgot_password(self, email: str) -> AuthResponse:
         try:
-            log_msg("info", f"Forgot password request for {email_or_phone}")
-            response = auth_client.forgot_password(email_or_phone)
+            log_msg("info", f"Forgot password request for {email}")
+            response = auth_client.forgot_password(email)
             return AuthResponse(
                 success=response.success,
-                message="Password reset OTP sent" if response.success else "Failed to send OTP"
+                message="OTP sent successfully" if response.success else "Failed to send OTP"
             )
-        except grpc.RpcError as e:
-            log_msg("error", f"ForgotPassword error for {email_or_phone}: {str(e)}")
-            return AuthResponse(success=False, message="Failed to process forgot password request")
+        except Exception as e:
+            log_msg("error", f"ForgotPassword error for {email}: {str(e)}")
+            return AuthResponse(success=False, message=str(e))
 
     @strawberry.mutation
     async def reset_password(
-        self, email_or_phone: str, otp_code: str, new_password: str
+        self, email: str, otp_code: str, new_password: str
     ) -> AuthResponse:
         try:
-            log_msg("info", f"Reset password request for {email_or_phone}")
+            log_msg("info", f"Reset password request for {email}")
             response = auth_client.reset_password(
-                email_or_phone,
+                email,
                 otp_code,
                 new_password
             )
             return AuthResponse(
                 success=response.success,
-                message="Password reset successful" if response.success else "Failed to reset password"
+                message="Password reset successfully" if response.success else "Failed to reset password"
             )
-        except grpc.RpcError as e:
-            log_msg("error", f"ResetPassword error for {email_or_phone}: {str(e)}")
-            if e.code() == grpc.StatusCode.UNAUTHENTICATED:
-                return AuthResponse(success=False, message="Invalid OTP")
-            if e.code() == grpc.StatusCode.NOT_FOUND:
-                return AuthResponse(success=False, message="User not found")
-            return AuthResponse(success=False, message="Failed to reset password") 
+        except Exception as e:
+            log_msg("error", f"ResetPassword error for {email}: {str(e)}")
+            return AuthResponse(success=False, message=str(e)) 

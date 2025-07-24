@@ -41,19 +41,27 @@ class AuthServiceClient:
         )
         return self.stub.VerifyOTP(request)
 
-    def forgot_password(self, email_or_phone: str):
-        request = auth_pb2.ForgotPasswordRequest(
-            email_or_phone=email_or_phone
-        )
-        return self.stub.ForgotPassword(request)
+    def forgot_password(self, email: str):
+        try:
+            response = self.stub.ForgotPassword(auth_pb2.ForgotPasswordRequest(
+                email=email
+            ))
+            return response
+        except Exception as e:
+            print(f"Error in forgot_password: {str(e)}")
+            raise
 
-    def reset_password(self, email_or_phone: str, otp_code: str, new_password: str):
-        request = auth_pb2.ResetPasswordRequest(
-            email_or_phone=email_or_phone,
-            otp_code=otp_code,
-            new_password=new_password
-        )
-        return self.stub.ResetPassword(request)
+    def reset_password(self, email: str, otp_code: str, new_password: str):
+        try:
+            response = self.stub.ResetPassword(auth_pb2.ResetPasswordRequest(
+                email=email,
+                otp_code=otp_code,
+                new_password=new_password
+            ))
+            return response
+        except Exception as e:
+            print(f"Error in reset_password: {str(e)}")
+            raise
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):

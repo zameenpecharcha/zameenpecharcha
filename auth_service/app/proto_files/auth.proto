@@ -38,7 +38,7 @@ message VerifyOTPResponse {
 }
 
 message ForgotPasswordRequest {
-  string email_or_phone = 1;
+  string email = 1;
 }
 
 message ForgotPasswordResponse {
@@ -46,7 +46,7 @@ message ForgotPasswordResponse {
 }
 
 message ResetPasswordRequest {
-  string email_or_phone = 1;
+  string email = 1;
   string otp_code = 2;
   string new_password = 3;
 }
