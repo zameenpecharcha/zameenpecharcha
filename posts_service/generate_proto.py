@@ -1,44 +1,33 @@
 import os
-import subprocess
 import sys
+from grpc_tools import protoc
 
-def generate_proto_files():
-    # Get the current directory
+def generate_proto():
+    # Get the directory containing this script
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    proto_dir = os.path.join(current_dir, "app", "proto_files")
+    proto_dir = os.path.join(current_dir, 'app', 'proto_files')
     
-    # Create proto_files directory if it doesn't exist
-    os.makedirs(proto_dir, exist_ok=True)
+    # Generate main service protos
+    post_proto = os.path.join(proto_dir, 'post.proto')
+    generate_single_proto(post_proto, proto_dir)
     
-    # Define the proto file path
-    proto_file = os.path.join(proto_dir, "post.proto")
+    # Generate external protos
+    external_dir = os.path.join(proto_dir, 'external')
+    user_proto = os.path.join(external_dir, 'user.proto')
+    generate_single_proto(user_proto, external_dir)
     
-    # Check if proto file exists
-    if not os.path.exists(proto_file):
-        print(f"Error: Proto file not found at {proto_file}")
-        sys.exit(1)
-    
-    # Define the output directory for generated files
-    output_dir = os.path.join(current_dir, "app", "proto_files")
-    
-    try:
-        # Generate Python files from proto
-        subprocess.run([
-            "python", "-m", "grpc_tools.protoc",
-            f"--proto_path={proto_dir}",
-            f"--python_out={output_dir}",
-            f"--grpc_python_out={output_dir}",
-            "post.proto"
-        ], check=True)
-        
-        print("Proto files generated successfully!")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"Error generating proto files: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Unexpected error: {e}")
-        sys.exit(1)
+    print("All proto files generated successfully!")
+
+def generate_single_proto(proto_file: str, proto_dir: str):
+    print(f"Generating gRPC code from {proto_file}...")
+    command = [
+        'grpc_tools.protoc',
+        f'--proto_path={proto_dir}',
+        f'--python_out={proto_dir}',
+        f'--grpc_python_out={proto_dir}',
+        proto_file
+    ]
+    protoc.main(command)
 
 if __name__ == "__main__":
-    generate_proto_files() 
+    generate_proto() 

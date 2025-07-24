@@ -7,13 +7,16 @@ from ..repository.post_repository import PostRepository, SessionLocal
 from ..entity.post_entity import Post
 from typing import List, Optional
 from datetime import datetime
+from ..utils.log_utils import log_msg
+import uuid
 
 # Add the app directory to sys.path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(app_dir)
 
-from app.proto_files import post_pb2, post_pb2_grpc
+from ..proto_files import post_pb2, post_pb2_grpc
+from ..proto_files.external import user_pb2, user_pb2_grpc
 
 def get_db():
     db = SessionLocal()
@@ -26,9 +29,45 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def __init__(self):
         self.db = next(get_db())
         self.repository = PostRepository(self.db)
+        # Create a channel to the user service
+        self.user_channel = grpc.insecure_channel('localhost:50051')
+        self.user_stub = user_pb2_grpc.UserServiceStub(self.user_channel)
+
+    def validate_user(self, user_id: str, context) -> bool:
+        try:
+            # Validate UUID format
+            try:
+                uuid_obj = uuid.UUID(user_id)
+            except ValueError:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(f"Invalid UUID format for user_id: {user_id}")
+                return False
+
+            # Call user service with string UUID
+            response = self.user_stub.GetUser(user_pb2.UserRequest(id=str(uuid_obj)))
+            return True
+        except grpc.RpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User {user_id} not found")
+                return False
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error validating user: {str(e)}")
+            return False
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error validating user: {str(e)}")
+            return False
 
     def CreatePost(self, request, context):
         try:
+            # Validate user exists
+            if not self.validate_user(request.user_id, context):
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"User {request.user_id} not found"
+                )
+
             # Create a new post using repository
             post = self.repository.create_post(
                 user_id=request.user_id,
@@ -272,7 +311,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     post_pb2_grpc.add_PostsServiceServicer_to_server(PostsService(), server)
-    server.add_insecure_port('localhost:50052')
+    server.add_insecure_port('0.0.0.0:50052')
     print("Starting posts service on port 50052...")
     server.start()
     server.wait_for_termination()

@@ -3,13 +3,17 @@ import bcrypt
 from concurrent import futures
 from user_service.app.proto_files import user_pb2, user_pb2_grpc
 from user_service.app.repository.user_repository import get_user_by_id, create_user
+import uuid
 
 class UserService(user_pb2_grpc.UserServiceServicer):
     def GetUser(self, request, context):
         try:
-            if not isinstance(request.id, int):
+            # Validate UUID format
+            try:
+                uuid.UUID(request.id)  # Just validate format, don't convert
+            except ValueError:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("User ID must be an integer")
+                context.set_details("Invalid UUID format")
                 return user_pb2.UserResponse()
 
             user = get_user_by_id(request.id)
@@ -19,10 +23,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 return user_pb2.UserResponse()
 
             return user_pb2.UserResponse(
-                id=user.user_id,
+                id=user.user_id,  # Already a string from UserRow
                 name=user.name,
                 email=user.email,
-                phone=user.phone if user.phone else 0,
+                phone=user.phone if user.phone else "",  # Changed to string
                 role=user.role if user.role else "",
                 location=user.location if user.location else ""
             )
@@ -73,7 +77,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             print(f"User created successfully with ID: {user_id}")
             
             return user_pb2.UserResponse(
-                id=user_id,
+                id=user_id,  # Already a string from create_user
                 name=request.name,
                 email=request.email,
                 phone=request.phone,

@@ -25,8 +25,43 @@ Base.metadata.create_all(bind=engine)
 class CommentService:
     def __init__(self, db: Session):
         self.repository = CommentRepository(db)
+        # Create channels to user and post services
+        self.user_channel = grpc.insecure_channel('localhost:50051')
+        self.post_channel = grpc.insecure_channel('localhost:50052')
+        
+        # Import and create stubs
+        from user_service.app.proto_files.user_pb2_grpc import UserServiceStub
+        from posts_service.app.proto_files.post_pb2_grpc import PostsServiceStub
+        self.user_stub = UserServiceStub(self.user_channel)
+        self.post_stub = PostsServiceStub(self.post_channel)
+
+    def validate_user(self, user_id: str) -> bool:
+        try:
+            from user_service.app.proto_files.user_pb2 import UserRequest
+            response = self.user_stub.GetUser(UserRequest(id=int(user_id)))
+            return True
+        except Exception as e:
+            logger.error(f"Error validating user {user_id}: {str(e)}")
+            return False
+
+    def validate_post(self, post_id: str) -> bool:
+        try:
+            from posts_service.app.proto_files.post_pb2 import PostRequest
+            response = self.post_stub.GetPost(PostRequest(post_id=post_id))
+            return True
+        except Exception as e:
+            logger.error(f"Error validating post {post_id}: {str(e)}")
+            return False
 
     def create_comment(self, post_id: str, user_id: str, content: str, parent_comment_id: Optional[str] = None) -> Comment:
+        # Validate user exists
+        if not self.validate_user(user_id):
+            raise ValueError(f"User {user_id} not found")
+
+        # Validate post exists
+        if not self.validate_post(post_id):
+            raise ValueError(f"Post {post_id} not found")
+
         # If parent_comment_id is provided, verify it exists
         if parent_comment_id:
             parent_comment = self.repository.get_comment(uuid.UUID(parent_comment_id))
@@ -49,9 +84,16 @@ class CommentService:
         return self.repository.get_comment(uuid.UUID(comment_id))
 
     def get_comments_by_post(self, post_id: str) -> List[Comment]:
+        # Validate post exists before getting comments
+        if not self.validate_post(post_id):
+            raise ValueError(f"Post {post_id} not found")
         return self.repository.get_comments_by_post(uuid.UUID(post_id))
 
     def get_replies(self, parent_comment_id: str) -> List[Comment]:
+        # Validate parent comment exists
+        parent_comment = self.repository.get_comment(uuid.UUID(parent_comment_id))
+        if not parent_comment:
+            raise ValueError(f"Parent comment {parent_comment_id} not found")
         return self.repository.get_replies(uuid.UUID(parent_comment_id))
 
     def update_comment(self, comment_id: str, content: str) -> Optional[Comment]:
@@ -61,9 +103,15 @@ class CommentService:
         return self.repository.delete_comment(uuid.UUID(comment_id))
 
     def like_comment(self, comment_id: str, user_id: str) -> Optional[Comment]:
+        # Validate user exists before liking
+        if not self.validate_user(user_id):
+            raise ValueError(f"User {user_id} not found")
         return self.repository.like_comment(uuid.UUID(comment_id), uuid.UUID(user_id))
 
     def unlike_comment(self, comment_id: str, user_id: str) -> Optional[Comment]:
+        # Validate user exists before unliking
+        if not self.validate_user(user_id):
+            raise ValueError(f"User {user_id} not found")
         return self.repository.unlike_comment(uuid.UUID(comment_id), uuid.UUID(user_id))
 
 class CommentsServicer(comments_pb2_grpc.CommentsServiceServicer):

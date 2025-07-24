@@ -4,10 +4,28 @@ import grpc
 
 from app.proto_files import post_pb2 as post__pb2
 
+GRPC_GENERATED_VERSION = '1.73.1'
+GRPC_VERSION = grpc.__version__
+_version_not_supported = False
+
+try:
+    from grpc._utilities import first_version_is_lower
+    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+except ImportError:
+    _version_not_supported = True
+
+if _version_not_supported:
+    raise RuntimeError(
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in post_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+    )
+
 
 class PostsServiceStub(object):
-    """Posts Service Definition
-    """
+    """Posts Service Definition"""
 
     def __init__(self, channel):
         """Constructor.
@@ -140,6 +158,7 @@ def add_PostsServiceServicer_to_server(servicer, server):
     generic_handler = grpc.method_handlers_generic_handler(
             'posts.PostsService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('posts.PostsService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -158,11 +177,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/CreatePost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/CreatePost',
             post__pb2.PostCreateRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def GetPost(request,
@@ -175,11 +204,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/GetPost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/GetPost',
             post__pb2.PostRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def UpdatePost(request,
@@ -192,11 +231,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/UpdatePost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/UpdatePost',
             post__pb2.PostUpdateRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def DeletePost(request,
@@ -209,11 +258,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/DeletePost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/DeletePost',
             post__pb2.PostRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def GetPostsByUser(request,
@@ -226,11 +285,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/GetPostsByUser',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/GetPostsByUser',
             post__pb2.GetPostsByUserRequest.SerializeToString,
             post__pb2.PostListResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def LikePost(request,
@@ -243,11 +312,21 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/LikePost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/LikePost',
             post__pb2.LikePostRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def UnlikePost(request,
@@ -260,8 +339,18 @@ class PostsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/posts.PostsService/UnlikePost',
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/posts.PostsService/UnlikePost',
             post__pb2.LikePostRequest.SerializeToString,
             post__pb2.PostResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

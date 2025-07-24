@@ -6,8 +6,8 @@ from ..utils.db_connection import Base
 class Post(Base):
     __tablename__ = "posts"
 
-    id = Column(Integer, primary_key=True, index=True)  # Changed from post_id to id
-    user_id = Column(String, nullable=False)  # Changed from Integer to String to accept UUID
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)  # Foreign key to users table
     title = Column(String, nullable=False)
     content = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
