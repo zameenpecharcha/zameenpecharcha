@@ -14,6 +14,46 @@ import app.proto_files.comments.comments_pb2_grpc as comments_pb2_grpc
 import app.proto_files.posts.post_pb2 as post_pb2
 import app.proto_files.posts.post_pb2_grpc as post_pb2_grpc
 from app.proto_files.property import property_pb2, property_pb2_grpc
+from app.proto_files.auth import auth_pb2, auth_pb2_grpc
+
+class AuthServiceClient:
+    def __init__(self, host='localhost', port=50052):
+        self.channel = grpc.insecure_channel(f'{host}:{port}')
+        self.stub = auth_pb2_grpc.AuthServiceStub(self.channel)
+
+    def login(self, email: str, password: str):
+        request = auth_pb2.LoginRequest(
+            email=email,
+            password=password
+        )
+        return self.stub.Login(request)
+
+    def send_otp(self, email: str):
+        request = auth_pb2.OTPRequest(
+            email=email
+        )
+        return self.stub.SendOTP(request)
+
+    def verify_otp(self, email: str, otp_code: str):
+        request = auth_pb2.VerifyOTPRequest(
+            email=email,
+            otp_code=otp_code
+        )
+        return self.stub.VerifyOTP(request)
+
+    def forgot_password(self, email_or_phone: str):
+        request = auth_pb2.ForgotPasswordRequest(
+            email_or_phone=email_or_phone
+        )
+        return self.stub.ForgotPassword(request)
+
+    def reset_password(self, email_or_phone: str, otp_code: str, new_password: str):
+        request = auth_pb2.ResetPasswordRequest(
+            email_or_phone=email_or_phone,
+            otp_code=otp_code,
+            new_password=new_password
+        )
+        return self.stub.ResetPassword(request)
 
 class UserServiceClient:
     def __init__(self, host='localhost', port=50051):
@@ -168,6 +208,7 @@ class PropertyServiceClient:
         return self.stub.IncrementViewCount(request)
 
 # Create singleton instances
+auth_client = AuthServiceClient()
 user_client = UserServiceClient()
 comments_client = CommentsServiceClient()
 posts_client = PostsServiceClient()

@@ -6,6 +6,7 @@ This is the API Gateway service that provides a GraphQL interface to interact wi
 
 - Python 3.x
 - User Service running on port 50051
+- Auth Service running on port 50052
 - Comments Service running on port 50053
 
 ## Installation
@@ -29,9 +30,147 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 2. The service will be available at:
-- GraphQL Endpoint: http://localhost:8000/api/v1/users/graphql
+- Auth GraphQL Endpoint: http://localhost:8000/api/v1/auth/graphql
+- Users GraphQL Endpoint: http://localhost:8000/api/v1/users/graphql
 - Comments GraphQL Endpoint: http://localhost:8000/api/v1/comments/graphql
 - Health Check: http://localhost:8000/health
+
+## Auth Service Endpoints
+
+### Login
+
+Use this mutation to login:
+
+```graphql
+mutation {
+  login(email: "Hello", password: "Hello") {
+    success
+    token
+    refreshToken
+    message
+  }
+}
+```
+
+Expected Response:
+```json
+{
+  "data": {
+    "login": {
+      "success": true,
+      "token": "jwt_token_here",
+      "refreshToken": "refresh_token_here",
+      "message": "Login successful"
+    }
+  }
+}
+```
+
+### Send OTP
+
+Use this mutation to send OTP:
+
+```graphql
+mutation {
+  sendOtp(email: "Hello") {
+    success
+    message
+  }
+}
+```
+
+Expected Response:
+```json
+{
+  "data": {
+    "sendOtp": {
+      "success": true,
+      "message": "OTP sent successfully"
+    }
+  }
+}
+```
+
+### Verify OTP
+
+Use this mutation to verify OTP:
+
+```graphql
+mutation {
+  verifyOtp(email: "Hello", otpCode: "123456") {
+    success
+    token
+    message
+  }
+}
+```
+
+Expected Response:
+```json
+{
+  "data": {
+    "verifyOtp": {
+      "success": true,
+      "token": "jwt_token_here",
+      "message": "OTP verified successfully"
+    }
+  }
+}
+```
+
+### Forgot Password
+
+Use this mutation to initiate password reset:
+
+```graphql
+mutation {
+  forgotPassword(emailOrPhone: "Hello") {
+    success
+    message
+  }
+}
+```
+
+Expected Response:
+```json
+{
+  "data": {
+    "forgotPassword": {
+      "success": true,
+      "message": "Password reset OTP sent"
+    }
+  }
+}
+```
+
+### Reset Password
+
+Use this mutation to reset password:
+
+```graphql
+mutation {
+  resetPassword(
+    emailOrPhone: "Hello"
+    otpCode: "123456"
+    newPassword: "newpassword123"
+  ) {
+    success
+    message
+  }
+}
+```
+
+Expected Response:
+```json
+{
+  "data": {
+    "resetPassword": {
+      "success": true,
+      "message": "Password reset successful"
+    }
+  }
+}
+```
 
 ## User Service Endpoints
 
