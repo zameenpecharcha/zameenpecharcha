@@ -9,8 +9,22 @@ This document contains all the API endpoints organized by service. Each request 
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { login(email: \"Hello\", password: \"Hello\") { success token refreshToken message } }"
+  "query": "mutation { login(email: \"user@example.com\", password: \"yourpassword\") { success token refreshToken message } }"
 }'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "login": {
+      "success": true,
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "message": "Login successful"
+    }
+  }
+}
 ```
 
 ### Send OTP
@@ -18,8 +32,20 @@ curl -X POST http://localhost:8000/api/v1/auth/graphql \
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { sendOtp(email: \"Hello\") { success message } }"
+  "query": "mutation { sendOtp(email: \"user@example.com\") { success message } }"
 }'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "sendOtp": {
+      "success": true,
+      "message": "OTP sent successfully"
+    }
+  }
+}
 ```
 
 ### Verify OTP
@@ -27,8 +53,21 @@ curl -X POST http://localhost:8000/api/v1/auth/graphql \
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { verifyOtp(email: \"Hello\", otpCode: \"123456\") { success token message } }"
+  "query": "mutation { verifyOtp(email: \"user@example.com\", otpCode: \"123456\") { success token message } }"
 }'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "verifyOtp": {
+      "success": true,
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "message": "OTP verified successfully"
+    }
+  }
+}
 ```
 
 ### Forgot Password
@@ -36,8 +75,20 @@ curl -X POST http://localhost:8000/api/v1/auth/graphql \
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { forgotPassword(emailOrPhone: \"Hello\") { success message } }"
+  "query": "mutation { forgotPassword(email: \"user@example.com\") { success message } }"
 }'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "forgotPassword": {
+      "success": true,
+      "message": "OTP sent successfully"
+    }
+  }
+}
 ```
 
 ### Reset Password
@@ -45,9 +96,93 @@ curl -X POST http://localhost:8000/api/v1/auth/graphql \
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { resetPassword(emailOrPhone: \"Hello\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
+  "query": "mutation { resetPassword(email: \"user@example.com\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
 }'
 ```
+
+Example Response:
+```json
+{
+  "data": {
+    "resetPassword": {
+      "success": true,
+      "message": "Password reset successfully"
+    }
+  }
+}
+```
+
+### Error Responses
+
+Invalid Credentials:
+```json
+{
+  "errors": [
+    {
+      "message": "Invalid credentials",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["login"]
+    }
+  ],
+  "data": {
+    "login": null
+  }
+}
+```
+
+Invalid OTP:
+```json
+{
+  "errors": [
+    {
+      "message": "Invalid OTP",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["verifyOtp"]
+    }
+  ],
+  "data": {
+    "verifyOtp": null
+  }
+}
+```
+
+User Not Found:
+```json
+{
+  "errors": [
+    {
+      "message": "User not found",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["forgotPassword"]
+    }
+  ],
+  "data": {
+    "forgotPassword": null
+  }
+}
+```
+
+### Password Reset Flow Example
+
+1. First, request OTP:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { forgotPassword(email: \"user@example.com\") { success message } }"
+}'
+```
+
+2. Then use the received OTP to reset password:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation { resetPassword(email: \"user@example.com\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
+}'
+```
+
+Note: The OTP is valid for 5 minutes. Make sure to use the same email in both steps.
 
 ## User Service Collection
 

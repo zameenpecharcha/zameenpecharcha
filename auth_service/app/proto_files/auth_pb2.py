@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nauth.proto\x12\x04\x61uth\"/\n\x0cLoginRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"5\n\rLoginResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x15\n\rrefresh_token\x18\x02 \x01(\t\"\x1b\n\nOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"\x1e\n\x0bOTPResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"3\n\x10VerifyOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\"\"\n\x11VerifyOTPResponse\x12\r\n\x05token\x18\x01 \x01(\t\"/\n\x15\x46orgotPasswordRequest\x12\x16\n\x0e\x65mail_or_phone\x18\x01 \x01(\t\")\n\x16\x46orgotPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"V\n\x14ResetPasswordRequest\x12\x16\n\x0e\x65mail_or_phone\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\x12\x14\n\x0cnew_password\x18\x03 \x01(\t\"(\n\x15ResetPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xc4\x02\n\x0b\x41uthService\x12\x30\n\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12.\n\x07SendOTP\x12\x10.auth.OTPRequest\x1a\x11.auth.OTPResponse\x12<\n\tVerifyOTP\x12\x16.auth.VerifyOTPRequest\x1a\x17.auth.VerifyOTPResponse\x12K\n\x0e\x46orgotPassword\x12\x1b.auth.ForgotPasswordRequest\x1a\x1c.auth.ForgotPasswordResponse\x12H\n\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nauth.proto\x12\x04\x61uth\"/\n\x0cLoginRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"5\n\rLoginResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x15\n\rrefresh_token\x18\x02 \x01(\t\"\x1b\n\nOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"\x1e\n\x0bOTPResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"3\n\x10VerifyOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\"\"\n\x11VerifyOTPResponse\x12\r\n\x05token\x18\x01 \x01(\t\"&\n\x15\x46orgotPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\")\n\x16\x46orgotPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"M\n\x14ResetPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\x12\x14\n\x0cnew_password\x18\x03 \x01(\t\"(\n\x15ResetPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xc4\x02\n\x0b\x41uthService\x12\x30\n\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12.\n\x07SendOTP\x12\x10.auth.OTPRequest\x1a\x11.auth.OTPResponse\x12<\n\tVerifyOTP\x12\x16.auth.VerifyOTPRequest\x1a\x17.auth.VerifyOTPResponse\x12K\n\x0e\x46orgotPassword\x12\x1b.auth.ForgotPasswordRequest\x1a\x1c.auth.ForgotPasswordResponse\x12H\n\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -44,13 +44,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_VERIFYOTPRESPONSE']._serialized_start=238
   _globals['_VERIFYOTPRESPONSE']._serialized_end=272
   _globals['_FORGOTPASSWORDREQUEST']._serialized_start=274
-  _globals['_FORGOTPASSWORDREQUEST']._serialized_end=321
-  _globals['_FORGOTPASSWORDRESPONSE']._serialized_start=323
-  _globals['_FORGOTPASSWORDRESPONSE']._serialized_end=364
-  _globals['_RESETPASSWORDREQUEST']._serialized_start=366
-  _globals['_RESETPASSWORDREQUEST']._serialized_end=452
-  _globals['_RESETPASSWORDRESPONSE']._serialized_start=454
-  _globals['_RESETPASSWORDRESPONSE']._serialized_end=494
-  _globals['_AUTHSERVICE']._serialized_start=497
-  _globals['_AUTHSERVICE']._serialized_end=821
+  _globals['_FORGOTPASSWORDREQUEST']._serialized_end=312
+  _globals['_FORGOTPASSWORDRESPONSE']._serialized_start=314
+  _globals['_FORGOTPASSWORDRESPONSE']._serialized_end=355
+  _globals['_RESETPASSWORDREQUEST']._serialized_start=357
+  _globals['_RESETPASSWORDREQUEST']._serialized_end=434
+  _globals['_RESETPASSWORDRESPONSE']._serialized_start=436
+  _globals['_RESETPASSWORDRESPONSE']._serialized_end=476
+  _globals['_AUTHSERVICE']._serialized_start=479
+  _globals['_AUTHSERVICE']._serialized_end=803
 # @@protoc_insertion_point(module_scope)

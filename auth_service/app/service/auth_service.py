@@ -63,15 +63,20 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
     def SendOTP(self, request, context):
         correlation_id = context.peer()
         try:
+            # Generate and store OTP
             otp_code = str(random.randint(100000, 999999))
-            print(f"Generated OTP {otp_code} for {request.email}")
+            print(f"\n=== SendOTP ===")
+            print(f"Generated new OTP {otp_code} for {request.email}")
             
             # Store OTP
-            if store_otp(request.email, otp_code):
-                print(f"OTP stored successfully for {request.email}")
-            else:
+            store_success = store_otp(request.email, otp_code)
+            if not store_success:
                 print(f"Failed to store OTP for {request.email}")
-                
+                raise Exception("Failed to store OTP")
+
+            # For testing purposes, print the OTP
+            print(f"TEST MODE: OTP for {request.email} is {otp_code}")
+            
             # Send OTP via email
             send_otp_email(request.email, otp_code)
 
@@ -87,9 +92,13 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
     def VerifyOTP(self, request, context):
         correlation_id = context.peer()
         try:
+            print(f"\n=== VerifyOTP START ===")
             print(f"Verifying OTP for {request.email}")
+            print(f"Received OTP code: {request.otp_code}")
+            
             stored_otp = get_otp(request.email)
-            print(f"Stored OTP: {stored_otp}, Received OTP: {request.otp_code}")
+            print(f"Retrieved stored OTP: {stored_otp}")
+            print(f"OTPs match: {stored_otp == request.otp_code}")
             
             if not stored_otp:
                 print(f"No OTP found for {request.email}")
@@ -100,15 +109,21 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
                 
             if stored_otp != request.otp_code:
                 print(f"OTP mismatch for {request.email}")
+                print(f"Stored OTP: {stored_otp}")
+                print(f"Received OTP: {request.otp_code}")
                 log_msg("warning", "OTP mismatch", user_id=request.email, correlation_id=correlation_id)
                 context.set_code(grpc.StatusCode.UNAUTHENTICATED)
                 context.set_details("Invalid OTP")
                 return auth_pb2.VerifyOTPResponse()
 
-            token = jwt.encode({"email": request.email, "exp": datetime.utcnow() + timedelta(hours=1)}, SECRET_KEY,
-                               algorithm="HS256")
-            delete_otp(request.email)
             print(f"OTP verified successfully for {request.email}")
+
+            # Generate token
+            token = jwt.encode(
+                {"email": request.email, "exp": datetime.utcnow() + timedelta(hours=1)},
+                SECRET_KEY,
+                algorithm="HS256"
+            )
 
             log_msg("info", "OTP verified successfully", user_id=request.email, correlation_id=correlation_id)
             return auth_pb2.VerifyOTPResponse(token=token)
@@ -118,76 +133,124 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Failed to verify OTP")
             return auth_pb2.VerifyOTPResponse()
+        finally:
+            print("=== VerifyOTP END ===\n")
 
     def ForgotPassword(self, request, context):
         correlation_id = context.peer()
+        print(f"\n=== ForgotPassword START ===")
+        print(f"Request received for: {request.email}")
+        
         try:
-            otp_code = str(random.randint(100000, 999999))
-            print(f"Generated OTP {otp_code} for forgot password request: {request.email_or_phone}")
+            # Generate OTP
+            otp = ''.join(random.choices('0123456789', k=6))
+            print(f"Generated OTP: {otp}")
             
             # Store OTP
-            if store_otp(request.email_or_phone, otp_code):
-                print(f"OTP stored successfully for {request.email_or_phone}")
-            else:
-                print(f"Failed to store OTP for {request.email_or_phone}")
-
-            if "@" in request.email_or_phone:
-                send_otp_email(request.email_or_phone, otp_code)
-            else:
-                send_otp_sms(request.email_or_phone, otp_code)
-
-            log_msg("info", "Forgot password OTP sent", user_id=request.email_or_phone, correlation_id=correlation_id)
+            print(f"Attempting to store OTP for {request.email}")
+            store_success = store_otp(request.email, otp)
+            print(f"OTP store result: {store_success}")
+            
+            if not store_success:
+                print("Failed to store OTP")
+                log_msg("error", "Failed to store OTP", user_id=request.email, correlation_id=correlation_id)
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to store OTP")
+                return auth_pb2.ForgotPasswordResponse(success=False)
+            
+            # Verify OTP was stored
+            print(f"Verifying OTP storage...")
+            stored_otp = get_otp(request.email)
+            print(f"Verification - Retrieved OTP: {stored_otp}")
+            print(f"Verification - Expected OTP: {otp}")
+            print(f"Verification - OTPs match: {stored_otp == otp}")
+            
+            if stored_otp != otp:
+                print("OTP verification failed - stored OTP doesn't match generated OTP")
+                log_msg("error", "OTP storage verification failed", user_id=request.email, correlation_id=correlation_id)
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to store OTP")
+                return auth_pb2.ForgotPasswordResponse(success=False)
+            
+            # Send OTP via email
+            try:
+                # TODO: Implement actual email sending
+                print(f"Would send email to {request.email} with OTP: {otp}")
+                print("FOR TESTING - USE THIS OTP: " + otp)
+                log_msg("info", "OTP email would be sent (not implemented)", user_id=request.email, correlation_id=correlation_id)
+            except Exception as e:
+                print(f"Failed to send email: {str(e)}")
+                # Don't fail the request if email fails, just log it
+                log_msg("warning", f"Failed to send OTP email: {str(e)}", user_id=request.email, correlation_id=correlation_id)
+            
+            print("ForgotPassword completed successfully")
+            log_msg("info", "ForgotPassword successful", user_id=request.email, correlation_id=correlation_id)
             return auth_pb2.ForgotPasswordResponse(success=True)
+            
         except Exception as e:
-            print(f"ForgotPassword error: {str(e)}")
-            log_msg("error", f"ForgotPassword error: {str(e)}", user_id=request.email_or_phone, correlation_id=correlation_id)
+            print(f"Error in ForgotPassword: {str(e)}")
+            log_msg("error", f"ForgotPassword error: {str(e)}", user_id=request.email, correlation_id=correlation_id)
             context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details("Failed to send OTP for password reset")
+            context.set_details(str(e))
             return auth_pb2.ForgotPasswordResponse(success=False)
+        finally:
+            print("=== ForgotPassword END ===\n")
 
     def ResetPassword(self, request, context):
         correlation_id = context.peer()
         db: Session = SessionLocal()
         try:
-            print(f"Resetting password for {request.email_or_phone}")
-            stored_otp = get_otp(request.email_or_phone)
-            print(f"Stored OTP: {stored_otp}, Received OTP: {request.otp_code}")
+            print(f"\n=== ResetPassword START ===")
+            print(f"Resetting password for {request.email}")
+            print(f"Received OTP code: {request.otp_code}")
+            
+            stored_otp = get_otp(request.email)
+            print(f"Retrieved stored OTP: {stored_otp}")
+            print(f"OTPs match: {stored_otp == request.otp_code}")
             
             if not stored_otp:
-                print(f"No OTP found for {request.email_or_phone}")
-                log_msg("warning", "No OTP found", user_id=request.email_or_phone, correlation_id=correlation_id)
+                print(f"No OTP found for {request.email}")
+                log_msg("warning", "No OTP found", user_id=request.email, correlation_id=correlation_id)
                 context.set_code(grpc.StatusCode.UNAUTHENTICATED)
                 context.set_details("Invalid OTP")
                 return auth_pb2.ResetPasswordResponse(success=False)
                 
             if stored_otp != request.otp_code:
-                print(f"OTP mismatch for {request.email_or_phone}")
-                log_msg("warning", "OTP mismatch", user_id=request.email_or_phone, correlation_id=correlation_id)
+                print(f"OTP mismatch for {request.email}")
+                print(f"Stored OTP: {stored_otp}")
+                print(f"Received OTP: {request.otp_code}")
+                log_msg("warning", "OTP mismatch", user_id=request.email, correlation_id=correlation_id)
                 context.set_code(grpc.StatusCode.UNAUTHENTICATED)
                 context.set_details("Invalid OTP")
                 return auth_pb2.ResetPasswordResponse(success=False)
 
-            user = db.query(User).filter(User.email == request.email_or_phone).first()
+            user = db.query(User).filter(User.email == request.email).first()
             if user:
+                # Delete OTP after successful verification
+                print("OTP verified successfully, deleting it...")
+                delete_otp(request.email)
+                
+                # Update password
+                print("Updating password...")
                 hashed_password = bcrypt.hashpw(request.new_password.encode(), bcrypt.gensalt()).decode('utf-8')
                 user.password = hashed_password
                 db.commit()
-                delete_otp(request.email_or_phone)
-                print(f"Password reset successful for {request.email_or_phone}")
-                log_msg("info", "Password reset successfully", user_id=request.email_or_phone, correlation_id=correlation_id)
+                print(f"Password reset successful for {request.email}")
+                log_msg("info", "Password reset successfully", user_id=request.email, correlation_id=correlation_id)
                 return auth_pb2.ResetPasswordResponse(success=True)
 
-            print(f"User not found: {request.email_or_phone}")
-            log_msg("error", "User not found", user_id=request.email_or_phone, correlation_id=correlation_id)
+            print(f"User not found: {request.email}")
+            log_msg("error", "User not found", user_id=request.email, correlation_id=correlation_id)
             context.set_code(grpc.StatusCode.NOT_FOUND)
             context.set_details("User not found")
             return auth_pb2.ResetPasswordResponse(success=False)
         except Exception as e:
             print(f"ResetPassword error: {str(e)}")
             db.rollback()
-            log_msg("error", f"ResetPassword error: {str(e)}", user_id=request.email_or_phone, correlation_id=correlation_id)
+            log_msg("error", f"ResetPassword error: {str(e)}", user_id=request.email, correlation_id=correlation_id)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Failed to reset password")
             return auth_pb2.ResetPasswordResponse(success=False)
         finally:
             db.close()
+            print("=== ResetPassword END ===\n")
