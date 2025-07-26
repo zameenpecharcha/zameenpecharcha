@@ -223,12 +223,31 @@ class Mutation:
                 created_at=response.created_at
             )
         except Exception as e:
-            log_msg("error", f"Error creating user {email}: {str(e)}")
-            raise REException(
-                "USER_CREATION_FAILED",
-                "Failed to create user",
-                str(e)
-            ).to_graphql_error()
+            error_message = str(e)
+            if "Email already registered" in error_message:
+                raise REException(
+                    "EMAIL_EXISTS",
+                    "This email address is already registered",
+                    "Please use a different email address or try logging in"
+                ).to_graphql_error()
+            elif "phone_unique" in error_message:
+                raise REException(
+                    "PHONE_EXISTS",
+                    "This phone number is already registered",
+                    "Please use a different phone number"
+                ).to_graphql_error()
+            elif "invalid email format" in error_message.lower():
+                raise REException(
+                    "INVALID_EMAIL",
+                    "Invalid email format",
+                    "Please provide a valid email address"
+                ).to_graphql_error()
+            else:
+                raise REException(
+                    "USER_CREATION_FAILED",
+                    "Failed to create user",
+                    "Please try again later"
+                ).to_graphql_error()
 
     @strawberry.mutation
     async def create_user_rating(
