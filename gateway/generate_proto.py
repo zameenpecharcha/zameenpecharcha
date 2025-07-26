@@ -27,10 +27,16 @@ def generate_proto_for_service(service_name, proto_dir, proto_file):
             content = f.read()
         
         # Replace the import statement
-        content = content.replace(
-            f'import {service_name}_pb2 as {service_name}__pb2',
-            f'from app.proto_files.{service_name} import {service_name}_pb2 as {service_name}__pb2'
-        )
+        if service_name == "post":
+            content = content.replace(
+                f'import {service_name}_pb2 as {service_name}__pb2',
+                f'from . import {service_name}_pb2 as {service_name}__pb2'
+            )
+        else:
+            content = content.replace(
+                f'import {service_name}_pb2 as {service_name}__pb2',
+                f'from app.proto_files.{service_name} import {service_name}_pb2 as {service_name}__pb2'
+            )
         
         with open(pb2_grpc_file, 'w') as f:
             f.write(content)
@@ -53,6 +59,11 @@ def generate_proto():
     user_proto_dir = os.path.join(current_dir, "app", "proto_files", "user")
     user_proto_file = os.path.join(user_proto_dir, "user.proto")
     generate_proto_for_service("user", user_proto_dir, user_proto_file)
+
+    # Posts service protos
+    posts_proto_dir = os.path.join(current_dir, "app", "proto_files", "posts")
+    posts_proto_file = os.path.join(posts_proto_dir, "post.proto")
+    generate_proto_for_service("post", posts_proto_dir, posts_proto_file)
 
 if __name__ == "__main__":
     generate_proto() 

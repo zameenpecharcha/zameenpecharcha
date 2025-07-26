@@ -9,13 +9,12 @@ project_root = str(Path(__file__).parent.parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
 
-from app.proto_files.user import user_pb2, user_pb2_grpc
+from app.proto_files.auth import auth_pb2_grpc, auth_pb2
+from app.proto_files.user import user_pb2_grpc, user_pb2
+from app.proto_files.posts import post_pb2_grpc, post_pb2
 import app.proto_files.comments.comments_pb2 as comments_pb2
 import app.proto_files.comments.comments_pb2_grpc as comments_pb2_grpc
-import app.proto_files.posts.post_pb2 as post_pb2
-import app.proto_files.posts.post_pb2_grpc as post_pb2_grpc
 from app.proto_files.property import property_pb2, property_pb2_grpc
-from app.proto_files.auth import auth_pb2, auth_pb2_grpc
 
 class AuthServiceClient:
     def __init__(self):
@@ -226,51 +225,207 @@ class CommentsServiceClient:
         return self.stub.UnlikeComment(request)
 
 class PostsServiceClient:
-    def __init__(self, host='localhost', port=50052):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
+    def __init__(self):
+        self.channel = grpc.insecure_channel('localhost:50053')
         self.stub = post_pb2_grpc.PostsServiceStub(self.channel)
 
-    def create_post(self, user_id: str, title: str, content: str):
-        request = post_pb2.PostCreateRequest(
-            user_id=user_id,
-            title=title,
-            content=content
-        )
-        return self.stub.CreatePost(request)
+    def create_post(self, user_id: int, title: str, content: str, visibility: str = None,
+                   property_type: str = None, location: str = None, map_location: str = None,
+                   price: float = None, status: str = None, media=None):
+        try:
+            request = post_pb2.PostCreateRequest(
+                user_id=user_id,
+                title=title,
+                content=content,
+                visibility=visibility,
+                property_type=property_type,
+                location=location,
+                map_location=map_location,
+                price=price,
+                status=status,
+                media=media or []
+            )
+            return self.stub.CreatePost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in create_post: {str(e)}")
+            raise
 
-    def get_post(self, post_id: str):
-        request = post_pb2.PostRequest(post_id=post_id)
-        return self.stub.GetPost(request)
+    def get_post(self, post_id: int):
+        try:
+            request = post_pb2.PostRequest(post_id=post_id)
+            return self.stub.GetPost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in get_post: {str(e)}")
+            raise
 
-    def update_post(self, post_id: str, title: str, content: str):
-        request = post_pb2.PostUpdateRequest(
-            post_id=post_id,
-            title=title,
-            content=content
-        )
-        return self.stub.UpdatePost(request)
+    def update_post(self, post_id: int, title: str = None, content: str = None,
+                   visibility: str = None, property_type: str = None,
+                   location: str = None, map_location: str = None,
+                   price: float = None, status: str = None):
+        try:
+            request = post_pb2.PostUpdateRequest(
+                post_id=post_id,
+                title=title,
+                content=content,
+                visibility=visibility,
+                property_type=property_type,
+                location=location,
+                map_location=map_location,
+                price=price,
+                status=status
+            )
+            return self.stub.UpdatePost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in update_post: {str(e)}")
+            raise
 
-    def delete_post(self, post_id: str):
-        request = post_pb2.PostRequest(post_id=post_id)
-        return self.stub.DeletePost(request)
+    def delete_post(self, post_id: int):
+        try:
+            request = post_pb2.PostRequest(post_id=post_id)
+            return self.stub.DeletePost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in delete_post: {str(e)}")
+            raise
 
-    def get_posts_by_user(self, user_id: str):
-        request = post_pb2.GetPostsByUserRequest(user_id=user_id)
-        return self.stub.GetPostsByUser(request)
+    def get_posts_by_user(self, user_id: int, page: int = 1, limit: int = 10):
+        try:
+            request = post_pb2.GetPostsByUserRequest(
+                user_id=user_id,
+                page=page,
+                limit=limit
+            )
+            return self.stub.GetPostsByUser(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in get_posts_by_user: {str(e)}")
+            raise
 
-    def like_post(self, post_id: str, user_id: str):
-        request = post_pb2.LikePostRequest(
-            post_id=post_id,
-            user_id=user_id
-        )
-        return self.stub.LikePost(request)
+    def search_posts(self, property_type: str = None, location: str = None,
+                    min_price: float = None, max_price: float = None,
+                    status: str = None, page: int = 1, limit: int = 10):
+        try:
+            request = post_pb2.SearchPostsRequest(
+                property_type=property_type,
+                location=location,
+                min_price=min_price or 0.0,
+                max_price=max_price or 0.0,
+                status=status,
+                page=page,
+                limit=limit
+            )
+            return self.stub.SearchPosts(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in search_posts: {str(e)}")
+            raise
 
-    def unlike_post(self, post_id: str, user_id: str):
-        request = post_pb2.LikePostRequest(
-            post_id=post_id,
-            user_id=user_id
-        )
-        return self.stub.UnlikePost(request)
+    def add_post_media(self, post_id: int, media):
+        try:
+            request = post_pb2.PostMediaRequest(
+                post_id=post_id,
+                media=media
+            )
+            return self.stub.AddPostMedia(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in add_post_media: {str(e)}")
+            raise
+
+    def delete_post_media(self, media_id: int):
+        try:
+            request = post_pb2.PostRequest(post_id=media_id)
+            return self.stub.DeletePostMedia(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in delete_post_media: {str(e)}")
+            raise
+
+    def like_post(self, post_id: int, user_id: int, reaction_type: str = 'like'):
+        try:
+            request = post_pb2.LikeRequest(
+                id=post_id,
+                user_id=user_id,
+                reaction_type=reaction_type
+            )
+            return self.stub.LikePost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in like_post: {str(e)}")
+            raise
+
+    def unlike_post(self, post_id: int, user_id: int):
+        try:
+            request = post_pb2.LikeRequest(
+                id=post_id,
+                user_id=user_id
+            )
+            return self.stub.UnlikePost(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in unlike_post: {str(e)}")
+            raise
+
+    def create_comment(self, post_id: int, user_id: int, comment: str, parent_comment_id: int = None):
+        try:
+            request = post_pb2.CommentCreateRequest(
+                post_id=post_id,
+                user_id=user_id,
+                comment=comment,
+                parent_comment_id=parent_comment_id or 0
+            )
+            return self.stub.CreateComment(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in create_comment: {str(e)}")
+            raise
+
+    def update_comment(self, comment_id: int, comment: str = None, status: str = None):
+        try:
+            request = post_pb2.CommentUpdateRequest(
+                comment_id=comment_id,
+                comment=comment,
+                status=status
+            )
+            return self.stub.UpdateComment(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in update_comment: {str(e)}")
+            raise
+
+    def delete_comment(self, comment_id: int):
+        try:
+            request = post_pb2.PostRequest(post_id=comment_id)
+            return self.stub.DeleteComment(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in delete_comment: {str(e)}")
+            raise
+
+    def get_comments(self, post_id: int, page: int = 1, limit: int = 10):
+        try:
+            request = post_pb2.GetCommentsRequest(
+                post_id=post_id,
+                page=page,
+                limit=limit
+            )
+            return self.stub.GetComments(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in get_comments: {str(e)}")
+            raise
+
+    def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like'):
+        try:
+            request = post_pb2.LikeRequest(
+                id=comment_id,
+                user_id=user_id,
+                reaction_type=reaction_type
+            )
+            return self.stub.LikeComment(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in like_comment: {str(e)}")
+            raise
+
+    def unlike_comment(self, comment_id: int, user_id: int):
+        try:
+            request = post_pb2.LikeRequest(
+                id=comment_id,
+                user_id=user_id
+            )
+            return self.stub.UnlikeComment(request)
+        except grpc.RpcError as e:
+            log_msg(f"Error in unlike_comment: {str(e)}")
+            raise
 
 class PropertyServiceClient:
     def __init__(self, host='localhost', port=50053):
