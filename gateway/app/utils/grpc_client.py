@@ -3,6 +3,9 @@ import sys
 import os
 from pathlib import Path
 from app.utils.log_utils import log_msg
+import base64
+from datetime import datetime
+from typing import Optional
 
 # Add the project root to Python path
 project_root = str(Path(__file__).parent.parent.parent)
@@ -229,10 +232,30 @@ class PostsServiceClient:
         self.channel = grpc.insecure_channel('localhost:50053')
         self.stub = post_pb2_grpc.PostsServiceStub(self.channel)
 
-    def create_post(self, user_id: int, title: str, content: str, visibility: str = None,
-                   property_type: str = None, location: str = None, map_location: str = None,
-                   price: float = None, status: str = None, media=None):
+    def create_post(self, user_id: int, title: str, content: str,
+                   visibility: str, property_type: str, location: str,
+                   map_location: str, price: float, status: str,
+                   media: list) -> dict:
         try:
+            media_list = []
+            for m in media:
+                # Convert base64 string to bytes
+                try:
+                    media_data = base64.b64decode(m.mediaData)
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'message': f'Invalid media data format: {str(e)}'
+                    }
+
+                media_upload = post_pb2.PostMediaUpload(
+                    media_type=m.mediaType,
+                    media_data=media_data,
+                    media_order=m.mediaOrder,
+                    caption=m.caption
+                )
+                media_list.append(media_upload)
+
             request = post_pb2.PostCreateRequest(
                 user_id=user_id,
                 title=title,
@@ -243,49 +266,93 @@ class PostsServiceClient:
                 map_location=map_location,
                 price=price,
                 status=status,
-                media=media or []
+                media=media_list
             )
-            return self.stub.CreatePost(request)
+            response = self.stub.CreatePost(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
+            return {
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in create_post: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error creating post: {str(e)}',
+                'post': None
+            }
 
     def get_post(self, post_id: int):
         try:
             request = post_pb2.PostRequest(post_id=post_id)
             return self.stub.GetPost(request)
         except grpc.RpcError as e:
-            log_msg(f"Error in get_post: {str(e)}")
-            raise
+            return None
 
-    def update_post(self, post_id: int, title: str = None, content: str = None,
-                   visibility: str = None, property_type: str = None,
-                   location: str = None, map_location: str = None,
-                   price: float = None, status: str = None):
+    def update_post(self, post_id: int, **kwargs):
         try:
             request = post_pb2.PostUpdateRequest(
                 post_id=post_id,
-                title=title,
-                content=content,
-                visibility=visibility,
-                property_type=property_type,
-                location=location,
-                map_location=map_location,
-                price=price,
-                status=status
+                **{k: v for k, v in kwargs.items() if v is not None}
             )
-            return self.stub.UpdatePost(request)
+            response = self.stub.UpdatePost(request)
+            return {
+                'success': True,
+                'message': 'Post updated successfully',
+                'post': response
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in update_post: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error updating post: {str(e)}'
+            }
 
     def delete_post(self, post_id: int):
         try:
             request = post_pb2.PostRequest(post_id=post_id)
-            return self.stub.DeletePost(request)
+            response = self.stub.DeletePost(request)
+            return {
+                'success': True,
+                'message': 'Post deleted successfully'
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in delete_post: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error deleting post: {str(e)}'
+            }
 
     def get_posts_by_user(self, user_id: int, page: int = 1, limit: int = 10):
         try:
@@ -294,59 +361,29 @@ class PostsServiceClient:
                 page=page,
                 limit=limit
             )
-            return self.stub.GetPostsByUser(request)
+            response = self.stub.GetPostsByUser(request)
+            return response.posts
         except grpc.RpcError as e:
-            log_msg(f"Error in get_posts_by_user: {str(e)}")
-            raise
+            return []
 
-    def search_posts(self, property_type: str = None, location: str = None,
-                    min_price: float = None, max_price: float = None,
-                    status: str = None, page: int = 1, limit: int = 10):
-        try:
-            request = post_pb2.SearchPostsRequest(
-                property_type=property_type,
-                location=location,
-                min_price=min_price or 0.0,
-                max_price=max_price or 0.0,
-                status=status,
-                page=page,
-                limit=limit
-            )
-            return self.stub.SearchPosts(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in search_posts: {str(e)}")
-            raise
-
-    def add_post_media(self, post_id: int, media):
-        try:
-            request = post_pb2.PostMediaRequest(
-                post_id=post_id,
-                media=media
-            )
-            return self.stub.AddPostMedia(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in add_post_media: {str(e)}")
-            raise
-
-    def delete_post_media(self, media_id: int):
-        try:
-            request = post_pb2.PostRequest(post_id=media_id)
-            return self.stub.DeletePostMedia(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in delete_post_media: {str(e)}")
-            raise
-
-    def like_post(self, post_id: int, user_id: int, reaction_type: str = 'like'):
+    def like_post(self, post_id: int, user_id: int):
         try:
             request = post_pb2.LikeRequest(
                 id=post_id,
                 user_id=user_id,
-                reaction_type=reaction_type
+                reaction_type='like'
             )
-            return self.stub.LikePost(request)
+            response = self.stub.LikePost(request)
+            return {
+                'success': True,
+                'message': 'Post liked successfully',
+                'post': response
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in like_post: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error liking post: {str(e)}'
+            }
 
     def unlike_post(self, post_id: int, user_id: int):
         try:
@@ -354,12 +391,20 @@ class PostsServiceClient:
                 id=post_id,
                 user_id=user_id
             )
-            return self.stub.UnlikePost(request)
+            response = self.stub.UnlikePost(request)
+            return {
+                'success': True,
+                'message': 'Post unliked successfully',
+                'post': response
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in unlike_post: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error unliking post: {str(e)}'
+            }
 
-    def create_comment(self, post_id: int, user_id: int, comment: str, parent_comment_id: int = None):
+    def create_comment(self, post_id: int, user_id: int, comment: str,
+                      parent_comment_id: Optional[int] = None) -> dict:
         try:
             request = post_pb2.CommentCreateRequest(
                 post_id=post_id,
@@ -367,65 +412,166 @@ class PostsServiceClient:
                 comment=comment,
                 parent_comment_id=parent_comment_id or 0
             )
-            return self.stub.CreateComment(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in create_comment: {str(e)}")
-            raise
+            response = self.stub.CreateComment(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response:
+                comment_dict = {
+                    'id': response.id,
+                    'postId': response.post_id,
+                    'userId': response.user_id,
+                    'comment': response.comment,
+                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
+                    'status': response.status,
+                    'addedAt': datetime.fromtimestamp(response.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'replies': [],  # Replies will be fetched separately if needed
+                    'likeCount': response.like_count
+                }
+            else:
+                comment_dict = None
 
-    def update_comment(self, comment_id: int, comment: str = None, status: str = None):
+            return {
+                'success': True,
+                'message': 'Comment created successfully',
+                'comment': comment_dict
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error creating comment: {str(e)}',
+                'comment': None
+            }
+
+    def update_comment(self, comment_id: int, comment: Optional[str] = None,
+                      status: Optional[str] = None) -> dict:
         try:
             request = post_pb2.CommentUpdateRequest(
                 comment_id=comment_id,
                 comment=comment,
                 status=status
             )
-            return self.stub.UpdateComment(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in update_comment: {str(e)}")
-            raise
+            response = self.stub.UpdateComment(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response:
+                comment_dict = {
+                    'id': response.id,
+                    'postId': response.post_id,
+                    'userId': response.user_id,
+                    'comment': response.comment,
+                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
+                    'status': response.status,
+                    'addedAt': datetime.fromtimestamp(response.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'replies': [],  # Replies will be fetched separately if needed
+                    'likeCount': response.like_count
+                }
+            else:
+                comment_dict = None
 
-    def delete_comment(self, comment_id: int):
+            return {
+                'success': True,
+                'message': 'Comment updated successfully',
+                'comment': comment_dict
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error updating comment: {str(e)}',
+                'comment': None
+            }
+
+    def delete_comment(self, comment_id: int) -> dict:
         try:
-            request = post_pb2.PostRequest(post_id=comment_id)
-            return self.stub.DeleteComment(request)
+            request = post_pb2.PostRequest(post_id=comment_id)  # Using PostRequest for comment_id
+            response = self.stub.DeleteComment(request)
+            return {
+                'success': True,
+                'message': 'Comment deleted successfully',
+                'comment': None
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in delete_comment: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error deleting comment: {str(e)}',
+                'comment': None
+            }
 
-    def get_comments(self, post_id: int, page: int = 1, limit: int = 10):
-        try:
-            request = post_pb2.GetCommentsRequest(
-                post_id=post_id,
-                page=page,
-                limit=limit
-            )
-            return self.stub.GetComments(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in get_comments: {str(e)}")
-            raise
-
-    def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like'):
+    def like_comment(self, comment_id: int, user_id: int) -> dict:
         try:
             request = post_pb2.LikeRequest(
                 id=comment_id,
                 user_id=user_id,
-                reaction_type=reaction_type
+                reaction_type='like'
             )
-            return self.stub.LikeComment(request)
-        except grpc.RpcError as e:
-            log_msg(f"Error in like_comment: {str(e)}")
-            raise
+            response = self.stub.LikeComment(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response:
+                comment_dict = {
+                    'id': response.id,
+                    'postId': response.post_id,
+                    'userId': response.user_id,
+                    'comment': response.comment,
+                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
+                    'status': response.status,
+                    'addedAt': datetime.fromtimestamp(response.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'replies': [],  # Replies will be fetched separately if needed
+                    'likeCount': response.like_count
+                }
+            else:
+                comment_dict = None
 
-    def unlike_comment(self, comment_id: int, user_id: int):
+            return {
+                'success': True,
+                'message': 'Comment liked successfully',
+                'comment': comment_dict
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error liking comment: {str(e)}',
+                'comment': None
+            }
+
+    def unlike_comment(self, comment_id: int, user_id: int) -> dict:
         try:
             request = post_pb2.LikeRequest(
                 id=comment_id,
                 user_id=user_id
             )
-            return self.stub.UnlikeComment(request)
+            response = self.stub.UnlikeComment(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response:
+                comment_dict = {
+                    'id': response.id,
+                    'postId': response.post_id,
+                    'userId': response.user_id,
+                    'comment': response.comment,
+                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
+                    'status': response.status,
+                    'addedAt': datetime.fromtimestamp(response.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'replies': [],  # Replies will be fetched separately if needed
+                    'likeCount': response.like_count
+                }
+            else:
+                comment_dict = None
+
+            return {
+                'success': True,
+                'message': 'Comment unliked successfully',
+                'comment': comment_dict
+            }
         except grpc.RpcError as e:
-            log_msg(f"Error in unlike_comment: {str(e)}")
-            raise
+            return {
+                'success': False,
+                'message': f'Error unliking comment: {str(e)}',
+                'comment': None
+            }
 
 class PropertyServiceClient:
     def __init__(self, host='localhost', port=50053):
@@ -460,6 +606,170 @@ class PropertyServiceClient:
     def increment_view_count(self, property_id: str):
         request = property_pb2.PropertyRequest(property_id=property_id)
         return self.stub.IncrementViewCount(request)
+
+    def search_posts(self, property_type: str = None, location: str = None,
+                    min_price: float = None, max_price: float = None,
+                    status: str = None, page: int = 1, limit: int = 10) -> list:
+        try:
+            request = post_pb2.SearchPostsRequest(
+                property_type=property_type or "",
+                location=location or "",
+                min_price=min_price or 0.0,
+                max_price=max_price or 0.0,
+                status=status or "",
+                page=page,
+                limit=limit
+            )
+            response = self.stub.SearchPosts(request)
+            
+            # Convert the gRPC response to a list of dictionaries
+            posts = []
+            for post in response.posts:
+                media_list = []
+                for m in post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                posts.append({
+                    'id': post.id,
+                    'userId': post.user_id,
+                    'title': post.title,
+                    'content': post.content,
+                    'visibility': post.visibility,
+                    'propertyType': post.property_type,
+                    'location': post.location,
+                    'mapLocation': post.map_location,
+                    'price': post.price,
+                    'status': post.status,
+                    'createdAt': datetime.fromtimestamp(post.created_at),
+                    'media': media_list,
+                    'likeCount': post.like_count,
+                    'commentCount': post.comment_count
+                })
+            return posts
+        except grpc.RpcError as e:
+            return []
+
+    def get_comments(self, post_id: int, page: int = 1, limit: int = 10) -> list:
+        try:
+            request = post_pb2.GetCommentsRequest(
+                post_id=post_id,
+                page=page,
+                limit=limit
+            )
+            response = self.stub.GetComments(request)
+            
+            # Convert the gRPC response to a list of dictionaries
+            comments = []
+            for comment in response.comments:
+                comments.append({
+                    'id': comment.id,
+                    'postId': comment.post_id,
+                    'userId': comment.user_id,
+                    'comment': comment.comment,
+                    'parentCommentId': comment.parent_comment_id if comment.parent_comment_id != 0 else None,
+                    'status': comment.status,
+                    'addedAt': datetime.fromtimestamp(comment.added_at),
+                    'commentedAt': datetime.fromtimestamp(comment.commented_at),
+                    'replies': [],  # Replies will be handled separately
+                    'likeCount': comment.like_count
+                })
+            return comments
+        except grpc.RpcError as e:
+            return []
+
+    def add_post_media(self, post_id: int, media: list) -> dict:
+        try:
+            media_list = []
+            for m in media:
+                # Convert base64 string to bytes
+                try:
+                    media_data = base64.b64decode(m.mediaData)
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'message': f'Invalid media data format: {str(e)}'
+                    }
+
+                media_upload = post_pb2.PostMediaUpload(
+                    media_type=m.mediaType,
+                    media_data=media_data,
+                    media_order=m.mediaOrder,
+                    caption=m.caption
+                )
+                media_list.append(media_upload)
+
+            request = post_pb2.PostMediaRequest(
+                post_id=post_id,
+                media=media_list
+            )
+            response = self.stub.AddPostMedia(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
+            return {
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error adding media: {str(e)}',
+                'post': None
+            }
+
+    def delete_post_media(self, media_id: int) -> dict:
+        try:
+            request = post_pb2.PostRequest(post_id=media_id)  # Using PostRequest for media_id
+            response = self.stub.DeletePostMedia(request)
+            return {
+                'success': response.success,
+                'message': response.message
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error deleting media: {str(e)}'
+            }
 
 # Create singleton instances
 auth_client = AuthServiceClient()

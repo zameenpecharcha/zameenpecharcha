@@ -91,36 +91,53 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     message=f"User with id {request.user_id} not found"
                 )
 
-            post = self.repository.create_post(
-                user_id=request.user_id,
-                title=request.title,
-                content=request.content,
-                visibility=request.visibility,
-                property_type=request.property_type,
-                location=request.location,
-                map_location=request.map_location,
-                price=request.price,
-                status=request.status
-            )
-
-            # Handle media uploads if any
-            for media in request.media:
-                # Here you would implement media file handling
-                # For now, we'll assume media_url is provided
-                self.repository.add_post_media(
-                    post_id=post.id,
-                    media_type=media.media_type,
-                    media_url="placeholder_url",  # This would be replaced with actual upload logic
-                    media_order=media.media_order,
-                    media_size=0,  # This would be actual file size
-                    caption=media.caption
+            try:
+                post = self.repository.create_post(
+                    user_id=request.user_id,
+                    title=request.title,
+                    content=request.content,
+                    visibility=request.visibility,
+                    property_type=request.property_type,
+                    location=request.location,
+                    map_location=request.map_location,
+                    price=request.price,
+                    status=request.status
                 )
 
-            return post_pb2.PostResponse(
-                success=True,
-                message="Post created successfully",
-                post=self._convert_to_proto_post(post)
-            )
+                # Handle media uploads if any
+                for media in request.media:
+                    # For now, we'll create a simple URL from the media data
+                    # In a real implementation, you would save the media data to a file/S3
+                    # and use the resulting URL
+                    media_url = f"/media/{post.id}/{media.media_order}"
+                    
+                    try:
+                        self.repository.add_post_media(
+                            post_id=post.id,
+                            media_type=media.media_type,
+                            media_url=media_url,
+                            media_order=media.media_order,
+                            caption=media.caption
+                        )
+                    except Exception as media_error:
+                        # Log the error but continue with other media
+                        print(f"Error adding media: {str(media_error)}")
+                        continue
+
+                # Refresh post to get the added media
+                post = self.repository.get_post(post.id)
+                return post_pb2.PostResponse(
+                    success=True,
+                    message="Post created successfully",
+                    post=self._convert_to_proto_post(post)
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"Failed to create post: {str(e)}"
+                )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
