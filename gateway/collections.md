@@ -4,12 +4,12 @@ This document contains all the API endpoints organized by service. Each request 
 
 ## Auth Service Collection
 
-### Login
+### 1. Login
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { login(email: \"user@example.com\", password: \"yourpassword\") { success token refreshToken message } }"
+  "query": "mutation Login { login(email: \"user@example.com\", password: \"yourpassword\") { success token refreshToken message userInfo { id firstName lastName email phone profilePhoto role address latitude longitude bio isactive emailVerified phoneVerified createdAt } } }"
 }'
 ```
 
@@ -21,18 +21,55 @@ Example Response:
       "success": true,
       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
       "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "message": "Login successful"
+      "message": "Login successful",
+      "userInfo": {
+        "id": 1,
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "user@example.com",
+        "phone": "+1234567890",
+        "profilePhoto": null,
+        "role": "user",
+        "address": "123 Main St",
+        "latitude": 12.345678,
+        "longitude": 45.678901,
+        "bio": "Software Developer",
+        "isactive": true,
+        "emailVerified": true,
+        "phoneVerified": false,
+        "createdAt": "2024-02-26T12:00:00Z"
+      }
     }
   }
 }
 ```
 
-### Send OTP
+### 2. Send OTP
+
+a) For Email Verification:
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { sendOtp(email: \"user@example.com\") { success message } }"
+  "query": "mutation SendVerificationOTP { sendOtp(email: \"user@example.com\", type: VERIFICATION) { success message channels } }"
+}'
+```
+
+b) For Password Reset:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation SendPasswordResetOTP { sendOtp(email: \"user@example.com\", type: PASSWORD_RESET) { success message channels } }"
+}'
+```
+
+c) For Login OTP:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation SendLoginOTP { sendOtp(email: \"user@example.com\", type: LOGIN) { success message channels } }"
 }'
 ```
 
@@ -42,18 +79,39 @@ Example Response:
   "data": {
     "sendOtp": {
       "success": true,
-      "message": "OTP sent successfully"
+      "message": "OTP sent successfully via email",
+      "channels": ["email"]
     }
   }
 }
 ```
 
-### Verify OTP
+### 3. Verify OTP
+
+a) Verify Email:
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { verifyOtp(email: \"user@example.com\", otpCode: \"123456\") { success token message } }"
+  "query": "mutation VerifyEmailOTP { verifyOtp(email: \"user@example.com\", otpCode: \"123456\", type: VERIFICATION) { success message userInfo { email emailVerified } } }"
+}'
+```
+
+b) Verify Password Reset OTP:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation VerifyPasswordResetOTP { verifyOtp(email: \"user@example.com\", otpCode: \"123456\", type: PASSWORD_RESET) { success message userInfo { email emailVerified } } }"
+}'
+```
+
+c) Verify Login OTP:
+```bash
+curl -X POST http://localhost:8000/api/v1/auth/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation VerifyLoginOTP { verifyOtp(email: \"user@example.com\", otpCode: \"123456\", type: LOGIN) { success token message userInfo { id email emailVerified } } }"
 }'
 ```
 
@@ -64,39 +122,34 @@ Example Response:
     "verifyOtp": {
       "success": true,
       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-      "message": "OTP verified successfully"
+      "message": "OTP verified successfully",
+      "userInfo": {
+        "id": 1,
+        "email": "user@example.com",
+        "emailVerified": true
+      }
     }
   }
 }
 ```
 
-### Forgot Password
+### 4. Password Reset Flow
+
+1. Request Password Reset OTP:
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { forgotPassword(email: \"user@example.com\") { success message } }"
+  "query": "mutation RequestPasswordReset { sendOtp(email: \"user@example.com\", type: PASSWORD_RESET) { success message channels } }"
 }'
 ```
 
-Example Response:
-```json
-{
-  "data": {
-    "forgotPassword": {
-      "success": true,
-      "message": "OTP sent successfully"
-    }
-  }
-}
-```
-
-### Reset Password
+2. Reset Password with OTP:
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { resetPassword(email: \"user@example.com\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
+  "query": "mutation ResetPassword { resetPassword(email: \"user@example.com\", otpCode: \"123456\", newPassword: \"newSecurePassword123\", confirmPassword: \"newSecurePassword123\") { success message userInfo { email emailVerified } } }"
 }'
 ```
 
@@ -106,7 +159,11 @@ Example Response:
   "data": {
     "resetPassword": {
       "success": true,
-      "message": "Password reset successfully"
+      "message": "Password reset successful",
+      "userInfo": {
+        "email": "user@example.com",
+        "emailVerified": true
+      }
     }
   }
 }
@@ -114,93 +171,198 @@ Example Response:
 
 ### Error Responses
 
-Invalid Credentials:
+1. User Not Found:
 ```json
 {
-  "errors": [
-    {
-      "message": "Invalid credentials",
-      "locations": [{"line": 2, "column": 3}],
-      "path": ["login"]
-    }
-  ],
-  "data": {
-    "login": null
-  }
+  "errors": [{
+    "message": "User not found",
+    "path": ["sendOtp"]
+  }]
 }
 ```
 
-Invalid OTP:
+2. Invalid OTP:
 ```json
 {
-  "errors": [
-    {
-      "message": "Invalid OTP",
-      "locations": [{"line": 2, "column": 3}],
-      "path": ["verifyOtp"]
-    }
-  ],
-  "data": {
-    "verifyOtp": null
-  }
+  "errors": [{
+    "message": "Invalid OTP",
+    "path": ["verifyOtp"]
+  }]
 }
 ```
 
-User Not Found:
+3. OTP Expired:
 ```json
 {
-  "errors": [
-    {
-      "message": "User not found",
-      "locations": [{"line": 2, "column": 3}],
-      "path": ["forgotPassword"]
-    }
-  ],
-  "data": {
-    "forgotPassword": null
-  }
+  "errors": [{
+    "message": "OTP expired or not found",
+    "path": ["verifyOtp"]
+  }]
 }
 ```
 
-### Password Reset Flow Example
-
-1. First, request OTP:
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { forgotPassword(email: \"user@example.com\") { success message } }"
-}'
+4. Invalid Credentials:
+```json
+{
+  "errors": [{
+    "message": "Invalid credentials",
+    "path": ["login"]
+  }]
+}
 ```
 
-2. Then use the received OTP to reset password:
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { resetPassword(email: \"user@example.com\", otpCode: \"123456\", newPassword: \"newpassword123\") { success message } }"
-}'
+5. Password Mismatch:
+```json
+{
+  "errors": [{
+    "message": "Passwords do not match",
+    "path": ["resetPassword"]
+  }]
+}
 ```
-
-Note: The OTP is valid for 5 minutes. Make sure to use the same email in both steps.
 
 ## User Service Collection
 
-### Create User
+### 1. Create User
 ```bash
 curl -X POST http://localhost:8000/api/v1/users/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation { createUser(name: \"Hello221111\", email: \"Hello2211111\", phone: 10, password: \"Hello111\", role: \"Hello\", location: \"12333,34454\") { userId name email phone role location } }"
+  "query": "mutation CreateUser { createUser(firstName: \"John\", lastName: \"Doe\", email: \"john@example.com\", phone: \"+1234567890\", password: \"securepassword123\", role: \"user\", address: \"123 Main St\", latitude: 12.345678, longitude: 45.678901, bio: \"Software Developer\") { id firstName lastName email phone profilePhoto role address latitude longitude bio isactive emailVerified phoneVerified createdAt } }"
 }'
 ```
 
-### Get User
+Example Response:
+```json
+{
+  "data": {
+    "createUser": {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "profilePhoto": null,
+      "role": "user",
+      "address": "123 Main St",
+      "latitude": 12.345678,
+      "longitude": 45.678901,
+      "bio": "Software Developer",
+      "isactive": true,
+      "emailVerified": false,
+      "phoneVerified": false,
+      "createdAt": "2024-02-26T12:00:00Z"
+    }
+  }
+}
+```
+
+### 2. Get User
 ```bash
 curl -X POST http://localhost:8000/api/v1/users/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "query { user(id: 12) { userId name email phone role location } }"
+  "query": "query GetUser { user(id: 1) { id firstName lastName email phone profilePhoto role address latitude longitude bio isactive emailVerified phoneVerified createdAt ratings { id ratedUserId ratedByUserId ratingValue review ratingType createdAt updatedAt } followersCount followingCount } }"
+}'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "user": {
+      "id": 1,
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "profilePhoto": null,
+      "role": "user",
+      "address": "123 Main St",
+      "latitude": 12.345678,
+      "longitude": 45.678901,
+      "bio": "Software Developer",
+      "isactive": true,
+      "emailVerified": false,
+      "phoneVerified": false,
+      "createdAt": "2024-02-26T12:00:00Z",
+      "ratings": [],
+      "followersCount": 0,
+      "followingCount": 0
+    }
+  }
+}
+```
+
+### 3. Create User Rating
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation CreateUserRating { createUserRating(ratedUserId: 2, ratedByUserId: 1, ratingValue: 5, review: \"Excellent service!\", ratingType: \"PROFESSIONAL\") { id ratedUserId ratedByUserId ratingValue review ratingType createdAt updatedAt } }"
+}'
+```
+
+Example Response:
+```json
+{
+  "data": {
+    "createUserRating": {
+      "id": 1,
+      "ratedUserId": 2,
+      "ratedByUserId": 1,
+      "ratingValue": 5,
+      "review": "Excellent service!",
+      "ratingType": "PROFESSIONAL",
+      "createdAt": "2024-02-26T12:00:00Z",
+      "updatedAt": "2024-02-26T12:00:00Z"
+    }
+  }
+}
+```
+
+### 4. Get User Ratings
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query GetUserRatings { userRatings(userId: 1) { id ratedUserId ratedByUserId ratingValue review ratingType createdAt updatedAt } }"
+}'
+```
+
+### 5. Follow User
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation FollowUser { followUser(userId: 1, followingId: 2) { id userId followingId status followedAt } }"
+}'
+```
+
+### 6. Get User Followers
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query GetUserFollowers { userFollowers(userId: 1) { id userId followingId status followedAt } }"
+}'
+```
+
+### 7. Get User Following
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query GetUserFollowing { userFollowing(userId: 1) { id userId followingId status followedAt } }"
+}'
+```
+
+### 8. Check Following Status
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query CheckFollowingStatus { checkFollowingStatus(userId: 1, followingId: 2) { id userId followingId status followedAt } }"
 }'
 ```
 
