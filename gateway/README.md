@@ -37,197 +37,310 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
 ## Auth Service Endpoints
 
-### Login
+### 1. Login
 
-Use this mutation to login:
-
+Regular password-based login:
 ```graphql
-mutation {
-  login(email: "user@example.com", password: "yourpassword") {
+mutation Login {
+  login(
+    email: "user@example.com"
+    password: "yourpassword"
+  ) {
     success
     token
     refreshToken
     message
-  }
-}
-```
-
-Expected Response:
-```json
-{
-  "data": {
-    "login": {
-      "success": true,
-      "token": "jwt_token_here",
-      "refreshToken": "refresh_token_here",
-      "message": "Login successful"
+    userInfo {
+      id
+      firstName
+      lastName
+      email
+      phone
+      profilePhoto
+      role
+      address
+      latitude
+      longitude
+      bio
+      isactive
+      emailVerified
+      phoneVerified
+      createdAt
     }
   }
 }
 ```
 
-### Send OTP
+### 2. Send OTP
 
-Use this mutation to send OTP:
+You can send OTP for different purposes:
 
+a) For Email Verification:
 ```graphql
-mutation {
-  sendOtp(email: "user@example.com") {
+mutation SendVerificationOTP {
+  sendOtp(
+    email: "user@example.com"
+    type: VERIFICATION
+  ) {
     success
     message
+    channels  # ["email"] or ["email", "sms"] if phone provided
   }
 }
 ```
 
-Expected Response:
-```json
-{
-  "data": {
-    "sendOtp": {
-      "success": true,
-      "message": "OTP sent successfully"
-    }
-  }
-}
-```
-
-### Verify OTP
-
-Use this mutation to verify OTP:
-
+b) For Password Reset:
 ```graphql
-mutation {
-  verifyOtp(email: "user@example.com", otpCode: "123456") {
-    success
-    token
-    message
-  }
-}
-```
-
-Expected Response:
-```json
-{
-  "data": {
-    "verifyOtp": {
-      "success": true,
-      "token": "jwt_token_here",
-      "message": "OTP verified successfully"
-    }
-  }
-}
-```
-
-### Forgot Password
-
-Use this mutation to initiate password reset:
-
-```graphql
-mutation {
-  forgotPassword(email: "user@example.com") {
+mutation SendPasswordResetOTP {
+  sendOtp(
+    email: "user@example.com"
+    type: PASSWORD_RESET
+  ) {
     success
     message
+    channels
   }
 }
 ```
 
-Expected Response:
-```json
-{
-  "data": {
-    "forgotPassword": {
-      "success": true,
-      "message": "OTP sent successfully"
+c) For Login OTP:
+```graphql
+mutation SendLoginOTP {
+  sendOtp(
+    email: "user@example.com"
+    type: LOGIN
+  ) {
+    success
+    message
+    channels
+  }
+}
+```
+
+Optional: Add phone number for SMS delivery:
+```graphql
+mutation SendOTPWithPhone {
+  sendOtp(
+    email: "user@example.com"
+    phone: "+1234567890"  # Optional
+    type: VERIFICATION    # or PASSWORD_RESET or LOGIN
+  ) {
+    success
+    message
+    channels
+  }
+}
+```
+
+### 3. Verify OTP
+
+Verify OTP for different purposes:
+
+a) Verify Email:
+```graphql
+mutation VerifyEmailOTP {
+  verifyOtp(
+    email: "user@example.com"
+    otpCode: "123456"
+    type: VERIFICATION
+  ) {
+    success
+    message
+    userInfo {
+      email
+      emailVerified
     }
   }
 }
 ```
 
-### Reset Password
-
-Use this mutation to reset password:
-
+b) Verify Password Reset OTP:
 ```graphql
-mutation {
+mutation VerifyPasswordResetOTP {
+  verifyOtp(
+    email: "user@example.com"
+    otpCode: "123456"
+    type: PASSWORD_RESET
+  ) {
+    success
+    message
+    userInfo {
+      email
+      emailVerified
+    }
+  }
+}
+```
+
+c) Verify Login OTP:
+```graphql
+mutation VerifyLoginOTP {
+  verifyOtp(
+    email: "user@example.com"
+    otpCode: "123456"
+    type: LOGIN
+  ) {
+    success
+    token          # JWT token for authentication
+    message
+    userInfo {
+      id
+      email
+      emailVerified
+    }
+  }
+}
+```
+
+### 4. Password Reset Flow
+
+Complete password reset flow:
+
+1. Request Password Reset OTP:
+```graphql
+mutation RequestPasswordReset {
+  sendOtp(
+    email: "user@example.com"
+    type: PASSWORD_RESET
+  ) {
+    success
+    message
+    channels
+  }
+}
+```
+
+2. Reset Password with OTP:
+```graphql
+mutation ResetPassword {
   resetPassword(
     email: "user@example.com"
     otpCode: "123456"
-    newPassword: "newpassword123"
+    newPassword: "newSecurePassword123"
+    confirmPassword: "newSecurePassword123"
   ) {
     success
     message
-  }
-}
-```
-
-Expected Response:
-```json
-{
-  "data": {
-    "resetPassword": {
-      "success": true,
-      "message": "Password reset successfully"
+    userInfo {
+      email
+      emailVerified
     }
   }
 }
 ```
 
-### Password Reset Flow
+### Response Types
 
-To reset a password, follow these steps:
-
-1. Call `forgotPassword` mutation with the user's email:
-```graphql
-mutation {
-  forgotPassword(email: "user@example.com") {
-    success
-    message
-  }
+1. AuthResponse Type:
+```typescript
+type AuthResponse {
+  success: Boolean!              # Operation success status
+  token: String                  # JWT token (for login/verify)
+  refreshToken: String          # Refresh token (for login only)
+  message: String               # Success/error message
+  channels: [String!]           # OTP delivery channels used
+  userInfo: UserInfo           # User details if available
 }
 ```
 
-2. User will receive an OTP (in development, check the auth service logs)
-
-3. Use the OTP to reset the password with `resetPassword` mutation:
-```graphql
-mutation {
-  resetPassword(
-    email: "user@example.com"
-    otpCode: "123456"  # Use the OTP received
-    newPassword: "newpassword123"
-  ) {
-    success
-    message
-  }
+2. UserInfo Type:
+```typescript
+type UserInfo {
+  id: Int!
+  firstName: String!
+  lastName: String!
+  email: String!
+  phone: String
+  profilePhoto: String
+  role: String
+  address: String
+  latitude: Float
+  longitude: Float
+  bio: String
+  isactive: Boolean!
+  emailVerified: Boolean!
+  phoneVerified: Boolean!
+  createdAt: String!
 }
 ```
 
-Note: The OTP is valid for 5 minutes. Make sure to use the same email in both steps.
-
-### Auth Service Error Types
+### Error Handling
 
 Common error responses:
-- `INVALID_CREDENTIALS`: Email or password is incorrect
-- `USER_NOT_FOUND`: User does not exist
-- `INVALID_OTP`: OTP is incorrect or expired
-- `OTP_SEND_FAILED`: Failed to send OTP
-- `PASSWORD_RESET_FAILED`: Failed to reset password
 
-Example error response:
+1. User Not Found:
 ```json
 {
-  "errors": [
-    {
-      "message": "Invalid credentials",
-      "locations": [{"line": 2, "column": 3}],
-      "path": ["login"]
-    }
-  ],
-  "data": {
-    "login": null
-  }
+  "errors": [{
+    "message": "User not found",
+    "path": ["sendOtp"]
+  }]
 }
 ```
+
+2. Invalid OTP:
+```json
+{
+  "errors": [{
+    "message": "Invalid OTP",
+    "path": ["verifyOtp"]
+  }]
+}
+```
+
+3. OTP Expired:
+```json
+{
+  "errors": [{
+    "message": "OTP expired or not found",
+    "path": ["verifyOtp"]
+  }]
+}
+```
+
+4. Invalid Credentials:
+```json
+{
+  "errors": [{
+    "message": "Invalid credentials",
+    "path": ["login"]
+  }]
+}
+```
+
+5. Password Mismatch:
+```json
+{
+  "errors": [{
+    "message": "Passwords do not match",
+    "path": ["resetPassword"]
+  }]
+}
+```
+
+### Important Notes
+
+1. OTP Validity:
+   - OTPs expire after 5 minutes
+   - Each new OTP invalidates previous ones
+   - OTPs are single-use except for PASSWORD_RESET
+
+2. OTP Types:
+   - VERIFICATION: For email verification
+   - PASSWORD_RESET: For password reset flow
+   - LOGIN: For OTP-based login
+
+3. Multi-channel Delivery:
+   - Email is always attempted
+   - SMS is attempted if phone number is provided and verified
+   - Response includes list of successful delivery channels
+
+4. Security:
+   - Passwords are hashed using bcrypt
+   - JWTs expire after 1 hour
+   - Refresh tokens expire after 7 days
+   - Account must be active for any operation
+   - Email verification status is tracked
 
 ## User Service Endpoints
 
