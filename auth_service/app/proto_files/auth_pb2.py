@@ -24,33 +24,37 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nauth.proto\x12\x04\x61uth\"/\n\x0cLoginRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"5\n\rLoginResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x15\n\rrefresh_token\x18\x02 \x01(\t\"\x1b\n\nOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"\x1e\n\x0bOTPResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"3\n\x10VerifyOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\"\"\n\x11VerifyOTPResponse\x12\r\n\x05token\x18\x01 \x01(\t\"&\n\x15\x46orgotPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\")\n\x16\x46orgotPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\"M\n\x14ResetPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\x12\x14\n\x0cnew_password\x18\x03 \x01(\t\"(\n\x15ResetPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32\xc4\x02\n\x0b\x41uthService\x12\x30\n\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12.\n\x07SendOTP\x12\x10.auth.OTPRequest\x1a\x11.auth.OTPResponse\x12<\n\tVerifyOTP\x12\x16.auth.VerifyOTPRequest\x1a\x17.auth.VerifyOTPResponse\x12K\n\x0e\x46orgotPassword\x12\x1b.auth.ForgotPasswordRequest\x1a\x1c.auth.ForgotPasswordResponse\x12H\n\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nauth.proto\x12\x04\x61uth\"/\n\x0cLoginRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08password\x18\x02 \x01(\t\"X\n\rLoginResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12\x15\n\rrefresh_token\x18\x02 \x01(\t\x12!\n\tuser_info\x18\x03 \x01(\x0b\x32\x0e.auth.UserInfo\"\xb0\x02\n\x08UserInfo\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\nfirst_name\x18\x02 \x01(\t\x12\x11\n\tlast_name\x18\x03 \x01(\t\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\r\n\x05phone\x18\x05 \x01(\t\x12\x15\n\rprofile_photo\x18\x06 \x01(\t\x12\x0c\n\x04role\x18\x07 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x08 \x01(\t\x12\x10\n\x08latitude\x18\t \x01(\x02\x12\x11\n\tlongitude\x18\n \x01(\x02\x12\x0b\n\x03\x62io\x18\x0b \x01(\t\x12\x10\n\x08isactive\x18\x0c \x01(\x08\x12\x16\n\x0e\x65mail_verified\x18\r \x01(\x08\x12\x16\n\x0ephone_verified\x18\x0e \x01(\x08\x12\x15\n\rlast_login_at\x18\x0f \x01(\t\x12\x12\n\ncreated_at\x18\x10 \x01(\t\"G\n\nOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\r\n\x05phone\x18\x02 \x01(\t\x12\x1b\n\x04type\x18\x03 \x01(\x0e\x32\r.auth.OTPType\"A\n\x0bOTPResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x10\n\x08\x63hannels\x18\x03 \x03(\t\"P\n\x10VerifyOTPRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\x12\x1b\n\x04type\x18\x03 \x01(\x0e\x32\r.auth.OTPType\"g\n\x11VerifyOTPResponse\x12\r\n\x05token\x18\x01 \x01(\t\x12!\n\tuser_info\x18\x02 \x01(\x0b\x32\x0e.auth.UserInfo\x12\x0f\n\x07success\x18\x03 \x01(\x08\x12\x0f\n\x07message\x18\x04 \x01(\t\"5\n\x15\x46orgotPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\r\n\x05phone\x18\x02 \x01(\t\"L\n\x16\x46orgotPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\x10\n\x08\x63hannels\x18\x03 \x03(\t\"g\n\x14ResetPasswordRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x10\n\x08otp_code\x18\x02 \x01(\t\x12\x14\n\x0cnew_password\x18\x03 \x01(\t\x12\x18\n\x10\x63onfirm_password\x18\x04 \x01(\t\"\\\n\x15ResetPasswordResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t\x12!\n\tuser_info\x18\x03 \x01(\x0b\x32\x0e.auth.UserInfo*:\n\x07OTPType\x12\x10\n\x0cVERIFICATION\x10\x00\x12\x12\n\x0ePASSWORD_RESET\x10\x01\x12\t\n\x05LOGIN\x10\x02\x32\xc4\x02\n\x0b\x41uthService\x12\x30\n\x05Login\x12\x12.auth.LoginRequest\x1a\x13.auth.LoginResponse\x12.\n\x07SendOTP\x12\x10.auth.OTPRequest\x1a\x11.auth.OTPResponse\x12<\n\tVerifyOTP\x12\x16.auth.VerifyOTPRequest\x1a\x17.auth.VerifyOTPResponse\x12K\n\x0e\x46orgotPassword\x12\x1b.auth.ForgotPasswordRequest\x1a\x1c.auth.ForgotPasswordResponse\x12H\n\rResetPassword\x12\x1a.auth.ResetPasswordRequest\x1a\x1b.auth.ResetPasswordResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'auth_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
+  _globals['_OTPTYPE']._serialized_start=1125
+  _globals['_OTPTYPE']._serialized_end=1183
   _globals['_LOGINREQUEST']._serialized_start=20
   _globals['_LOGINREQUEST']._serialized_end=67
   _globals['_LOGINRESPONSE']._serialized_start=69
-  _globals['_LOGINRESPONSE']._serialized_end=122
-  _globals['_OTPREQUEST']._serialized_start=124
-  _globals['_OTPREQUEST']._serialized_end=151
-  _globals['_OTPRESPONSE']._serialized_start=153
-  _globals['_OTPRESPONSE']._serialized_end=183
-  _globals['_VERIFYOTPREQUEST']._serialized_start=185
-  _globals['_VERIFYOTPREQUEST']._serialized_end=236
-  _globals['_VERIFYOTPRESPONSE']._serialized_start=238
-  _globals['_VERIFYOTPRESPONSE']._serialized_end=272
-  _globals['_FORGOTPASSWORDREQUEST']._serialized_start=274
-  _globals['_FORGOTPASSWORDREQUEST']._serialized_end=312
-  _globals['_FORGOTPASSWORDRESPONSE']._serialized_start=314
-  _globals['_FORGOTPASSWORDRESPONSE']._serialized_end=355
-  _globals['_RESETPASSWORDREQUEST']._serialized_start=357
-  _globals['_RESETPASSWORDREQUEST']._serialized_end=434
-  _globals['_RESETPASSWORDRESPONSE']._serialized_start=436
-  _globals['_RESETPASSWORDRESPONSE']._serialized_end=476
-  _globals['_AUTHSERVICE']._serialized_start=479
-  _globals['_AUTHSERVICE']._serialized_end=803
+  _globals['_LOGINRESPONSE']._serialized_end=157
+  _globals['_USERINFO']._serialized_start=160
+  _globals['_USERINFO']._serialized_end=464
+  _globals['_OTPREQUEST']._serialized_start=466
+  _globals['_OTPREQUEST']._serialized_end=537
+  _globals['_OTPRESPONSE']._serialized_start=539
+  _globals['_OTPRESPONSE']._serialized_end=604
+  _globals['_VERIFYOTPREQUEST']._serialized_start=606
+  _globals['_VERIFYOTPREQUEST']._serialized_end=686
+  _globals['_VERIFYOTPRESPONSE']._serialized_start=688
+  _globals['_VERIFYOTPRESPONSE']._serialized_end=791
+  _globals['_FORGOTPASSWORDREQUEST']._serialized_start=793
+  _globals['_FORGOTPASSWORDREQUEST']._serialized_end=846
+  _globals['_FORGOTPASSWORDRESPONSE']._serialized_start=848
+  _globals['_FORGOTPASSWORDRESPONSE']._serialized_end=924
+  _globals['_RESETPASSWORDREQUEST']._serialized_start=926
+  _globals['_RESETPASSWORDREQUEST']._serialized_end=1029
+  _globals['_RESETPASSWORDRESPONSE']._serialized_start=1031
+  _globals['_RESETPASSWORDRESPONSE']._serialized_end=1123
+  _globals['_AUTHSERVICE']._serialized_start=1186
+  _globals['_AUTHSERVICE']._serialized_end=1510
 # @@protoc_insertion_point(module_scope)

@@ -1,11 +1,13 @@
 import os
 import redis
+import time
 from dotenv import load_dotenv
 
 # Create a singleton instance of OTPStore at module level
 class OTPStore:
     _instance = None
-    _store = {}  # Move store to class variable
+    _store = {}  # {key: (value, expiry_time)}
+    _expiry_time = 300  # 5 minutes in seconds
     
     def __new__(cls):
         if cls._instance is None:
@@ -19,10 +21,11 @@ class OTPStore:
     def set(self, key, value):
         print(f"\n=== OTPStore.set ===")
         print(f"Storing OTP. Key: {key}, Value: {value}")
-        OTPStore._store[key] = value  # Use class variable
+        expiry = time.time() + self._expiry_time
+        OTPStore._store[key] = (value, expiry)
         print(f"Store contents after set: {OTPStore._store}")
         # Verify storage
-        stored_value = OTPStore._store.get(key)
+        stored_value = self.get(key)
         print(f"Verification - Retrieved value: {stored_value}")
         print(f"=== OTPStore.set END ===\n")
         return stored_value == value
@@ -30,11 +33,22 @@ class OTPStore:
     def get(self, key):
         print(f"\n=== OTPStore.get ===")
         print(f"Retrieving OTP for key: {key}")
-        value = OTPStore._store.get(key)
-        print(f"Retrieved value: {value}")
+        self._cleanup_expired()
+        value_and_expiry = OTPStore._store.get(key)
+        if value_and_expiry:
+            value, expiry = value_and_expiry
+            if time.time() < expiry:
+                print(f"Retrieved value: {value}")
+                print(f"Current store contents: {OTPStore._store}")
+                print(f"=== OTPStore.get END ===\n")
+                return value
+            else:
+                # OTP expired
+                del OTPStore._store[key]
+        print("OTP expired or not found")
         print(f"Current store contents: {OTPStore._store}")
         print(f"=== OTPStore.get END ===\n")
-        return value
+        return None
 
     def delete(self, key):
         print(f"\n=== OTPStore.delete ===")
@@ -47,6 +61,16 @@ class OTPStore:
             print(f"Key not found in store: {key}")
         print(f"Store contents after delete: {OTPStore._store}")
         print(f"=== OTPStore.delete END ===\n")
+
+    def _cleanup_expired(self):
+        current_time = time.time()
+        expired_keys = [
+            key for key, (_, expiry) in OTPStore._store.items()
+            if current_time >= expiry
+        ]
+        for key in expired_keys:
+            del OTPStore._store[key]
+            print(f"Cleaned up expired OTP for key: {key}")
 
 # Create the singleton instance
 otp_store = OTPStore()
