@@ -440,144 +440,428 @@ curl -X POST http://localhost:8000/api/v1/comments/graphql \
 }'
 ```
 
-## Posts Service Collection
+# Posts Service Collection
 
-### Create Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { createPost(userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\", title: \"My First Post\", content: \"This is the content\") { postId title content } }"
-}'
-```
+## Queries
 
-### Get Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "query { post(postId: \"1\") { postId title content } }"
-}'
+### Get Single Post
+```graphql
+query {
+  post(postId: 1) {
+    id
+    userId
+    title
+    content
+    visibility
+    propertyType
+    location
+    mapLocation
+    price
+    status
+    createdAt
+    media {
+      id
+      mediaType
+      mediaUrl
+      mediaOrder
+      caption
+    }
+    likeCount
+    commentCount
+  }
+}
 ```
 
 ### Get Posts by User
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "query { postsByUser(userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\") { postId title content createdAt updatedAt likeCount commentCount } }"
-}'
+```graphql
+query {
+  postsByUser(userId: 2, page: 1, limit: 10) {
+    id
+    title
+    content
+    visibility
+    propertyType
+    location
+    mapLocation
+    price
+    status
+    createdAt
+    media {
+      mediaUrl
+      caption
+    }
+    likeCount
+    commentCount
+  }
+}
+```
+
+### Search Posts
+```graphql
+query {
+  searchPosts(
+    propertyType: "house"
+    location: "New York"
+    minPrice: 100000
+    maxPrice: 500000
+    status: "active"
+    page: 1
+    limit: 10
+  ) {
+    id
+    title
+    propertyType
+    location
+    price
+    status
+    media {
+      mediaUrl
+    }
+  }
+}
+```
+
+### Get Post Comments
+```graphql
+query {
+  postComments(postId: 1, page: 1, limit: 10) {
+    id
+    postId
+    userId
+    comment
+    parentCommentId
+    status
+    addedAt
+    commentedAt
+    replies {
+      id
+      comment
+    }
+    likeCount
+  }
+}
+```
+
+## Mutations
+
+### Create Post
+```graphql
+mutation {
+  createPost(
+    userId: 2
+    title: "Beautiful House for Sale"
+    content: "3 bedroom house with garden"
+    visibility: "public"
+    propertyType: "house"
+    location: "New York"
+    mapLocation: "40.7128,-74.0060"
+    price: 500000.0
+    status: "active"
+    media: [
+      {
+        mediaType: "image"
+        mediaData: "base64_encoded_image_data"
+        mediaOrder: 1
+        caption: "Front view"
+      }
+    ]
+  ) {
+    success
+    message
+    post {
+      id
+      title
+      media {
+        id
+        mediaUrl
+        caption
+      }
+    }
+  }
+}
+```
+
+Response:
+```json
+{
+  "data": {
+    "createPost": {
+      "success": true,
+      "message": "Post created successfully",
+      "post": {
+        "id": 1,
+        "title": "Beautiful House for Sale",
+        "media": [
+          {
+            "id": 1,
+            "mediaUrl": "/media/1/1",
+            "caption": "Front view"
+          }
+        ]
+      }
+    }
+  }
+}
 ```
 
 ### Update Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { updatePost(postId: \"1\", title: \"Updated Title\", content: \"Updated content\") { postId title content updatedAt } }"
-}'
+```graphql
+mutation {
+  updatePost(
+    postId: 1
+    title: "Updated House Title"
+    price: 550000.0
+    status: "pending"
+  ) {
+    success
+    message
+    post {
+      id
+      title
+      price
+      status
+      createdAt
+    }
+  }
+}
 ```
 
 ### Delete Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { deletePost(postId: \"1\") }"
-}'
+```graphql
+mutation {
+  deletePost(postId: 1) {
+    success
+    message
+  }
+}
 ```
 
-### Like Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { likePost(postId: \"1\", userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\") { postId likeCount } }"
-}'
+### Add Media to Post
+```graphql
+mutation {
+  addPostMedia(
+    postId: 1
+    media: [
+      {
+        mediaType: "image"
+        mediaData: "base64_encoded_image_data"
+        mediaOrder: 2
+        caption: "Garden view"
+      }
+    ]
+  ) {
+    success
+    message
+    post {
+      id
+      media {
+        id
+        mediaUrl
+        caption
+      }
+    }
+  }
+}
 ```
 
-### Unlike Post
-```bash
-curl -X POST http://localhost:8000/api/v1/posts/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { unlikePost(postId: \"1\", userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\") { postId likeCount } }"
-}'
+### Delete Media
+```graphql
+mutation {
+  deletePostMedia(mediaId: 1) {
+    success
+    message
+  }
+}
+```
+
+### Like/Unlike Post
+```graphql
+mutation {
+  likePost(postId: 1, userId: 2) {
+    success
+    message
+    post {
+      id
+      likeCount
+    }
+  }
+}
+
+mutation {
+  unlikePost(postId: 1, userId: 2) {
+    success
+    message
+    post {
+      id
+      likeCount
+    }
+  }
+}
+```
+
+### Create Comment
+```graphql
+# Create top-level comment
+mutation {
+  createComment(
+    postId: 1
+    userId: 2
+    comment: "Great property!"
+  ) {
+    success
+    message
+    comment {
+      id
+      comment
+      addedAt
+      likeCount
+    }
+  }
+}
+
+# Create reply to a comment
+mutation {
+  createComment(
+    postId: 1
+    userId: 2
+    comment: "Thanks for your feedback!"
+    parentCommentId: 1
+  ) {
+    success
+    message
+    comment {
+      id
+      parentCommentId
+      comment
+      addedAt
+    }
+  }
+}
+```
+
+### Update Comment
+```graphql
+mutation {
+  updateComment(
+    commentId: 1
+    comment: "Updated comment text"
+  ) {
+    success
+    message
+    comment {
+      id
+      comment
+      commentedAt
+    }
+  }
+}
+```
+
+### Delete Comment
+```graphql
+mutation {
+  deleteComment(commentId: 1) {
+    success
+    message
+  }
+}
+```
+
+### Like/Unlike Comment
+```graphql
+mutation {
+  likeComment(commentId: 1, userId: 2) {
+    success
+    message
+    comment {
+      id
+      likeCount
+    }
+  }
+}
+
+mutation {
+  unlikeComment(commentId: 1, userId: 2) {
+    success
+    message
+    comment {
+      id
+      likeCount
+    }
+  }
+}
+```
+
+## Error Responses
+
+Posts service can return the following error types:
+
+1. Not Found (404):
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Post not found",
+      "path": ["post"]
+    }
+  ]
+}
+```
+
+2. Validation Error (400):
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Invalid input: price must be greater than 0",
+      "path": ["createPost"]
+    }
+  ]
+}
+```
+
+3. Authorization Error (401/403):
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "User not authorized to perform this action",
+      "path": ["updatePost"]
+    }
+  ]
+}
+```
+
+4. Media Error:
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Invalid media data format",
+      "path": ["createPost"]
+    }
+  ]
+}
+```
+
+5. Comment Error:
+```json
+{
+  "data": null,
+  "errors": [
+    {
+      "message": "Parent comment not found",
+      "path": ["createComment"]
+    }
+  ]
+}
 ```
 
 ## Property Service Collection
 
 ### Create Property
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { createProperty(userId: \"5807b553-ff97-48ba-88a9-6f3f69395667\", title: \"Modern Villa with Pool\", description: \"Beautiful modern villa with swimming pool\", price: 750000.0, location: \"Miami Beach\", propertyType: VILLA, status: ACTIVE, bedrooms: 4, bathrooms: 3, area: 3000.0, yearBuilt: 2022, images: [\"image1.jpg\", \"image2.jpg\"], amenities: [\"Pool\", \"Garden\", \"Garage\"], latitude: 25.7617, longitude: -80.1918, address: \"123 Palm Avenue\", city: \"Miami\", state: \"Florida\", country: \"USA\", zipCode: \"33139\") { propertyId title price location propertyType status bedrooms bathrooms area } }"
-}'
 ```
-
-### Get Property
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "query { property(propertyId: \"123e4567-e89b-12d3-a456-426614174000\") { propertyId userId title description price location propertyType status bedrooms bathrooms area yearBuilt images amenities createdAt updatedAt viewCount latitude longitude address city state country zipCode } }"
-}'
-```
-
-### Search Properties
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "query { searchProperties(query: \"beach view\", propertyType: VILLA, minPrice: 500000, maxPrice: 1000000, location: \"Miami\", minBedrooms: 3, minBathrooms: 2, minArea: 2000, maxArea: 5000) { propertyId title price location propertyType bedrooms bathrooms area } }"
-}'
-```
-
-### Update Property
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { updateProperty(propertyId: \"123e4567-e89b-12d3-a456-426614174000\", title: \"Updated Villa Title\", description: \"Updated description\", price: 800000.0, status: ACTIVE) { propertyId title description price status updatedAt } }"
-}'
-```
-
-### Delete Property
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { deleteProperty(propertyId: \"123e4567-e89b-12d3-a456-426614174000\") }"
-}'
-```
-
-### Increment View Count
-```bash
-curl -X POST http://localhost:8000/api/v1/properties/graphql \
--H "Content-Type: application/json" \
--d '{
-  "query": "mutation { incrementViewCount(propertyId: \"123e4567-e89b-12d3-a456-426614174000\") { propertyId viewCount } }"
-}'
-```
-
-## Importing to Postman
-
-1. Create a new collection for each service (Users, Comments, Posts, Properties)
-2. For each endpoint:
-   - Create a new request
-   - Set method to POST
-   - Set URL to the appropriate endpoint
-   - Add header: `Content-Type: application/json`
-   - In the Body tab, select "raw" and "JSON"
-   - Copy the query from the curl command's -d parameter
-   - Save the request
-
-## Environment Variables
-
-Consider setting up environment variables in Postman for:
-- `baseUrl`: http://localhost:8000
-- `userId`: Your test user ID
-- `postId`: Your test post ID
-- `commentId`: Your test comment ID
-- `propertyId`: Your test property ID 

@@ -2,285 +2,362 @@ import strawberry
 from typing import List, Optional
 from datetime import datetime
 from ..utils.grpc_client import PostsServiceClient
+import logging
+from dataclasses import dataclass
 
-@strawberry.type
-class PostMedia:
-    id: int
-    post_id: int
-    media_type: str
-    media_url: str
-    media_order: int
-    media_size: int
-    caption: Optional[str]
-    uploaded_at: datetime
+logger = logging.getLogger(__name__)
 
 @strawberry.type
 class Comment:
     id: int
-    post_id: int
-    parent_comment_id: Optional[int]
+    postId: int
+    userId: int
     comment: str
-    user_id: int
+    parentCommentId: Optional[int]
     status: str
-    added_at: datetime
-    commented_at: datetime
+    addedAt: datetime
+    commentedAt: datetime
     replies: List['Comment']
-    like_count: int
+    likeCount: int
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        if not data:
+            return None
+        return cls(
+            id=data['id'],
+            postId=data['postId'],
+            userId=data['userId'],
+            comment=data['comment'],
+            parentCommentId=data.get('parentCommentId'),
+            status=data['status'],
+            addedAt=data['addedAt'],
+            commentedAt=data['commentedAt'],
+            replies=[cls.from_dict(reply) for reply in data.get('replies', [])],
+            likeCount=data['likeCount']
+        )
+
+@strawberry.type
+class CommentResponse:
+    success: bool
+    message: str
+    comment: Optional[Comment] = None
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message'],
+            comment=Comment.from_dict(data.get('comment'))
+        )
+
+@strawberry.type
+class PostMedia:
+    id: int
+    mediaType: str
+    mediaUrl: str
+    mediaOrder: int
+    mediaSize: Optional[int]
+    caption: Optional[str]
+    uploadedAt: datetime
+
+@strawberry.input
+class PostMediaInput:
+    mediaType: str
+    mediaData: str
+    mediaOrder: int
+    caption: Optional[str] = None
 
 @strawberry.type
 class Post:
     id: int
-    user_id: int
+    userId: int
     title: str
     content: str
-    visibility: Optional[str]
-    property_type: Optional[str]
-    location: Optional[str]
-    map_location: Optional[str]
-    price: Optional[float]
-    status: Optional[str]
-    created_at: datetime
+    visibility: str
+    propertyType: str
+    location: str
+    mapLocation: str
+    price: float
+    status: str
+    createdAt: datetime
     media: List[PostMedia]
-    comments: List[Comment]
-    like_count: int
-    comment_count: int
+    likeCount: int
+    commentCount: int
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        if not data:
+            return None
+        media_list = [
+            PostMedia(
+                id=m['id'],
+                mediaType=m['mediaType'],
+                mediaUrl=m['mediaUrl'],
+                mediaOrder=m['mediaOrder'],
+                mediaSize=m.get('mediaSize'),
+                caption=m.get('caption'),
+                uploadedAt=m['uploadedAt']
+            ) for m in data.get('media', [])
+        ]
+        return cls(
+            id=data['id'],
+            userId=data['userId'],
+            title=data['title'],
+            content=data['content'],
+            visibility=data['visibility'],
+            propertyType=data['propertyType'],
+            location=data['location'],
+            mapLocation=data['mapLocation'],
+            price=data['price'],
+            status=data['status'],
+            createdAt=data['createdAt'],
+            media=media_list,
+            likeCount=data['likeCount'],
+            commentCount=data['commentCount']
+        )
 
 @strawberry.type
 class PostResponse:
     success: bool
     message: str
-    post: Optional[Post]
+    post: Optional[Post] = None
 
-@strawberry.type
-class PostListResponse:
-    success: bool
-    message: str
-    posts: List[Post]
-    total_count: int
-    page: int
-    total_pages: int
-
-@strawberry.type
-class CommentListResponse:
-    success: bool
-    message: str
-    comments: List[Comment]
-    total_count: int
-    page: int
-    total_pages: int
-
-@strawberry.type
-class GenericResponse:
-    success: bool
-    message: str
-
-@strawberry.input
-class PostMediaInput:
-    media_type: str
-    media_data: str
-    media_order: int
-    caption: Optional[str]
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message'],
+            post=Post.from_dict(data.get('post'))
+        )
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def post(self, post_id: int) -> PostResponse:
+    def post(self, postId: int) -> Optional[Post]:
+        logger.debug(f"Query.post called with postId: {postId}")
         client = PostsServiceClient()
-        response = client.get_post(post_id)
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
-        )
+        result = client.get_post(post_id=postId)
+        return Post.from_dict(result.get('post')) if result else None
 
     @strawberry.field
-    def posts_by_user(self, user_id: int, page: int = 1, limit: int = 10) -> PostListResponse:
+    def postsByUser(self, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
+        logger.debug(f"Query.postsByUser called with userId: {userId}, page: {page}, limit: {limit}")
         client = PostsServiceClient()
-        response = client.get_posts_by_user(user_id, page, limit)
-        return PostListResponse(
-            success=response.success,
-            message=response.message,
-            posts=response.posts,
-            total_count=response.total_count,
-            page=response.page,
-            total_pages=response.total_pages
-        )
+        result = client.get_posts_by_user(user_id=userId, page=page, limit=limit)
+        return [Post.from_dict(post) for post in result] if result else []
 
     @strawberry.field
-    def search_posts(self, property_type: Optional[str] = None, location: Optional[str] = None,
-                    min_price: Optional[float] = None, max_price: Optional[float] = None,
-                    status: Optional[str] = None, page: int = 1, limit: int = 10) -> PostListResponse:
+    def searchPosts(
+        self,
+        propertyType: Optional[str] = None,
+        location: Optional[str] = None,
+        minPrice: Optional[float] = None,
+        maxPrice: Optional[float] = None,
+        status: Optional[str] = None,
+        page: int = 1,
+        limit: int = 10
+    ) -> List[Post]:
+        logger.debug(f"Query.searchPosts called with propertyType: {propertyType}, location: {location}")
         client = PostsServiceClient()
-        response = client.search_posts(
-            property_type=property_type,
+        result = client.search_posts(
+            property_type=propertyType,
             location=location,
-            min_price=min_price,
-            max_price=max_price,
+            min_price=minPrice,
+            max_price=maxPrice,
             status=status,
             page=page,
             limit=limit
         )
-        return PostListResponse(
-            success=response.success,
-            message=response.message,
-            posts=response.posts,
-            total_count=response.total_count,
-            page=response.page,
-            total_pages=response.total_pages
-        )
+        return [Post.from_dict(post) for post in result] if result else []
 
     @strawberry.field
-    def post_comments(self, post_id: int, page: int = 1, limit: int = 10) -> CommentListResponse:
+    def postComments(
+        self,
+        postId: int,
+        page: int = 1,
+        limit: int = 10
+    ) -> List[Comment]:
+        logger.debug(f"Query.postComments called with postId: {postId}")
         client = PostsServiceClient()
-        response = client.get_comments(post_id, page, limit)
-        return CommentListResponse(
-            success=response.success,
-            message=response.message,
-            comments=response.comments,
-            total_count=response.total_count,
-            page=response.page,
-            total_pages=response.total_pages
-        )
+        result = client.get_comments(post_id=postId, page=page, limit=limit)
+        return [Comment.from_dict(comment) for comment in result] if result else []
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    def create_post(self, user_id: int, title: str, content: str,
-                   visibility: Optional[str] = None, property_type: Optional[str] = None,
-                   location: Optional[str] = None, map_location: Optional[str] = None,
-                   price: Optional[float] = None, status: Optional[str] = None,
-                   media: Optional[List[PostMediaInput]] = None) -> PostResponse:
+    def createPost(
+        self,
+        userId: int,
+        title: str,
+        content: str,
+        visibility: str,
+        propertyType: str,
+        location: str,
+        mapLocation: str,
+        price: float,
+        status: str,
+        media: List[PostMediaInput]
+    ) -> PostResponse:
+        logger.debug(f"Mutation.createPost called with userId: {userId}, title: {title}")
         client = PostsServiceClient()
-        response = client.create_post(
-            user_id=user_id,
+        result = client.create_post(
+            user_id=userId,
             title=title,
             content=content,
             visibility=visibility,
-            property_type=property_type,
+            property_type=propertyType,
             location=location,
-            map_location=map_location,
+            map_location=mapLocation,
             price=price,
             status=status,
-            media=[{
-                'media_type': m.media_type,
-                'media_data': m.media_data,
-                'media_order': m.media_order,
-                'caption': m.caption
-            } for m in (media or [])]
+            media=media
         )
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
-        )
+        logger.debug(f"CreatePost result: {result}")
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    def update_post(self, post_id: int, title: Optional[str] = None,
-                   content: Optional[str] = None, visibility: Optional[str] = None,
-                   property_type: Optional[str] = None, location: Optional[str] = None,
-                   map_location: Optional[str] = None, price: Optional[float] = None,
-                   status: Optional[str] = None) -> PostResponse:
+    def updatePost(
+        self,
+        postId: int,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        visibility: Optional[str] = None,
+        propertyType: Optional[str] = None,
+        location: Optional[str] = None,
+        mapLocation: Optional[str] = None,
+        price: Optional[float] = None,
+        status: Optional[str] = None
+    ) -> PostResponse:
+        logger.debug(f"Mutation.updatePost called with postId: {postId}")
         client = PostsServiceClient()
-        response = client.update_post(
-            post_id=post_id,
+        result = client.update_post(
+            post_id=postId,
             title=title,
             content=content,
             visibility=visibility,
-            property_type=property_type,
+            property_type=propertyType,
             location=location,
-            map_location=map_location,
+            map_location=mapLocation,
             price=price,
             status=status
         )
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def deletePost(self, postId: int) -> PostResponse:
+        logger.debug(f"Mutation.deletePost called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.delete_post(post_id=postId)
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def likePost(self, postId: int, userId: int) -> PostResponse:
+        logger.debug(f"Mutation.likePost called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.like_post(post_id=postId, user_id=userId)
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def unlikePost(self, postId: int, userId: int) -> PostResponse:
+        logger.debug(f"Mutation.unlikePost called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.unlike_post(post_id=postId, user_id=userId)
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def createComment(
+        self,
+        postId: int,
+        userId: int,
+        comment: str,
+        parentCommentId: Optional[int] = None
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.createComment called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.create_comment(
+            post_id=postId,
+            user_id=userId,
+            comment=comment,
+            parent_comment_id=parentCommentId
         )
+        logger.debug(f"CreateComment result: {result}")
+        return CommentResponse.from_dict(result)
 
     @strawberry.mutation
-    def delete_post(self, post_id: int) -> GenericResponse:
+    def updateComment(
+        self,
+        commentId: int,
+        comment: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.updateComment called with commentId: {commentId}")
         client = PostsServiceClient()
-        response = client.delete_post(post_id)
-        return GenericResponse(
-            success=response.success,
-            message=response.message
+        result = client.update_comment(
+            comment_id=commentId,
+            comment=comment,
+            status=status
         )
+        return CommentResponse.from_dict(result)
 
     @strawberry.mutation
-    def add_post_media(self, post_id: int, media: List[PostMediaInput]) -> PostResponse:
+    def deleteComment(
+        self,
+        commentId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.deleteComment called with commentId: {commentId}")
         client = PostsServiceClient()
-        response = client.add_post_media(
-            post_id=post_id,
-            media=[{
-                'media_type': m.media_type,
-                'media_data': m.media_data,
-                'media_order': m.media_order,
-                'caption': m.caption
-            } for m in media]
+        result = client.delete_comment(comment_id=commentId)
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def likeComment(
+        self,
+        commentId: int,
+        userId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.likeComment called with commentId: {commentId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.like_comment(
+            comment_id=commentId,
+            user_id=userId
         )
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def unlikeComment(
+        self,
+        commentId: int,
+        userId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.unlikeComment called with commentId: {commentId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.unlike_comment(
+            comment_id=commentId,
+            user_id=userId
         )
+        return CommentResponse.from_dict(result)
 
     @strawberry.mutation
-    def delete_post_media(self, media_id: int) -> GenericResponse:
+    def addPostMedia(
+        self,
+        postId: int,
+        media: List[PostMediaInput]
+    ) -> PostResponse:
+        logger.debug(f"Mutation.addPostMedia called with postId: {postId}")
         client = PostsServiceClient()
-        response = client.delete_post_media(media_id)
-        return GenericResponse(
-            success=response.success,
-            message=response.message
+        result = client.add_post_media(
+            post_id=postId,
+            media=media
         )
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    def like_post(self, post_id: int, user_id: int, reaction_type: str = 'like') -> PostResponse:
+    def deletePostMedia(
+        self,
+        mediaId: int
+    ) -> PostResponse:
+        logger.debug(f"Mutation.deletePostMedia called with mediaId: {mediaId}")
         client = PostsServiceClient()
-        response = client.like_post(post_id, user_id, reaction_type)
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
-        )
-
-    @strawberry.mutation
-    def unlike_post(self, post_id: int, user_id: int) -> PostResponse:
-        client = PostsServiceClient()
-        response = client.unlike_post(post_id, user_id)
-        return PostResponse(
-            success=response.success,
-            message=response.message,
-            post=response.post if response.success else None
-        )
-
-    @strawberry.mutation
-    def create_comment(self, post_id: int, user_id: int, comment: str,
-                      parent_comment_id: Optional[int] = None) -> Comment:
-        client = PostsServiceClient()
-        return client.create_comment(post_id, user_id, comment, parent_comment_id)
-
-    @strawberry.mutation
-    def update_comment(self, comment_id: int, comment: Optional[str] = None,
-                      status: Optional[str] = None) -> Comment:
-        client = PostsServiceClient()
-        return client.update_comment(comment_id, comment, status)
-
-    @strawberry.mutation
-    def delete_comment(self, comment_id: int) -> GenericResponse:
-        client = PostsServiceClient()
-        response = client.delete_comment(comment_id)
-        return GenericResponse(
-            success=response.success,
-            message=response.message
-        )
-
-    @strawberry.mutation
-    def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like') -> Comment:
-        client = PostsServiceClient()
-        return client.like_comment(comment_id, user_id, reaction_type)
-
-    @strawberry.mutation
-    def unlike_comment(self, comment_id: int, user_id: int) -> Comment:
-        client = PostsServiceClient()
-        return client.unlike_comment(comment_id, user_id) 
+        result = client.delete_post_media(media_id=mediaId)
+        return PostResponse.from_dict(result) 

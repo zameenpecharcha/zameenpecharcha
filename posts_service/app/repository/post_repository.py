@@ -2,6 +2,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
 from ..entity.post_entity import Post, PostMedia, PostLike, CommentLike
 from ..models.comment import CommentReference
 from ..models.user import UserReference
@@ -14,101 +15,126 @@ class PostRepository:
     def create_post(self, user_id: int, title: str, content: str, visibility: str = None,
                    property_type: str = None, location: str = None, map_location: str = None,
                    price: float = None, status: str = 'active') -> Post:
-        post = Post(
-            user_id=user_id,
-            title=title,
-            content=content,
-            visibility=visibility,
-            property_type=property_type,
-            location=location,
-            map_location=map_location,
-            price=price,
-            status=status,
-            created_at=datetime.utcnow()
-        )
-        self.db.add(post)
-        self.db.commit()
-        self.db.refresh(post)
-        return post
+        try:
+            post = Post(
+                user_id=user_id,
+                title=title,
+                content=content,
+                visibility=visibility,
+                property_type=property_type,
+                location=location,
+                map_location=map_location,
+                price=price,
+                status=status,
+                created_at=datetime.utcnow()
+            )
+            self.db.add(post)
+            self.db.commit()
+            self.db.refresh(post)
+            return post
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise Exception(f"Database error while creating post: {str(e)}")
 
     def get_post(self, post_id: int) -> Optional[Post]:
-        return self.db.query(Post).filter(Post.id == post_id).first()
+        try:
+            return self.db.query(Post).filter(Post.id == post_id).first()
+        except SQLAlchemyError as e:
+            raise Exception(f"Database error while fetching post: {str(e)}")
 
     def update_post(self, post_id: int, title: str = None, content: str = None,
                    visibility: str = None, property_type: str = None,
                    location: str = None, map_location: str = None,
                    price: float = None, status: str = None) -> Optional[Post]:
-        post = self.get_post(post_id)
-        if post:
-            if title is not None:
-                post.title = title
-            if content is not None:
-                post.content = content
-            if visibility is not None:
-                post.visibility = visibility
-            if property_type is not None:
-                post.property_type = property_type
-            if location is not None:
-                post.location = location
-            if map_location is not None:
-                post.map_location = map_location
-            if price is not None:
-                post.price = price
-            if status is not None:
-                post.status = status
-            self.db.commit()
-            self.db.refresh(post)
-        return post
+        try:
+            post = self.get_post(post_id)
+            if post:
+                if title is not None:
+                    post.title = title
+                if content is not None:
+                    post.content = content
+                if visibility is not None:
+                    post.visibility = visibility
+                if property_type is not None:
+                    post.property_type = property_type
+                if location is not None:
+                    post.location = location
+                if map_location is not None:
+                    post.map_location = map_location
+                if price is not None:
+                    post.price = price
+                if status is not None:
+                    post.status = status
+                self.db.commit()
+                self.db.refresh(post)
+            return post
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise Exception(f"Database error while updating post: {str(e)}")
 
     def delete_post(self, post_id: int) -> bool:
-        post = self.get_post(post_id)
-        if post:
-            self.db.delete(post)
-            self.db.commit()
-            return True
-        return False
+        try:
+            post = self.get_post(post_id)
+            if post:
+                self.db.delete(post)
+                self.db.commit()
+                return True
+            return False
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise Exception(f"Database error while deleting post: {str(e)}")
 
     def get_posts_by_user(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
-        query = self.db.query(Post).filter(Post.user_id == user_id)
-        total = query.count()
-        posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
-        return posts, total
+        try:
+            query = self.db.query(Post).filter(Post.user_id == user_id)
+            total = query.count()
+            posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
+            return posts, total
+        except SQLAlchemyError as e:
+            raise Exception(f"Database error while fetching user posts: {str(e)}")
 
     def search_posts(self, property_type: str = None, location: str = None,
                     min_price: float = None, max_price: float = None,
                     status: str = None, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
-        query = self.db.query(Post)
-        if property_type:
-            query = query.filter(Post.property_type == property_type)
-        if location:
-            query = query.filter(Post.location.ilike(f"%{location}%"))
-        if min_price is not None:
-            query = query.filter(Post.price >= min_price)
-        if max_price is not None:
-            query = query.filter(Post.price <= max_price)
-        if status:
-            query = query.filter(Post.status == status)
-        
-        total = query.count()
-        posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
-        return posts, total
+        try:
+            query = self.db.query(Post)
+            if property_type:
+                query = query.filter(Post.property_type == property_type)
+            if location:
+                query = query.filter(Post.location.ilike(f"%{location}%"))
+            if min_price is not None:
+                query = query.filter(Post.price >= min_price)
+            if max_price is not None:
+                query = query.filter(Post.price <= max_price)
+            if status:
+                query = query.filter(Post.status == status)
+            
+            total = query.count()
+            posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
+            return posts, total
+        except SQLAlchemyError as e:
+            raise Exception(f"Database error while searching posts: {str(e)}")
 
     # Media Operations
     def add_post_media(self, post_id: int, media_type: str, media_url: str,
-                      media_order: int, media_size: int, caption: str = None) -> PostMedia:
-        media = PostMedia(
-            post_id=post_id,
-            media_type=media_type,
-            media_url=media_url,
-            media_order=media_order,
-            media_size=media_size,
-            caption=caption,
-            uploaded_at=datetime.utcnow()
-        )
-        self.db.add(media)
-        self.db.commit()
-        self.db.refresh(media)
-        return media
+                      media_order: int, media_size: int = 0, caption: str = None) -> PostMedia:
+        try:
+            media = PostMedia(
+                post_id=post_id,
+                media_type=media_type,
+                media_url=media_url,
+                media_order=media_order,
+                media_size=media_size,
+                caption=caption,
+                uploaded_at=datetime.utcnow()
+            )
+            self.db.add(media)
+            self.db.commit()
+            self.db.refresh(media)
+            return media
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise Exception(f"Database error while adding media: {str(e)}")
 
     def delete_post_media(self, media_id: int) -> bool:
         media = self.db.query(PostMedia).filter(PostMedia.id == media_id).first()
