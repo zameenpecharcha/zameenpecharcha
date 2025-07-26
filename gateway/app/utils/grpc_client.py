@@ -2,6 +2,7 @@ import grpc
 import sys
 import os
 from pathlib import Path
+from app.utils.log_utils import log_msg
 
 # Add the project root to Python path
 project_root = str(Path(__file__).parent.parent.parent)
@@ -17,71 +18,161 @@ from app.proto_files.property import property_pb2, property_pb2_grpc
 from app.proto_files.auth import auth_pb2, auth_pb2_grpc
 
 class AuthServiceClient:
-    def __init__(self, host='localhost', port=50052):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
+    def __init__(self):
+        self.channel = grpc.insecure_channel('localhost:50052')
         self.stub = auth_pb2_grpc.AuthServiceStub(self.channel)
 
     def login(self, email: str, password: str):
-        request = auth_pb2.LoginRequest(
-            email=email,
-            password=password
-        )
-        return self.stub.Login(request)
-
-    def send_otp(self, email: str):
-        request = auth_pb2.OTPRequest(
-            email=email
-        )
-        return self.stub.SendOTP(request)
-
-    def verify_otp(self, email: str, otp_code: str):
-        request = auth_pb2.VerifyOTPRequest(
-            email=email,
-            otp_code=otp_code
-        )
-        return self.stub.VerifyOTP(request)
-
-    def forgot_password(self, email: str):
         try:
-            response = self.stub.ForgotPassword(auth_pb2.ForgotPasswordRequest(
-                email=email
-            ))
-            return response
-        except Exception as e:
-            print(f"Error in forgot_password: {str(e)}")
-            raise
+            request = auth_pb2.LoginRequest(
+                email=email,
+                password=password
+            )
+            return self.stub.Login(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in login: {str(e)}")
+            raise e
 
-    def reset_password(self, email: str, otp_code: str, new_password: str):
+    def send_otp(self, email: str, phone: str = None, otp_type: int = 0):
         try:
-            response = self.stub.ResetPassword(auth_pb2.ResetPasswordRequest(
+            request = auth_pb2.OTPRequest(
+                email=email,
+                phone=phone,
+                type=otp_type.value if hasattr(otp_type, 'value') else otp_type
+            )
+            return self.stub.SendOTP(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in send_otp: {str(e)}")
+            raise e
+
+    def verify_otp(self, email: str, otp_code: str, otp_type: int = 0):
+        try:
+            request = auth_pb2.VerifyOTPRequest(
                 email=email,
                 otp_code=otp_code,
-                new_password=new_password
-            ))
-            return response
-        except Exception as e:
-            print(f"Error in reset_password: {str(e)}")
-            raise
+                type=otp_type.value if hasattr(otp_type, 'value') else otp_type
+            )
+            return self.stub.VerifyOTP(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in verify_otp: {str(e)}")
+            raise e
+
+    def forgot_password(self, email: str, phone: str = None):
+        try:
+            request = auth_pb2.ForgotPasswordRequest(
+                email=email,
+                phone=phone
+            )
+            return self.stub.ForgotPassword(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in forgot_password: {str(e)}")
+            raise e
+
+    def reset_password(self, email: str, otp_code: str, new_password: str, confirm_password: str):
+        try:
+            request = auth_pb2.ResetPasswordRequest(
+                email=email,
+                otp_code=otp_code,
+                new_password=new_password,
+                confirm_password=confirm_password
+            )
+            return self.stub.ResetPassword(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in reset_password: {str(e)}")
+            raise e
 
 class UserServiceClient:
-    def __init__(self, host='localhost', port=50051):
-        self.channel = grpc.insecure_channel(f'{host}:{port}')
+    def __init__(self):
+        self.channel = grpc.insecure_channel('localhost:50051')
         self.stub = user_pb2_grpc.UserServiceStub(self.channel)
 
-    def get_user(self, user_id):
-        request = user_pb2.UserRequest(id=user_id)
-        return self.stub.GetUser(request)
+    def get_user(self, id):
+        try:
+            request = user_pb2.UserRequest(id=id)
+            return self.stub.GetUser(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in get_user: {str(e)}")
+            raise e
 
-    def create_user(self, name, email, phone, password, role, location):
-        request = user_pb2.CreateUserRequest(
-            name=name,
-            email=email,
-            phone=phone,
-            password=password,
-            role=role,
-            location=location
-        )
-        return self.stub.CreateUser(request)
+    def create_user(self, first_name, last_name, email, phone, password, role=None, 
+                   address=None, latitude=None, longitude=None, bio=None):
+        try:
+            request = user_pb2.CreateUserRequest(
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                phone=phone,
+                password=password,
+                role=role,
+                address=address,
+                latitude=latitude,
+                longitude=longitude,
+                bio=bio
+            )
+            return self.stub.CreateUser(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in create_user: {str(e)}")
+            raise e
+
+    def create_user_rating(self, rated_user_id, rated_by_user_id, rating_value, review=None, rating_type=None):
+        try:
+            request = user_pb2.CreateUserRatingRequest(
+                rated_user_id=rated_user_id,
+                rated_by_user_id=rated_by_user_id,
+                rating_value=rating_value,
+                review=review,
+                rating_type=rating_type
+            )
+            return self.stub.CreateUserRating(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in create_user_rating: {str(e)}")
+            raise e
+
+    def get_user_ratings(self, user_id):
+        try:
+            request = user_pb2.UserRequest(id=user_id)
+            return self.stub.GetUserRatings(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in get_user_ratings: {str(e)}")
+            raise e
+
+    def follow_user(self, user_id, following_id):
+        try:
+            request = user_pb2.FollowUserRequest(
+                user_id=user_id,
+                following_id=following_id
+            )
+            return self.stub.FollowUser(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in follow_user: {str(e)}")
+            raise e
+
+    def get_user_followers(self, user_id):
+        try:
+            request = user_pb2.UserRequest(id=user_id)
+            return self.stub.GetUserFollowers(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in get_user_followers: {str(e)}")
+            raise e
+
+    def get_user_following(self, user_id):
+        try:
+            request = user_pb2.UserRequest(id=user_id)
+            return self.stub.GetUserFollowing(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in get_user_following: {str(e)}")
+            raise e
+
+    def check_following_status(self, user_id, following_id):
+        try:
+            request = user_pb2.CheckFollowingRequest(
+                user_id=user_id,
+                following_id=following_id
+            )
+            return self.stub.CheckFollowingStatus(request)
+        except grpc.RpcError as e:
+            log_msg("error", f"gRPC error in check_following_status: {str(e)}")
+            raise e
 
 class CommentsServiceClient:
     def __init__(self, host='localhost', port=50053):

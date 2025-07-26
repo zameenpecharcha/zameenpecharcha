@@ -236,22 +236,51 @@ Example error response:
 Use this mutation to create a new user:
 
 ```graphql
-mutation {
+mutation CreateUser {
   createUser(
-    name: "Hello221111",
-    email: "Hello2211111",
-    phone: 10,
-    password: "Hello111",
-    role: "Hello",
-    location: "12333,34454"
+    firstName: "John"
+    lastName: "Doe"
+    email: "john@example.com"
+    phone: "+1234567890"
+    password: "securepassword123"
+    role: "user"
+    address: "123 Main St"
+    latitude: 12.345678
+    longitude: 45.678901
+    bio: "Software Developer"
   ) {
-    userId
-    name
+    id
+    firstName
+    lastName
     email
     phone
+    profilePhoto
     role
-    location
+    address
+    latitude
+    longitude
+    bio
+    isactive
+    emailVerified
+    phoneVerified
+    createdAt
   }
+}
+```
+
+Variables:
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "password": "securepassword123",
+  "role": "user",
+  "address": "123 Main St",
+  "latitude": 12.345678,
+  "longitude": 45.678901,
+  "bio": "Software Developer"
 }
 ```
 
@@ -260,12 +289,21 @@ Expected Response:
 {
   "data": {
     "createUser": {
-      "userId": 12,
-      "name": "Hello221111",
-      "email": "Hello2211111",
-      "phone": 10,
-      "role": "Hello",
-      "location": "12333,34454"
+      "id": "1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "profilePhoto": null,
+      "role": "user",
+      "address": "123 Main St",
+      "latitude": 12.345678,
+      "longitude": 45.678901,
+      "bio": "Software Developer",
+      "isactive": true,
+      "emailVerified": false,
+      "phoneVerified": false,
+      "createdAt": "2024-02-26T12:00:00Z"
     }
   }
 }
@@ -276,14 +314,35 @@ Expected Response:
 Use this query to get user details:
 
 ```graphql
-query {
-  user(id: 12) {
-    userId
-    name
+query GetUser {
+  user(id: 1) {
+    id
+    firstName
+    lastName
     email
     phone
+    profilePhoto
     role
-    location
+    address
+    latitude
+    longitude
+    bio
+    isactive
+    emailVerified
+    phoneVerified
+    createdAt
+    ratings {
+      id
+      ratedUserId
+      ratedByUserId
+      ratingValue
+      review
+      ratingType
+      createdAt
+      updatedAt
+    }
+    followersCount
+    followingCount
   }
 }
 ```
@@ -293,13 +352,187 @@ Expected Response:
 {
   "data": {
     "user": {
-      "userId": 12,
-      "name": "Hello221111",
-      "email": "Hello2211111",
-      "phone": 10,
-      "role": "Hello",
-      "location": "12333,34454"
+      "id": "1",
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "profilePhoto": null,
+      "role": "user",
+      "address": "123 Main St",
+      "latitude": 12.345678,
+      "longitude": 45.678901,
+      "bio": "Software Developer",
+      "isactive": true,
+      "emailVerified": false,
+      "phoneVerified": false,
+      "createdAt": "2024-02-26T12:00:00Z",
+      "ratings": [],
+      "followersCount": 0,
+      "followingCount": 0
     }
+  }
+}
+```
+
+### Get User Ratings
+
+```graphql
+query GetUserRatings {
+  userRatings(userId: 1) {
+    id
+    ratedUserId
+    ratedByUserId
+    ratingValue
+    review
+    ratingType
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Create User Rating
+
+```graphql
+mutation CreateUserRating {
+  createUserRating(
+    ratedUserId: 2
+    ratedByUserId: 1
+    ratingValue: 5
+    review: "Excellent service!"
+    ratingType: "PROFESSIONAL"
+  ) {
+    id
+    ratedUserId
+    ratedByUserId
+    ratingValue
+    review
+    ratingType
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Get User Followers
+
+```graphql
+query GetUserFollowers {
+  userFollowers(userId: 1) {
+    id
+    userId
+    followingId
+    status
+    followedAt
+  }
+}
+```
+
+### Get User Following
+
+```graphql
+query GetUserFollowing {
+  userFollowing(userId: 1) {
+    id
+    userId
+    followingId
+    status
+    followedAt
+  }
+}
+```
+
+### Follow User
+
+```graphql
+mutation FollowUser {
+  followUser(
+    userId: 1
+    followingId: 2
+  ) {
+    id
+    userId
+    followingId
+    status
+    followedAt
+  }
+}
+```
+
+### Check Following Status
+
+```graphql
+query CheckFollowingStatus {
+  checkFollowingStatus(userId: 1, followingId: 2) {
+    id
+    userId
+    followingId
+    status
+    followedAt
+  }
+}
+```
+
+### User Service Error Types
+
+Common error responses:
+- `USER_NOT_FOUND`: The requested user doesn't exist
+- `USER_CREATION_FAILED`: Failed to create the user
+- `INVALID_INPUT`: Invalid input data provided
+- `RATING_CREATION_FAILED`: Failed to create rating
+- `FOLLOW_FAILED`: Failed to follow user
+- `INVALID_RATING_VALUE`: Rating value must be between 1 and 5
+
+Example error response:
+```json
+{
+  "errors": [
+    {
+      "message": "USER_CREATION_FAILED: Failed to create user",
+      "locations": [{"line": 2, "column": 3}],
+      "path": ["createUser"]
+    }
+  ],
+  "data": null
+}
+```
+
+### Testing Methods
+
+1. **Using GraphQL Playground**:
+   - Visit: http://localhost:8000/api/v1/users/graphql
+   - Paste the query/mutation
+   - Add variables in the Variables section
+   - Click the "Play" button
+
+2. **Using cURL**:
+```bash
+# Create User
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation CreateUser { createUser(firstName: \"John\", lastName: \"Doe\", email: \"john@example.com\", phone: \"+1234567890\", password: \"securepassword123\", role: \"user\", address: \"123 Main St\", latitude: 12.345678, longitude: 45.678901, bio: \"Software Developer\") { id firstName lastName email phone role } }"
+}'
+
+# Get User
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "query GetUser { user(id: 1) { id firstName lastName email phone role } }"
+}'
+```
+
+3. **Using Postman or any API client**:
+- URL: `http://localhost:8000/api/v1/users/graphql`
+- Method: POST
+- Headers: `Content-Type: application/json`
+- Body (raw JSON):
+```json
+{
+  "query": "your_query_or_mutation_here",
+  "variables": {
+    "your_variables_here"
   }
 }
 ```
