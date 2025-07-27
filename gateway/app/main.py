@@ -45,10 +45,12 @@ async def log_requests(request: Request, call_next):
 # Add GraphQL routes
 graphql_app = GraphQLRouter(
     schema,
-    path="/api/v1/graphql",
-    graphiql=True  # Enable GraphiQL interface
+    graphiql=True,  # Enable GraphiQL interface for browser access
+    path="/graphql"  # Base path for GraphQL
 )
-app.include_router(graphql_app)
+
+# Mount the GraphQL app at the API path
+app.include_router(graphql_app, prefix="/api/v1")
 
 # Health check endpoint
 @app.get("/health")

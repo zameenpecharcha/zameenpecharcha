@@ -4,6 +4,7 @@ from datetime import datetime
 from ..utils.grpc_client import PostsServiceClient
 import logging
 from dataclasses import dataclass
+import typing
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +185,18 @@ class Query:
         return [Comment.from_dict(comment) for comment in result] if result else []
 
 @strawberry.type
+class MediaResponse:
+    success: bool
+    message: str
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message']
+        )
+
+@strawberry.type
 class Mutation:
     @strawberry.mutation
     def createPost(
@@ -197,7 +210,7 @@ class Mutation:
         mapLocation: str,
         price: float,
         status: str,
-        media: List[PostMediaInput]
+        media: typing.Optional[typing.List[PostMediaInput]] = None
     ) -> PostResponse:
         logger.debug(f"Mutation.createPost called with userId: {userId}, title: {title}")
         client = PostsServiceClient()
@@ -211,7 +224,7 @@ class Mutation:
             map_location=mapLocation,
             price=price,
             status=status,
-            media=media
+            media=media or []
         )
         logger.debug(f"CreatePost result: {result}")
         return PostResponse.from_dict(result)
@@ -356,8 +369,8 @@ class Mutation:
     def deletePostMedia(
         self,
         mediaId: int
-    ) -> PostResponse:
+    ) -> MediaResponse:
         logger.debug(f"Mutation.deletePostMedia called with mediaId: {mediaId}")
         client = PostsServiceClient()
         result = client.delete_post_media(media_id=mediaId)
-        return PostResponse.from_dict(result) 
+        return MediaResponse.from_dict(result) 

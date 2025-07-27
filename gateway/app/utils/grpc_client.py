@@ -235,26 +235,26 @@ class PostsServiceClient:
     def create_post(self, user_id: int, title: str, content: str,
                    visibility: str, property_type: str, location: str,
                    map_location: str, price: float, status: str,
-                   media: list) -> dict:
+                   media: list = None) -> dict:
         try:
             media_list = []
-            for m in media:
-                # Convert base64 string to bytes
-                try:
-                    media_data = base64.b64decode(m.mediaData)
-                except Exception as e:
-                    return {
-                        'success': False,
-                        'message': f'Invalid media data format: {str(e)}'
-                    }
+            if media:
+                for m in media:
+                    try:
+                        media_data = base64.b64decode(m.mediaData)
+                    except Exception as e:
+                        return {
+                            'success': False,
+                            'message': f'Invalid media data format: {str(e)}'
+                        }
 
-                media_upload = post_pb2.PostMediaUpload(
-                    media_type=m.mediaType,
-                    media_data=media_data,
-                    media_order=m.mediaOrder,
-                    caption=m.caption
-                )
-                media_list.append(media_upload)
+                    media_upload = post_pb2.PostMediaUpload(
+                        media_type=m.mediaType,
+                        media_data=media_data,
+                        media_order=m.mediaOrder,
+                        caption=m.caption
+                    )
+                    media_list.append(media_upload)
 
             request = post_pb2.PostCreateRequest(
                 user_id=user_id,
@@ -322,22 +322,66 @@ class PostsServiceClient:
         except grpc.RpcError as e:
             return None
 
-    def update_post(self, post_id: int, **kwargs):
+    def update_post(self, post_id: int, **kwargs) -> dict:
         try:
+            # Filter out None values
+            update_data = {k: v for k, v in kwargs.items() if v is not None}
+            
+            # Convert camelCase to snake_case for property_type and map_location
+            if 'propertyType' in update_data:
+                update_data['property_type'] = update_data.pop('propertyType')
+            if 'mapLocation' in update_data:
+                update_data['map_location'] = update_data.pop('mapLocation')
+
             request = post_pb2.PostUpdateRequest(
                 post_id=post_id,
-                **{k: v for k, v in kwargs.items() if v is not None}
+                **update_data
             )
             response = self.stub.UpdatePost(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
             return {
-                'success': True,
-                'message': 'Post updated successfully',
-                'post': response
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
             }
         except grpc.RpcError as e:
             return {
                 'success': False,
-                'message': f'Error updating post: {str(e)}'
+                'message': f'Error updating post: {str(e)}',
+                'post': None
             }
 
     def delete_post(self, post_id: int):
@@ -366,41 +410,207 @@ class PostsServiceClient:
         except grpc.RpcError as e:
             return []
 
-    def like_post(self, post_id: int, user_id: int):
+    def like_post(self, post_id: int, user_id: int) -> dict:
         try:
+            # First check if the post exists
+            post_request = post_pb2.PostRequest(post_id=post_id)
+            post_response = self.stub.GetPost(post_request)
+            if not post_response.post:
+                return {
+                    'success': False,
+                    'message': f'Post with ID {post_id} not found',
+                    'post': None
+                }
+
             request = post_pb2.LikeRequest(
-                id=post_id,
+                post_id=post_id,  # Changed from id to post_id
                 user_id=user_id,
                 reaction_type='like'
             )
             response = self.stub.LikePost(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
             return {
-                'success': True,
-                'message': 'Post liked successfully',
-                'post': response
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
             }
         except grpc.RpcError as e:
             return {
                 'success': False,
-                'message': f'Error liking post: {str(e)}'
+                'message': f'Error liking post: {str(e)}',
+                'post': None
             }
 
-    def unlike_post(self, post_id: int, user_id: int):
+    def unlike_post(self, post_id: int, user_id: int) -> dict:
         try:
             request = post_pb2.LikeRequest(
-                id=post_id,
+                post_id=post_id,  # Changed from id to post_id
                 user_id=user_id
             )
             response = self.stub.UnlikePost(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
             return {
-                'success': True,
-                'message': 'Post unliked successfully',
-                'post': response
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
             }
         except grpc.RpcError as e:
             return {
                 'success': False,
-                'message': f'Error unliking post: {str(e)}'
+                'message': f'Error unliking post: {str(e)}',
+                'post': None
+            }
+
+    def delete_post_media(self, media_id: int) -> dict:
+        try:
+            request = post_pb2.PostRequest(post_id=media_id)
+            response = self.stub.DeletePostMedia(request)
+            
+            return {
+                'success': response.success,
+                'message': response.message
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error deleting media: {str(e)}'
+            }
+
+    def add_post_media(self, post_id: int, media: list) -> dict:
+        try:
+            media_list = []
+            for m in media:
+                try:
+                    media_data = base64.b64decode(m.mediaData)
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'message': f'Invalid media data format: {str(e)}'
+                    }
+
+                media_upload = post_pb2.PostMediaUpload(
+                    media_type=m.mediaType,
+                    media_data=media_data,
+                    media_order=m.mediaOrder,
+                    caption=m.caption
+                )
+                media_list.append(media_upload)
+
+            request = post_pb2.PostMediaRequest(
+                post_id=post_id,
+                media=media_list
+            )
+            response = self.stub.AddPostMedia(request)
+            
+            # Convert the gRPC response to a dictionary
+            if response.post:
+                media_list = []
+                for m in response.post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                post_dict = {
+                    'id': response.post.id,
+                    'userId': response.post.user_id,
+                    'title': response.post.title,
+                    'content': response.post.content,
+                    'visibility': response.post.visibility,
+                    'propertyType': response.post.property_type,
+                    'location': response.post.location,
+                    'mapLocation': response.post.map_location,
+                    'price': response.post.price,
+                    'status': response.post.status,
+                    'createdAt': datetime.fromtimestamp(response.post.created_at),
+                    'media': media_list,
+                    'likeCount': response.post.like_count,
+                    'commentCount': response.post.comment_count
+                }
+            else:
+                post_dict = None
+
+            return {
+                'success': response.success,
+                'message': response.message,
+                'post': post_dict
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error adding media: {str(e)}',
+                'post': None
             }
 
     def create_comment(self, post_id: int, user_id: int, comment: str,
@@ -759,8 +969,9 @@ class PropertyServiceClient:
 
     def delete_post_media(self, media_id: int) -> dict:
         try:
-            request = post_pb2.PostRequest(post_id=media_id)  # Using PostRequest for media_id
+            request = post_pb2.PostRequest(post_id=media_id)
             response = self.stub.DeletePostMedia(request)
+            
             return {
                 'success': response.success,
                 'message': response.message
