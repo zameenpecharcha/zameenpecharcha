@@ -232,6 +232,75 @@ class PostsServiceClient:
         self.channel = grpc.insecure_channel('localhost:50053')
         self.stub = post_pb2_grpc.PostsServiceStub(self.channel)
 
+    def search_posts(self, property_type: str = None, location: str = None,
+                    min_price: float = None, max_price: float = None,
+                    status: str = None, page: int = 1, limit: int = 10) -> dict:
+        try:
+            request = post_pb2.SearchPostsRequest(
+                property_type=property_type or "",
+                location=location or "",
+                min_price=min_price or 0.0,
+                max_price=max_price or 0.0,
+                status=status or "",
+                page=page,
+                limit=limit
+            )
+            response = self.stub.SearchPosts(request)
+            
+            if not response.success:
+                return {
+                    'success': False,
+                    'message': response.message,
+                    'posts': []
+                }
+
+            # Convert the gRPC response to a list of dictionaries
+            posts = []
+            for post in response.posts:
+                media_list = []
+                for m in post.media:
+                    media_list.append({
+                        'id': m.id,
+                        'mediaType': m.media_type,
+                        'mediaUrl': m.media_url,
+                        'mediaOrder': m.media_order,
+                        'mediaSize': m.media_size,
+                        'caption': m.caption,
+                        'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                    })
+
+                posts.append({
+                    'id': post.id,
+                    'userId': post.user_id,
+                    'title': post.title,
+                    'content': post.content,
+                    'visibility': post.visibility,
+                    'propertyType': post.property_type,
+                    'location': post.location,
+                    'mapLocation': post.map_location,
+                    'price': post.price,
+                    'status': post.status,
+                    'createdAt': datetime.fromtimestamp(post.created_at),
+                    'media': media_list,
+                    'likeCount': post.like_count,
+                    'commentCount': post.comment_count
+                })
+
+            return {
+                'success': True,
+                'message': response.message,
+                'posts': posts,
+                'total_count': response.total_count,
+                'page': response.page,
+                'total_pages': response.total_pages
+            }
+        except grpc.RpcError as e:
+            return {
+                'success': False,
+                'message': f'Error searching posts: {str(e)}',
+                'posts': []
+            }
+
     def create_post(self, user_id: int, title: str, content: str,
                    visibility: str, property_type: str, location: str,
                    map_location: str, price: float, status: str,

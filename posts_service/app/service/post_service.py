@@ -253,6 +253,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def SearchPosts(self, request, context):
         try:
+            print(f"SearchPosts called with params: property_type={request.property_type}, location={request.location}, page={request.page}, limit={request.limit}")
             posts, total = self.repository.search_posts(
                 property_type=request.property_type,
                 location=request.location,
@@ -262,8 +263,9 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 page=request.page,
                 limit=request.limit
             )
-
-            return post_pb2.PostListResponse(
+            print(f"Found {total} posts")
+            
+            response = post_pb2.PostListResponse(
                 success=True,
                 message="Posts retrieved successfully",
                 posts=[self._convert_to_proto_post(p) for p in posts],
@@ -271,7 +273,10 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 page=request.page,
                 total_pages=(total + request.limit - 1) // request.limit
             )
+            print(f"Returning response with {len(response.posts)} posts")
+            return response
         except Exception as e:
+            print(f"Error in SearchPosts: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return post_pb2.PostListResponse(

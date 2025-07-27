@@ -139,7 +139,34 @@ class Query:
         logger.debug(f"Query.post called with postId: {postId}")
         client = PostsServiceClient()
         result = client.get_post(post_id=postId)
-        return Post.from_dict(result.get('post')) if result else None
+        # Convert gRPC response to dictionary format
+        if result and result.success and result.post:
+            post_data = {
+                'id': result.post.id,
+                'userId': result.post.user_id,
+                'title': result.post.title,
+                'content': result.post.content,
+                'visibility': result.post.visibility,
+                'propertyType': result.post.property_type,
+                'location': result.post.location,
+                'mapLocation': result.post.map_location,
+                'price': result.post.price,
+                'status': result.post.status,
+                'createdAt': datetime.fromtimestamp(result.post.created_at),
+                'media': [{
+                    'id': m.id,
+                    'mediaType': m.media_type,
+                    'mediaUrl': m.media_url,
+                    'mediaOrder': m.media_order,
+                    'mediaSize': m.media_size,
+                    'caption': m.caption,
+                    'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                } for m in result.post.media],
+                'likeCount': result.post.like_count,
+                'commentCount': result.post.comment_count
+            }
+            return Post.from_dict(post_data)
+        return None
 
     @strawberry.field
     def postsByUser(self, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
@@ -170,7 +197,7 @@ class Query:
             page=page,
             limit=limit
         )
-        return [Post.from_dict(post) for post in result] if result else []
+        return [Post.from_dict(post) for post in result.get('posts', [])] if result and result.get('success') else []
 
     @strawberry.field
     def postComments(
