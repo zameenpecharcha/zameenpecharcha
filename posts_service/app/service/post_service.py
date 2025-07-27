@@ -342,24 +342,46 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def LikePost(self, request, context):
         try:
-            post = self.repository.like_post(
-                post_id=request.id,
-                user_id=request.user_id,
-                reaction_type=request.reaction_type
-            )
-            if not post:
+            # First check if user exists
+            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Post not found")
+                context.set_details(f"User with id {request.user_id} not found")
                 return post_pb2.PostResponse(
                     success=False,
-                    message="Post not found"
+                    message=f"User with id {request.user_id} not found"
                 )
 
-            return post_pb2.PostResponse(
-                success=True,
-                message="Post liked successfully",
-                post=self._convert_to_proto_post(post)
-            )
+            # Check if post exists and get it first
+            post = self.repository.get_post(request.post_id)  # Changed from request.id
+            if not post:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"Post with id {request.post_id} not found")  # Changed from request.id
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"Post with id {request.post_id} not found"  # Changed from request.id
+                )
+
+            # Try to like the post
+            try:
+                # Use the post ID from the post we found
+                post = self.repository.like_post(
+                    post_id=post.id,
+                    user_id=request.user_id,
+                    reaction_type=request.reaction_type
+                )
+                return post_pb2.PostResponse(
+                    success=True,
+                    message="Post liked successfully",
+                    post=self._convert_to_proto_post(post)
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"Failed to like post: {str(e)}"
+                )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
@@ -370,23 +392,44 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def UnlikePost(self, request, context):
         try:
-            post = self.repository.unlike_post(
-                post_id=request.id,
-                user_id=request.user_id
-            )
-            if not post:
+            # First check if user exists
+            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Post not found")
+                context.set_details(f"User with id {request.user_id} not found")
                 return post_pb2.PostResponse(
                     success=False,
-                    message="Post not found"
+                    message=f"User with id {request.user_id} not found"
                 )
 
-            return post_pb2.PostResponse(
-                success=True,
-                message="Post unliked successfully",
-                post=self._convert_to_proto_post(post)
-            )
+            # Check if post exists and get it first
+            post = self.repository.get_post(request.post_id)  # Changed from request.id
+            if not post:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"Post with id {request.post_id} not found")  # Changed from request.id
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"Post with id {request.post_id} not found"  # Changed from request.id
+                )
+
+            # Try to unlike the post
+            try:
+                post = self.repository.unlike_post(
+                    post_id=post.id,
+                    user_id=request.user_id
+                )
+                return post_pb2.PostResponse(
+                    success=True,
+                    message="Post unliked successfully",
+                    post=self._convert_to_proto_post(post)
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.PostResponse(
+                    success=False,
+                    message=f"Failed to unlike post: {str(e)}"
+                )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
@@ -411,31 +454,19 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 context.set_details(f"Post with id {request.post_id} not found")
                 return post_pb2.Comment()
 
-            # If parent_comment_id is provided, verify it exists
-            if request.parent_comment_id != 0:
-                parent_comment = self.db.query(CommentReference).filter(CommentReference.id == request.parent_comment_id).first()
-                if not parent_comment:
-                    context.set_code(grpc.StatusCode.NOT_FOUND)
-                    context.set_details(f"Parent comment with id {request.parent_comment_id} not found")
-                    return post_pb2.Comment()
-                
-                # Verify parent comment belongs to the same post
-                if parent_comment.post_id != request.post_id:
-                    context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                    context.set_details("Parent comment does not belong to the specified post")
-                    return post_pb2.Comment()
-
-            # Set parent_comment_id to None if it's 0 (top-level comment)
-            parent_id = request.parent_comment_id if request.parent_comment_id != 0 else None
-
-            comment = self.repository.create_comment(
-                post_id=request.post_id,
-                user_id=request.user_id,
-                comment_text=request.comment,
-                parent_comment_id=parent_id
-            )
-
-            return self._convert_to_proto_comment(comment)
+            try:
+                # Pass parent_comment_id as is - repository will handle defaults
+                comment = self.repository.create_comment(
+                    post_id=request.post_id,
+                    user_id=request.user_id,
+                    comment_text=request.comment,
+                    parent_comment_id=request.parent_comment_id
+                )
+                return self._convert_to_proto_comment(comment)
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.Comment()
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))

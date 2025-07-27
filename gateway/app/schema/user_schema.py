@@ -175,6 +175,28 @@ class Query:
                 str(e)
             ).to_graphql_error()
 
+    @strawberry.field
+    def check_following_status(self, user_id: int, following_id: int) -> typing.Optional[UserFollower]:
+        try:
+            log_msg("info", f"Checking following status for user {user_id} -> {following_id}")
+            response = client.check_following_status(user_id, following_id)
+            if not response or not response.id:
+                return None
+            return UserFollower(
+                id=response.id,
+                user_id=response.user_id,
+                following_id=response.following_id,
+                status=response.status,
+                followed_at=response.followed_at
+            )
+        except Exception as e:
+            log_msg("error", f"Error checking following status: {str(e)}")
+            raise REException(
+                "FOLLOWING_STATUS_CHECK_FAILED",
+                "Failed to check following status",
+                str(e)
+            ).to_graphql_error()
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation

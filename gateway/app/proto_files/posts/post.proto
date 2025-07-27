@@ -100,7 +100,7 @@ message PostMediaRequest {
 
 // Like Request Message
 message LikeRequest {
-    int64 id = 1;
+    int64 post_id = 1;  // Changed from 'id' to 'post_id' for clarity
     int64 user_id = 2;
     string reaction_type = 3;
 }

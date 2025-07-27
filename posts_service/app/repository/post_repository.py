@@ -146,51 +146,111 @@ class PostRepository:
 
     # Like Operations
     def like_post(self, post_id: int, user_id: int, reaction_type: str = 'like') -> Optional[Post]:
-        existing_like = self.db.query(PostLike).filter(
-            PostLike.post_id == post_id,
-            PostLike.user_id == user_id
-        ).first()
-        
-        if not existing_like:
-            like = PostLike(
-                post_id=post_id,
-                user_id=user_id,
-                reaction_type=reaction_type,
-                liked_at=datetime.utcnow()
-            )
-            self.db.add(like)
-            self.db.commit()
-        
-        return self.get_post(post_id)
+        try:
+            # First check if post exists
+            post = self.get_post(post_id)
+            if not post:
+                raise Exception(f"Post with ID {post_id} not found")
+
+            # Check if user has already liked the post
+            existing_like = self.db.query(PostLike).filter(
+                PostLike.post_id == post_id,
+                PostLike.user_id == user_id
+            ).first()
+            
+            if not existing_like:
+                try:
+                    like = PostLike(
+                        post_id=post_id,  # Make sure we're using the correct post_id
+                        user_id=user_id,
+                        reaction_type=reaction_type,
+                        liked_at=datetime.utcnow()
+                    )
+                    self.db.add(like)
+                    self.db.commit()
+                except SQLAlchemyError as e:
+                    self.db.rollback()
+                    raise Exception(f"Database error while adding like: {str(e)}")
+            
+            # Get fresh post data with updated like count
+            try:
+                self.db.refresh(post)
+                return post
+            except SQLAlchemyError as e:
+                self.db.rollback()
+                raise Exception(f"Database error while refreshing post: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def unlike_post(self, post_id: int, user_id: int) -> Optional[Post]:
-        like = self.db.query(PostLike).filter(
-            PostLike.post_id == post_id,
-            PostLike.user_id == user_id
-        ).first()
-        
-        if like:
-            self.db.delete(like)
-            self.db.commit()
-        
-        return self.get_post(post_id)
+        try:
+            # First check if post exists
+            post = self.get_post(post_id)
+            if not post:
+                raise Exception(f"Post with ID {post_id} not found")
+
+            # Check if user has liked the post
+            like = self.db.query(PostLike).filter(
+                PostLike.post_id == post_id,
+                PostLike.user_id == user_id
+            ).first()
+            
+            if like:
+                try:
+                    self.db.delete(like)
+                    self.db.commit()
+                except SQLAlchemyError as e:
+                    self.db.rollback()
+                    raise Exception(f"Database error while removing like: {str(e)}")
+            
+            # Get fresh post data with updated like count
+            try:
+                self.db.refresh(post)
+                return post
+            except SQLAlchemyError as e:
+                self.db.rollback()
+                raise Exception(f"Database error while refreshing post: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     # Comment Operations
     def create_comment(self, post_id: int, user_id: int, comment_text: str,
                       parent_comment_id: int = None) -> CommentReference:
-        comment = CommentReference(
-            post_id=post_id,
-            user_id=user_id,
-            comment=comment_text,
-            parent_comment_id=parent_comment_id,
-            added_at=datetime.utcnow(),
-            commented_at=datetime.utcnow(),
-            status='active'
-        )
-        self.db.add(comment)
-        self.db.commit()
-        self.db.refresh(comment)
-        return comment
+        try:
+            # For replies, verify parent comment exists
+            if parent_comment_id is not None and parent_comment_id > 0:
+                parent_comment = self.get_comment(parent_comment_id)
+                if not parent_comment:
+                    raise Exception(f"Parent comment with ID {parent_comment_id} not found")
+                # Verify parent comment belongs to the same post
+                if parent_comment.post_id != post_id:
+                    raise Exception("Parent comment does not belong to the specified post")
+            else:
+                # For new comments, set parent_comment_id to None
+                parent_comment_id = None
+
+            # Create the comment
+            comment = CommentReference(
+                post_id=post_id,
+                user_id=user_id,
+                comment=comment_text,
+                parent_comment_id=parent_comment_id,  # Will be NULL for new comments, actual ID for replies
+                added_at=datetime.utcnow(),
+                commented_at=datetime.utcnow(),
+                status='active'
+            )
+            self.db.add(comment)
+            self.db.commit()
+            self.db.refresh(comment)
+            return comment
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            raise Exception(f"Database error while creating comment: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def get_comment(self, comment_id: int) -> Optional[CommentReference]:
         return self.db.query(CommentReference).filter(CommentReference.id == comment_id).first()
