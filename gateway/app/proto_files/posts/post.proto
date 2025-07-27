@@ -105,6 +105,13 @@ message LikeRequest {
     string reaction_type = 3;
 }
 
+// Comment Like Request Message
+message CommentLikeRequest {
+    int64 comment_id = 1;
+    int64 user_id = 2;
+    string reaction_type = 3;
+}
+
 // Comment Create Request Message
 message CommentCreateRequest {
     int64 post_id = 1;
@@ -178,6 +185,13 @@ message GenericResponse {
     string message = 2;
 }
 
+// Comment Response Message
+message CommentResponse {
+    bool success = 1;
+    string message = 2;
+    Comment comment = 3;
+}
+
 // Posts Service Definition
 service PostsService {
     // Post Operations
@@ -197,10 +211,10 @@ service PostsService {
     rpc UnlikePost(LikeRequest) returns (PostResponse) {}
 
     // Comment Operations
-    rpc CreateComment(CommentCreateRequest) returns (Comment) {}
-    rpc UpdateComment(CommentUpdateRequest) returns (Comment) {}
+    rpc CreateComment(CommentCreateRequest) returns (CommentResponse) {}
+    rpc UpdateComment(CommentUpdateRequest) returns (CommentResponse) {}
     rpc DeleteComment(PostRequest) returns (GenericResponse) {}
     rpc GetComments(GetCommentsRequest) returns (CommentListResponse) {}
-    rpc LikeComment(LikeRequest) returns (Comment) {}
-    rpc UnlikeComment(LikeRequest) returns (Comment) {}
+    rpc LikeComment(CommentLikeRequest) returns (CommentResponse) {}
+    rpc UnlikeComment(CommentLikeRequest) returns (CommentResponse) {}
 } 

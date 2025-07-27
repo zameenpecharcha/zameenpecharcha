@@ -9,7 +9,7 @@ class CommentReference(Base):
 
     id = Column(BigInteger, primary_key=True)
     post_id = Column(BigInteger, ForeignKey('posts.id', ondelete='CASCADE'), nullable=False)
-    parent_comment_id = Column(BigInteger, ForeignKey('comments.id', ondelete='CASCADE'), nullable=True)
+    parent_comment_id = Column(BigInteger, ForeignKey('comments.id', ondelete='CASCADE'), nullable=True)  # NULL for top-level comments
     comment = Column(String(1000))
     user_id = Column(BigInteger, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     status = Column(String(20), default='active')

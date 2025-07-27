@@ -455,12 +455,16 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 return post_pb2.Comment()
 
             try:
-                # Pass parent_comment_id as is - repository will handle defaults
+                # If parent_comment_id is 0, it's a new comment
+                # If it's > 0, it's a reply
+                # This ensures we don't convert 0 to None
+                parent_comment_id = request.parent_comment_id if request.parent_comment_id > 0 else 0
+
                 comment = self.repository.create_comment(
                     post_id=request.post_id,
                     user_id=request.user_id,
                     comment_text=request.comment,
-                    parent_comment_id=request.parent_comment_id
+                    parent_comment_id=parent_comment_id
                 )
                 return self._convert_to_proto_comment(comment)
             except Exception as e:
@@ -554,23 +558,46 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"User with id {request.user_id} not found"
+                )
 
-            comment = self.repository.like_comment(
-                comment_id=request.id,
-                user_id=request.user_id,
-                reaction_type=request.reaction_type
-            )
+            # Check if comment exists first
+            comment = self.repository.get_comment(request.comment_id)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Comment not found")
-                return post_pb2.Comment()
+                context.set_details(f"Comment with id {request.comment_id} not found")
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"Comment with id {request.comment_id} not found"
+                )
 
-            return self._convert_to_proto_comment(comment)
+            try:
+                comment = self.repository.like_comment(
+                    comment_id=request.comment_id,
+                    user_id=request.user_id,
+                    reaction_type=request.reaction_type
+                )
+                return post_pb2.CommentResponse(
+                    success=True,
+                    message="Comment liked successfully",
+                    comment=self._convert_to_proto_comment(comment)
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"Failed to like comment: {str(e)}"
+                )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
-            return post_pb2.Comment()
+            return post_pb2.CommentResponse(
+                success=False,
+                message=f"Failed to like comment: {str(e)}"
+            )
 
     def UnlikeComment(self, request, context):
         try:
@@ -579,22 +606,45 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"User with id {request.user_id} not found"
+                )
 
-            comment = self.repository.unlike_comment(
-                comment_id=request.id,
-                user_id=request.user_id
-            )
+            # Check if comment exists first
+            comment = self.repository.get_comment(request.comment_id)
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Comment not found")
-                return post_pb2.Comment()
+                context.set_details(f"Comment with id {request.comment_id} not found")
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"Comment with id {request.comment_id} not found"
+                )
 
-            return self._convert_to_proto_comment(comment)
+            try:
+                comment = self.repository.unlike_comment(
+                    comment_id=request.comment_id,
+                    user_id=request.user_id
+                )
+                return post_pb2.CommentResponse(
+                    success=True,
+                    message="Comment unliked successfully",
+                    comment=self._convert_to_proto_comment(comment)
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(str(e))
+                return post_pb2.CommentResponse(
+                    success=False,
+                    message=f"Failed to unlike comment: {str(e)}"
+                )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
-            return post_pb2.Comment()
+            return post_pb2.CommentResponse(
+                success=False,
+                message=f"Failed to unlike comment: {str(e)}"
+            )
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

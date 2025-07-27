@@ -219,8 +219,8 @@ class PostRepository:
     def create_comment(self, post_id: int, user_id: int, comment_text: str,
                       parent_comment_id: int = None) -> CommentReference:
         try:
-            # For replies, verify parent comment exists
-            if parent_comment_id is not None and parent_comment_id > 0:
+            # For replies (parent_comment_id > 0), verify parent comment exists
+            if parent_comment_id and parent_comment_id > 0:
                 parent_comment = self.get_comment(parent_comment_id)
                 if not parent_comment:
                     raise Exception(f"Parent comment with ID {parent_comment_id} not found")
@@ -228,7 +228,7 @@ class PostRepository:
                 if parent_comment.post_id != post_id:
                     raise Exception("Parent comment does not belong to the specified post")
             else:
-                # For new comments, set parent_comment_id to None
+                # For new comments (parent_comment_id = 0 or None), set to None
                 parent_comment_id = None
 
             # Create the comment
@@ -315,44 +315,74 @@ class PostRepository:
         return comments, total
 
     def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like') -> Optional[CommentReference]:
-        # First check if comment exists
-        comment = self.get_comment(comment_id)
-        if not comment:
-            return None
+        try:
+            # First check if comment exists
+            comment = self.get_comment(comment_id)
+            if not comment:
+                raise Exception(f"Comment with ID {comment_id} not found")
 
-        existing_like = self.db.query(CommentLike).filter(
-            CommentLike.comment_id == comment_id,
-            CommentLike.user_id == user_id
-        ).first()
-        
-        if not existing_like:
-            like = CommentLike(
-                comment_id=comment_id,
-                user_id=user_id,
-                reaction_type=reaction_type,
-                liked_at=datetime.utcnow()
-            )
-            self.db.add(like)
-            self.db.commit()
-        
-        return self.get_comment(comment_id)
+            # Check if user has already liked the comment
+            existing_like = self.db.query(CommentLike).filter(
+                CommentLike.comment_id == comment_id,
+                CommentLike.user_id == user_id
+            ).first()
+            
+            if not existing_like:
+                try:
+                    like = CommentLike(
+                        comment_id=comment_id,
+                        user_id=user_id,
+                        reaction_type=reaction_type,
+                        liked_at=datetime.utcnow()
+                    )
+                    self.db.add(like)
+                    self.db.commit()
+                except SQLAlchemyError as e:
+                    self.db.rollback()
+                    raise Exception(f"Database error while adding like: {str(e)}")
+            
+            # Get fresh comment data with updated like count
+            try:
+                self.db.refresh(comment)
+                return comment
+            except SQLAlchemyError as e:
+                self.db.rollback()
+                raise Exception(f"Database error while refreshing comment: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     def unlike_comment(self, comment_id: int, user_id: int) -> Optional[CommentReference]:
-        # First check if comment exists
-        comment = self.get_comment(comment_id)
-        if not comment:
-            return None
+        try:
+            # First check if comment exists
+            comment = self.get_comment(comment_id)
+            if not comment:
+                raise Exception(f"Comment with ID {comment_id} not found")
 
-        like = self.db.query(CommentLike).filter(
-            CommentLike.comment_id == comment_id,
-            CommentLike.user_id == user_id
-        ).first()
-        
-        if like:
-            self.db.delete(like)
-            self.db.commit()
-        
-        return self.get_comment(comment_id)
+            # Check if user has liked the comment
+            like = self.db.query(CommentLike).filter(
+                CommentLike.comment_id == comment_id,
+                CommentLike.user_id == user_id
+            ).first()
+            
+            if like:
+                try:
+                    self.db.delete(like)
+                    self.db.commit()
+                except SQLAlchemyError as e:
+                    self.db.rollback()
+                    raise Exception(f"Database error while removing like: {str(e)}")
+            
+            # Get fresh comment data with updated like count
+            try:
+                self.db.refresh(comment)
+                return comment
+            except SQLAlchemyError as e:
+                self.db.rollback()
+                raise Exception(f"Database error while refreshing comment: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            raise e
 
     # Helper Methods
     def get_post_like_count(self, post_id: int) -> int:

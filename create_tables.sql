@@ -172,15 +172,16 @@ CREATE TABLE post_likes (
 CREATE TABLE Comments (
     id BIGINT NOT NULL DEFAULT nextval('comments_id_seq') PRIMARY KEY,
     post_id BIGINT NOT NULL,
-    parent_comment_id BIGINT,
+    parent_comment_id BIGINT NULL,  -- NULL for top-level comments, actual ID for replies
     comment VARCHAR(1000),
     user_id BIGINT NOT NULL,
     status VARCHAR(20) DEFAULT 'active',
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     commented_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES Posts(id),
-    FOREIGN KEY (parent_comment_id) REFERENCES Comments(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_comment_id) REFERENCES Comments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT valid_parent_comment CHECK (parent_comment_id IS NULL OR parent_comment_id > 0)  -- Ensure parent_comment_id is either NULL or a valid ID
 );
 
 -- Create post_comment_likes table
