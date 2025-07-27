@@ -710,33 +710,33 @@ class PostsServiceClient:
 
     def like_comment(self, comment_id: int, user_id: int) -> dict:
         try:
-            request = post_pb2.LikeRequest(
-                id=comment_id,
+            request = post_pb2.CommentLikeRequest(
+                comment_id=comment_id,
                 user_id=user_id,
                 reaction_type='like'
             )
             response = self.stub.LikeComment(request)
             
             # Convert the gRPC response to a dictionary
-            if response:
+            if response.comment:
                 comment_dict = {
-                    'id': response.id,
-                    'postId': response.post_id,
-                    'userId': response.user_id,
-                    'comment': response.comment,
-                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
-                    'status': response.status,
-                    'addedAt': datetime.fromtimestamp(response.added_at),
-                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'id': response.comment.id,
+                    'postId': response.comment.post_id,
+                    'userId': response.comment.user_id,
+                    'comment': response.comment.comment,
+                    'parentCommentId': response.comment.parent_comment_id if response.comment.parent_comment_id != 0 else None,
+                    'status': response.comment.status,
+                    'addedAt': datetime.fromtimestamp(response.comment.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.comment.commented_at),
                     'replies': [],  # Replies will be fetched separately if needed
-                    'likeCount': response.like_count
+                    'likeCount': response.comment.like_count
                 }
             else:
                 comment_dict = None
 
             return {
-                'success': True,
-                'message': 'Comment liked successfully',
+                'success': response.success,
+                'message': response.message,
                 'comment': comment_dict
             }
         except grpc.RpcError as e:
@@ -748,32 +748,32 @@ class PostsServiceClient:
 
     def unlike_comment(self, comment_id: int, user_id: int) -> dict:
         try:
-            request = post_pb2.LikeRequest(
-                id=comment_id,
+            request = post_pb2.CommentLikeRequest(
+                comment_id=comment_id,
                 user_id=user_id
             )
             response = self.stub.UnlikeComment(request)
             
             # Convert the gRPC response to a dictionary
-            if response:
+            if response.comment:
                 comment_dict = {
-                    'id': response.id,
-                    'postId': response.post_id,
-                    'userId': response.user_id,
-                    'comment': response.comment,
-                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
-                    'status': response.status,
-                    'addedAt': datetime.fromtimestamp(response.added_at),
-                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'id': response.comment.id,
+                    'postId': response.comment.post_id,
+                    'userId': response.comment.user_id,
+                    'comment': response.comment.comment,
+                    'parentCommentId': response.comment.parent_comment_id if response.comment.parent_comment_id != 0 else None,
+                    'status': response.comment.status,
+                    'addedAt': datetime.fromtimestamp(response.comment.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.comment.commented_at),
                     'replies': [],  # Replies will be fetched separately if needed
-                    'likeCount': response.like_count
+                    'likeCount': response.comment.like_count
                 }
             else:
                 comment_dict = None
 
             return {
-                'success': True,
-                'message': 'Comment unliked successfully',
+                'success': response.success,
+                'message': response.message,
                 'comment': comment_dict
             }
         except grpc.RpcError as e:

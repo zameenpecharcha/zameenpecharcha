@@ -88,12 +88,12 @@ class PostsServiceStub(object):
         self.CreateComment = channel.unary_unary(
                 '/posts.PostsService/CreateComment',
                 request_serializer=post__pb2.CommentCreateRequest.SerializeToString,
-                response_deserializer=post__pb2.Comment.FromString,
+                response_deserializer=post__pb2.CommentResponse.FromString,
                 _registered_method=True)
         self.UpdateComment = channel.unary_unary(
                 '/posts.PostsService/UpdateComment',
                 request_serializer=post__pb2.CommentUpdateRequest.SerializeToString,
-                response_deserializer=post__pb2.Comment.FromString,
+                response_deserializer=post__pb2.CommentResponse.FromString,
                 _registered_method=True)
         self.DeleteComment = channel.unary_unary(
                 '/posts.PostsService/DeleteComment',
@@ -107,13 +107,13 @@ class PostsServiceStub(object):
                 _registered_method=True)
         self.LikeComment = channel.unary_unary(
                 '/posts.PostsService/LikeComment',
-                request_serializer=post__pb2.LikeRequest.SerializeToString,
-                response_deserializer=post__pb2.Comment.FromString,
+                request_serializer=post__pb2.CommentLikeRequest.SerializeToString,
+                response_deserializer=post__pb2.CommentResponse.FromString,
                 _registered_method=True)
         self.UnlikeComment = channel.unary_unary(
                 '/posts.PostsService/UnlikeComment',
-                request_serializer=post__pb2.LikeRequest.SerializeToString,
-                response_deserializer=post__pb2.Comment.FromString,
+                request_serializer=post__pb2.CommentLikeRequest.SerializeToString,
+                response_deserializer=post__pb2.CommentResponse.FromString,
                 _registered_method=True)
 
 
@@ -277,12 +277,12 @@ def add_PostsServiceServicer_to_server(servicer, server):
             'CreateComment': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateComment,
                     request_deserializer=post__pb2.CommentCreateRequest.FromString,
-                    response_serializer=post__pb2.Comment.SerializeToString,
+                    response_serializer=post__pb2.CommentResponse.SerializeToString,
             ),
             'UpdateComment': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateComment,
                     request_deserializer=post__pb2.CommentUpdateRequest.FromString,
-                    response_serializer=post__pb2.Comment.SerializeToString,
+                    response_serializer=post__pb2.CommentResponse.SerializeToString,
             ),
             'DeleteComment': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteComment,
@@ -296,13 +296,13 @@ def add_PostsServiceServicer_to_server(servicer, server):
             ),
             'LikeComment': grpc.unary_unary_rpc_method_handler(
                     servicer.LikeComment,
-                    request_deserializer=post__pb2.LikeRequest.FromString,
-                    response_serializer=post__pb2.Comment.SerializeToString,
+                    request_deserializer=post__pb2.CommentLikeRequest.FromString,
+                    response_serializer=post__pb2.CommentResponse.SerializeToString,
             ),
             'UnlikeComment': grpc.unary_unary_rpc_method_handler(
                     servicer.UnlikeComment,
-                    request_deserializer=post__pb2.LikeRequest.FromString,
-                    response_serializer=post__pb2.Comment.SerializeToString,
+                    request_deserializer=post__pb2.CommentLikeRequest.FromString,
+                    response_serializer=post__pb2.CommentResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -602,7 +602,7 @@ class PostsService(object):
             target,
             '/posts.PostsService/CreateComment',
             post__pb2.CommentCreateRequest.SerializeToString,
-            post__pb2.Comment.FromString,
+            post__pb2.CommentResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -629,7 +629,7 @@ class PostsService(object):
             target,
             '/posts.PostsService/UpdateComment',
             post__pb2.CommentUpdateRequest.SerializeToString,
-            post__pb2.Comment.FromString,
+            post__pb2.CommentResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -709,8 +709,8 @@ class PostsService(object):
             request,
             target,
             '/posts.PostsService/LikeComment',
-            post__pb2.LikeRequest.SerializeToString,
-            post__pb2.Comment.FromString,
+            post__pb2.CommentLikeRequest.SerializeToString,
+            post__pb2.CommentResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -736,8 +736,8 @@ class PostsService(object):
             request,
             target,
             '/posts.PostsService/UnlikeComment',
-            post__pb2.LikeRequest.SerializeToString,
-            post__pb2.Comment.FromString,
+            post__pb2.CommentLikeRequest.SerializeToString,
+            post__pb2.CommentResponse.FromString,
             options,
             channel_credentials,
             insecure,
