@@ -97,23 +97,39 @@ class PostRepository:
                     min_price: float = None, max_price: float = None,
                     status: str = None, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
         try:
+            print("Starting search_posts in repository")
             query = self.db.query(Post)
-            if property_type:
+            
+            # Only apply filters if they are explicitly provided
+            if property_type and property_type.strip():
+                print(f"Filtering by property_type: {property_type}")
                 query = query.filter(Post.property_type == property_type)
-            if location:
+            if location and location.strip():
+                print(f"Filtering by location: {location}")
                 query = query.filter(Post.location.ilike(f"%{location}%"))
-            if min_price is not None:
+            if min_price is not None and min_price > 0:
+                print(f"Filtering by min_price: {min_price}")
                 query = query.filter(Post.price >= min_price)
-            if max_price is not None:
+            if max_price is not None and max_price > 0:
+                print(f"Filtering by max_price: {max_price}")
                 query = query.filter(Post.price <= max_price)
-            if status:
+            if status and status.strip():
+                print(f"Filtering by status: {status}")
                 query = query.filter(Post.status == status)
             
             total = query.count()
+            print(f"Total posts before pagination: {total}")
+            
             posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
+            print(f"Retrieved {len(posts)} posts after pagination")
+            
             return posts, total
         except SQLAlchemyError as e:
+            print(f"Database error in search_posts: {str(e)}")
             raise Exception(f"Database error while searching posts: {str(e)}")
+        except Exception as e:
+            print(f"Unexpected error in search_posts: {str(e)}")
+            raise e
 
     # Media Operations
     def add_post_media(self, post_id: int, media_type: str, media_url: str,
