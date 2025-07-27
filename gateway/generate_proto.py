@@ -2,6 +2,50 @@ import os
 import subprocess
 import sys
 
+def generate_proto_for_service(service_name, proto_dir, proto_file):
+    # Create __init__.py files
+    os.makedirs(proto_dir, exist_ok=True)
+    with open(os.path.join(proto_dir, "__init__.py"), "w") as f:
+        pass
+    
+    # Command to generate Python code from proto file
+    cmd = [
+        sys.executable, "-m", "grpc_tools.protoc",
+        f"--proto_path={os.path.dirname(proto_file)}",
+        f"--python_out={os.path.dirname(proto_file)}",
+        f"--grpc_python_out={os.path.dirname(proto_file)}",
+        proto_file
+    ]
+    
+    try:
+        subprocess.run(cmd, check=True)
+        print(f"{service_name} proto files generated successfully!")
+        
+        # Fix imports in generated files
+        pb2_grpc_file = os.path.join(proto_dir, f"{service_name}_pb2_grpc.py")
+        with open(pb2_grpc_file, 'r') as f:
+            content = f.read()
+        
+        # Replace the import statement
+        if service_name == "post":
+            content = content.replace(
+                f'import {service_name}_pb2 as {service_name}__pb2',
+                f'from . import {service_name}_pb2 as {service_name}__pb2'
+            )
+        else:
+            content = content.replace(
+                f'import {service_name}_pb2 as {service_name}__pb2',
+                f'from app.proto_files.{service_name} import {service_name}_pb2 as {service_name}__pb2'
+            )
+        
+        with open(pb2_grpc_file, 'w') as f:
+            f.write(content)
+            
+        print(f"Fixed imports in {service_name} generated files!")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"Error generating {service_name} proto files: {str(e)}")
+
 def generate_proto():
     # Get the current directory
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -9,43 +53,17 @@ def generate_proto():
     # Auth service protos
     auth_proto_dir = os.path.join(current_dir, "app", "proto_files", "auth")
     auth_proto_file = os.path.join(auth_proto_dir, "auth.proto")
+    generate_proto_for_service("auth", auth_proto_dir, auth_proto_file)
     
-    # Create __init__.py files
-    os.makedirs(auth_proto_dir, exist_ok=True)
-    with open(os.path.join(auth_proto_dir, "__init__.py"), "w") as f:
-        pass
-    
-    # Command to generate Python code from proto file
-    cmd = [
-        sys.executable, "-m", "grpc_tools.protoc",
-        f"--proto_path={os.path.dirname(auth_proto_file)}",
-        f"--python_out={os.path.dirname(auth_proto_file)}",
-        f"--grpc_python_out={os.path.dirname(auth_proto_file)}",
-        auth_proto_file
-    ]
-    
-    try:
-        subprocess.run(cmd, check=True)
-        print("Proto files generated successfully!")
-        
-        # Fix imports in generated files
-        pb2_grpc_file = os.path.join(auth_proto_dir, "auth_pb2_grpc.py")
-        with open(pb2_grpc_file, 'r') as f:
-            content = f.read()
-        
-        # Replace the import statement
-        content = content.replace(
-            'import auth_pb2 as auth__pb2',
-            'from app.proto_files.auth import auth_pb2 as auth__pb2'
-        )
-        
-        with open(pb2_grpc_file, 'w') as f:
-            f.write(content)
-            
-        print("Fixed imports in generated files!")
-        
-    except subprocess.CalledProcessError as e:
-        print(f"Error generating proto files: {str(e)}")
+    # User service protos
+    user_proto_dir = os.path.join(current_dir, "app", "proto_files", "user")
+    user_proto_file = os.path.join(user_proto_dir, "user.proto")
+    generate_proto_for_service("user", user_proto_dir, user_proto_file)
+
+    # Posts service protos
+    posts_proto_dir = os.path.join(current_dir, "app", "proto_files", "posts")
+    posts_proto_file = os.path.join(posts_proto_dir, "post.proto")
+    generate_proto_for_service("post", posts_proto_dir, posts_proto_file)
 
 if __name__ == "__main__":
     generate_proto() 

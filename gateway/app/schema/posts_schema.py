@@ -1,192 +1,376 @@
-import typing
 import strawberry
-from app.exception.UserException import REException
-from app.utils.log_utils import log_msg
-from app.utils.grpc_client import posts_client
+from typing import List, Optional
+from datetime import datetime
+from ..utils.grpc_client import PostsServiceClient
+import logging
+from dataclasses import dataclass
+import typing
+
+logger = logging.getLogger(__name__)
+
+@strawberry.type
+class Comment:
+    id: int
+    postId: int
+    userId: int
+    comment: str
+    parentCommentId: Optional[int]
+    status: str
+    addedAt: datetime
+    commentedAt: datetime
+    replies: List['Comment']
+    likeCount: int
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        if not data:
+            return None
+        return cls(
+            id=data['id'],
+            postId=data['postId'],
+            userId=data['userId'],
+            comment=data['comment'],
+            parentCommentId=data.get('parentCommentId'),
+            status=data['status'],
+            addedAt=data['addedAt'],
+            commentedAt=data['commentedAt'],
+            replies=[cls.from_dict(reply) for reply in data.get('replies', [])],
+            likeCount=data['likeCount']
+        )
+
+@strawberry.type
+class CommentResponse:
+    success: bool
+    message: str
+    comment: Optional[Comment] = None
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message'],
+            comment=Comment.from_dict(data.get('comment'))
+        )
+
+@strawberry.type
+class PostMedia:
+    id: int
+    mediaType: str
+    mediaUrl: str
+    mediaOrder: int
+    mediaSize: Optional[int]
+    caption: Optional[str]
+    uploadedAt: datetime
+
+@strawberry.input
+class PostMediaInput:
+    mediaType: str
+    mediaData: str
+    mediaOrder: int
+    caption: Optional[str] = None
 
 @strawberry.type
 class Post:
-    postId: str = strawberry.field(name="postId")
-    userId: str = strawberry.field(name="userId")
+    id: int
+    userId: int
     title: str
     content: str
-    createdAt: int = strawberry.field(name="createdAt")
-    updatedAt: int = strawberry.field(name="updatedAt")
-    likeCount: int = strawberry.field(name="likeCount")
-    commentCount: int = strawberry.field(name="commentCount")
+    visibility: str
+    propertyType: str
+    location: str
+    mapLocation: str
+    price: float
+    status: str
+    createdAt: datetime
+    media: List[PostMedia]
+    likeCount: int
+    commentCount: int
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        if not data:
+            return None
+        media_list = [
+            PostMedia(
+                id=m['id'],
+                mediaType=m['mediaType'],
+                mediaUrl=m['mediaUrl'],
+                mediaOrder=m['mediaOrder'],
+                mediaSize=m.get('mediaSize'),
+                caption=m.get('caption'),
+                uploadedAt=m['uploadedAt']
+            ) for m in data.get('media', [])
+        ]
+        return cls(
+            id=data['id'],
+            userId=data['userId'],
+            title=data['title'],
+            content=data['content'],
+            visibility=data['visibility'],
+            propertyType=data['propertyType'],
+            location=data['location'],
+            mapLocation=data['mapLocation'],
+            price=data['price'],
+            status=data['status'],
+            createdAt=data['createdAt'],
+            media=media_list,
+            likeCount=data['likeCount'],
+            commentCount=data['commentCount']
+        )
+
+@strawberry.type
+class PostResponse:
+    success: bool
+    message: str
+    post: Optional[Post] = None
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message'],
+            post=Post.from_dict(data.get('post'))
+        )
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def post(self, postId: str) -> typing.Optional[Post]:
-        try:
-            response = posts_client.get_post(postId)
-            if not response.success:
-                raise REException("POST_NOT_FOUND", response.message, "Post not found")
-            
-            return Post(
-                postId=response.post.post_id,
-                userId=response.post.user_id,
-                title=response.post.title,
-                content=response.post.content,
-                createdAt=response.post.created_at,
-                updatedAt=response.post.updated_at,
-                likeCount=response.post.like_count,
-                commentCount=response.post.comment_count
-            )
-        except Exception as e:
-            log_msg("error", f"Error fetching post: {str(e)}")
-            raise REException(
-                "POST_NOT_FOUND",
-                "Failed to fetch post",
-                str(e)
-            ).to_graphql_error()
+    def post(self, postId: int) -> Optional[Post]:
+        logger.debug(f"Query.post called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.get_post(post_id=postId)
+        return Post.from_dict(result.get('post')) if result else None
 
     @strawberry.field
-    def posts_by_user(self, userId: str) -> typing.List[Post]:
-        try:
-            response = posts_client.get_posts_by_user(userId)
-            if not response.success:
-                raise REException("POSTS_NOT_FOUND", response.message, "Failed to fetch posts")
-            
-            return [
-                Post(
-                    postId=post.post_id,
-                    userId=post.user_id,
-                    title=post.title,
-                    content=post.content,
-                    createdAt=post.created_at,
-                    updatedAt=post.updated_at,
-                    likeCount=post.like_count,
-                    commentCount=post.comment_count
-                )
-                for post in response.posts.posts
-            ]
-        except Exception as e:
-            log_msg("error", f"Error fetching posts: {str(e)}")
-            raise REException(
-                "POSTS_NOT_FOUND",
-                "Failed to fetch posts",
-                str(e)
-            ).to_graphql_error()
+    def postsByUser(self, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
+        logger.debug(f"Query.postsByUser called with userId: {userId}, page: {page}, limit: {limit}")
+        client = PostsServiceClient()
+        result = client.get_posts_by_user(user_id=userId, page=page, limit=limit)
+        return [Post.from_dict(post) for post in result] if result else []
+
+    @strawberry.field
+    def searchPosts(
+        self,
+        propertyType: Optional[str] = None,
+        location: Optional[str] = None,
+        minPrice: Optional[float] = None,
+        maxPrice: Optional[float] = None,
+        status: Optional[str] = None,
+        page: int = 1,
+        limit: int = 10
+    ) -> List[Post]:
+        logger.debug(f"Query.searchPosts called with propertyType: {propertyType}, location: {location}")
+        client = PostsServiceClient()
+        result = client.search_posts(
+            property_type=propertyType,
+            location=location,
+            min_price=minPrice,
+            max_price=maxPrice,
+            status=status,
+            page=page,
+            limit=limit
+        )
+        return [Post.from_dict(post) for post in result] if result else []
+
+    @strawberry.field
+    def postComments(
+        self,
+        postId: int,
+        page: int = 1,
+        limit: int = 10
+    ) -> List[Comment]:
+        logger.debug(f"Query.postComments called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.get_comments(post_id=postId, page=page, limit=limit)
+        return [Comment.from_dict(comment) for comment in result] if result else []
+
+@strawberry.type
+class MediaResponse:
+    success: bool
+    message: str
+
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            success=data['success'],
+            message=data['message']
+        )
 
 @strawberry.type
 class Mutation:
     @strawberry.mutation
-    async def create_post(
-        self, userId: str, title: str, content: str
-    ) -> Post:
-        try:
-            response = posts_client.create_post(userId, title, content)
-            if not response.success:
-                raise REException("POST_CREATION_FAILED", response.message, "Failed to create post")
-            
-            return Post(
-                postId=response.post.post_id,
-                userId=response.post.user_id,
-                title=response.post.title,
-                content=response.post.content,
-                createdAt=response.post.created_at,
-                updatedAt=response.post.updated_at,
-                likeCount=response.post.like_count,
-                commentCount=response.post.comment_count
-            )
-        except Exception as e:
-            log_msg("error", f"Error creating post: {str(e)}")
-            raise REException(
-                "POST_CREATION_FAILED",
-                "Failed to create post",
-                str(e)
-            ).to_graphql_error()
+    def createPost(
+        self,
+        userId: int,
+        title: str,
+        content: str,
+        visibility: str,
+        propertyType: str,
+        location: str,
+        mapLocation: str,
+        price: float,
+        status: str,
+        media: typing.Optional[typing.List[PostMediaInput]] = None
+    ) -> PostResponse:
+        logger.debug(f"Mutation.createPost called with userId: {userId}, title: {title}")
+        client = PostsServiceClient()
+        result = client.create_post(
+            user_id=userId,
+            title=title,
+            content=content,
+            visibility=visibility,
+            property_type=propertyType,
+            location=location,
+            map_location=mapLocation,
+            price=price,
+            status=status,
+            media=media or []
+        )
+        logger.debug(f"CreatePost result: {result}")
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    async def update_post(
-        self, postId: str, title: str, content: str
-    ) -> Post:
-        try:
-            response = posts_client.update_post(postId, title, content)
-            if not response.success:
-                raise REException("POST_UPDATE_FAILED", response.message, "Failed to update post")
-            
-            return Post(
-                postId=response.post.post_id,
-                userId=response.post.user_id,
-                title=response.post.title,
-                content=response.post.content,
-                createdAt=response.post.created_at,
-                updatedAt=response.post.updated_at,
-                likeCount=response.post.like_count,
-                commentCount=response.post.comment_count
-            )
-        except Exception as e:
-            log_msg("error", f"Error updating post: {str(e)}")
-            raise REException(
-                "POST_UPDATE_FAILED",
-                "Failed to update post",
-                str(e)
-            ).to_graphql_error()
+    def updatePost(
+        self,
+        postId: int,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        visibility: Optional[str] = None,
+        propertyType: Optional[str] = None,
+        location: Optional[str] = None,
+        mapLocation: Optional[str] = None,
+        price: Optional[float] = None,
+        status: Optional[str] = None
+    ) -> PostResponse:
+        logger.debug(f"Mutation.updatePost called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.update_post(
+            post_id=postId,
+            title=title,
+            content=content,
+            visibility=visibility,
+            property_type=propertyType,
+            location=location,
+            map_location=mapLocation,
+            price=price,
+            status=status
+        )
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    async def delete_post(self, postId: str) -> bool:
-        try:
-            response = posts_client.delete_post(postId)
-            if not response.success:
-                raise REException("POST_DELETION_FAILED", response.message, "Failed to delete post")
-            return True
-        except Exception as e:
-            log_msg("error", f"Error deleting post: {str(e)}")
-            raise REException(
-                "POST_DELETION_FAILED",
-                "Failed to delete post",
-                str(e)
-            ).to_graphql_error()
+    def deletePost(self, postId: int) -> PostResponse:
+        logger.debug(f"Mutation.deletePost called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.delete_post(post_id=postId)
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    async def like_post(self, postId: str, userId: str) -> Post:
-        try:
-            response = posts_client.like_post(postId, userId)
-            if not response.success:
-                raise REException("POST_LIKE_FAILED", response.message, "Failed to like post")
-            
-            return Post(
-                postId=response.post.post_id,
-                userId=response.post.user_id,
-                title=response.post.title,
-                content=response.post.content,
-                createdAt=response.post.created_at,
-                updatedAt=response.post.updated_at,
-                likeCount=response.post.like_count,
-                commentCount=response.post.comment_count
-            )
-        except Exception as e:
-            log_msg("error", f"Error liking post: {str(e)}")
-            raise REException(
-                "POST_LIKE_FAILED",
-                "Failed to like post",
-                str(e)
-            ).to_graphql_error()
+    def likePost(self, postId: int, userId: int) -> PostResponse:
+        logger.debug(f"Mutation.likePost called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.like_post(post_id=postId, user_id=userId)
+        return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    async def unlike_post(self, postId: str, userId: str) -> Post:
-        try:
-            response = posts_client.unlike_post(postId, userId)
-            if not response.success:
-                raise REException("POST_UNLIKE_FAILED", response.message, "Failed to unlike post")
-            
-            return Post(
-                postId=response.post.post_id,
-                userId=response.post.user_id,
-                title=response.post.title,
-                content=response.post.content,
-                createdAt=response.post.created_at,
-                updatedAt=response.post.updated_at,
-                likeCount=response.post.like_count,
-                commentCount=response.post.comment_count
-            )
-        except Exception as e:
-            log_msg("error", f"Error unliking post: {str(e)}")
-            raise REException(
-                "POST_UNLIKE_FAILED",
-                "Failed to unlike post",
-                str(e)
-            ).to_graphql_error() 
+    def unlikePost(self, postId: int, userId: int) -> PostResponse:
+        logger.debug(f"Mutation.unlikePost called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.unlike_post(post_id=postId, user_id=userId)
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def createComment(
+        self,
+        postId: int,
+        userId: int,
+        comment: str,
+        parentCommentId: Optional[int] = None
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.createComment called with postId: {postId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.create_comment(
+            post_id=postId,
+            user_id=userId,
+            comment=comment,
+            parent_comment_id=parentCommentId
+        )
+        logger.debug(f"CreateComment result: {result}")
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def updateComment(
+        self,
+        commentId: int,
+        comment: Optional[str] = None,
+        status: Optional[str] = None
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.updateComment called with commentId: {commentId}")
+        client = PostsServiceClient()
+        result = client.update_comment(
+            comment_id=commentId,
+            comment=comment,
+            status=status
+        )
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def deleteComment(
+        self,
+        commentId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.deleteComment called with commentId: {commentId}")
+        client = PostsServiceClient()
+        result = client.delete_comment(comment_id=commentId)
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def likeComment(
+        self,
+        commentId: int,
+        userId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.likeComment called with commentId: {commentId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.like_comment(
+            comment_id=commentId,
+            user_id=userId
+        )
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def unlikeComment(
+        self,
+        commentId: int,
+        userId: int
+    ) -> CommentResponse:
+        logger.debug(f"Mutation.unlikeComment called with commentId: {commentId}, userId: {userId}")
+        client = PostsServiceClient()
+        result = client.unlike_comment(
+            comment_id=commentId,
+            user_id=userId
+        )
+        return CommentResponse.from_dict(result)
+
+    @strawberry.mutation
+    def addPostMedia(
+        self,
+        postId: int,
+        media: List[PostMediaInput]
+    ) -> PostResponse:
+        logger.debug(f"Mutation.addPostMedia called with postId: {postId}")
+        client = PostsServiceClient()
+        result = client.add_post_media(
+            post_id=postId,
+            media=media
+        )
+        return PostResponse.from_dict(result)
+
+    @strawberry.mutation
+    def deletePostMedia(
+        self,
+        mediaId: int
+    ) -> MediaResponse:
+        logger.debug(f"Mutation.deletePostMedia called with mediaId: {mediaId}")
+        client = PostsServiceClient()
+        result = client.delete_post_media(media_id=mediaId)
+        return MediaResponse.from_dict(result) 

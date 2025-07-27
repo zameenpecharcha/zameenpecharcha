@@ -1,3 +1,0 @@
-"""
-Comments Service Application Package
-""" 
