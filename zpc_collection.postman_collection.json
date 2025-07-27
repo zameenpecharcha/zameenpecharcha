@@ -1,0 +1,782 @@
+{
+	"info": {
+		"_postman_id": "981b93d4-bbf9-45c8-85d9-b15bd274b4b1",
+		"name": "zpc_collection",
+		"description": "training",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "11069795"
+	},
+	"item": [
+		{
+			"name": "user",
+			"item": [
+				{
+					"name": "createuser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreateUser {\r\n  createUser(\r\n    firstName: \"John\"\r\n    lastName: \"Doe\"\r\n    email: \"ram91511@gmail.com\"  # Fixed email format\r\n    phone: \"1234\"  # Changed phone number to be unique\r\n    password: \"securepassword12347\"\r\n    role: \"user\"\r\n    address: \"123 Main St\"\r\n    latitude: 12.345678\r\n    longitude: 45.678901\r\n    bio: \"Software Developer\"\r\n  ) {\r\n    id\r\n    firstName\r\n    lastName\r\n    email\r\n    phone\r\n    profilePhoto\r\n    role\r\n    address\r\n    latitude\r\n    longitude\r\n    bio\r\n    isactive\r\n    emailVerified\r\n    phoneVerified\r\n    createdAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getuser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetUser {\r\n  user(id: 1) {\r\n    id\r\n    firstName\r\n    lastName\r\n    email\r\n    phone\r\n    profilePhoto\r\n    role\r\n    address\r\n    latitude\r\n    longitude\r\n    bio\r\n    isactive\r\n    emailVerified\r\n    phoneVerified\r\n    createdAt\r\n    ratings {\r\n      id\r\n      ratedUserId\r\n      ratedByUserId\r\n      ratingValue\r\n      review\r\n      ratingType\r\n      createdAt\r\n      updatedAt\r\n    }\r\n    followersCount\r\n    followingCount\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getuserratings",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetUserRatings {\r\n  userRatings(userId: 1) {\r\n    id\r\n    ratedUserId\r\n    ratedByUserId\r\n    ratingValue\r\n    review\r\n    ratingType\r\n    createdAt\r\n    updatedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createuserrating",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreateUserRating {\r\n  createUserRating(\r\n    ratedUserId: 1\r\n    ratedByUserId: 5\r\n    ratingValue: 5\r\n    review: \"Excellent service!\"\r\n    ratingType: \"PROFESSIONAL\"\r\n  ) {\r\n    id\r\n    ratedUserId\r\n    ratedByUserId\r\n    ratingValue\r\n    review\r\n    ratingType\r\n    createdAt\r\n    updatedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getuserfollowers",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetUserFollowers {\r\n  userFollowers(userId: 1) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getusrefollowing",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetUserFollowing {\r\n  userFollowing(userId: 1) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "followuser",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation FollowUser {\r\n  followUser(\r\n    userId: 1\r\n    followingId: 2\r\n  ) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "checkfollowingstatus",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query CheckFollowingStatus {\r\n  checkFollowingStatus(userId: 1, followingId: 2) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation Login {\r\n  login(\r\n    email: \"ram9151@gmail.com\"\r\n    password: \"securepassword1234\"\r\n  ) {\r\n    success\r\n    token\r\n    refreshToken\r\n    message\r\n    userInfo {\r\n      id\r\n      firstName\r\n      lastName\r\n      email\r\n      phone\r\n      profilePhoto\r\n      role\r\n      address\r\n      latitude\r\n      longitude\r\n      bio\r\n      isactive\r\n      emailVerified\r\n      phoneVerified\r\n      createdAt\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "emailverification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation SendVerificationOTP {\r\n  sendOtp(\r\n    email: \"ram9151@gmail.com\"\r\n    type: VERIFICATION\r\n  ) {\r\n    success\r\n    message\r\n    channels  # [\"email\"] or [\"email\", \"sms\"] if phone provided\r\n  }\r\n}\r\n",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "loginotp",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation SendLoginOTP {\r\n  sendOtp(\r\n    email: \"ram9151@gmail.com\"\r\n    type: LOGIN\r\n  ) {\r\n    success\r\n    message\r\n    channels\r\n  }\r\n}\r\n",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "password_reset_verify",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation VerifyPasswordResetOTP {\r\n  verifyOtp(\r\n    email: \"ram9151@gmail.com\"\r\n    otpCode: \"139397\"\r\n    type: PASSWORD_RESET\r\n  ) {\r\n    success\r\n    message\r\n    userInfo {\r\n      email\r\n      emailVerified\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "reset_password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ResetPassword {\r\n  resetPassword(\r\n    email: \"ram9151@gmail.com\"\r\n    otpCode: \"139397\"\r\n    newPassword: \"1234\"\r\n    confirmPassword: \"1234\"\r\n  ) {\r\n    success\r\n    message\r\n    userInfo {\r\n      email\r\n      emailVerified\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "posts",
+			"item": [
+				{
+					"name": "createpost_with_image",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreatePost {\r\n  createPost(\r\n    userId: 1\r\n    title: \"Beautiful House for Sale\"\r\n    content: \"3 bedroom house with garden\"\r\n    visibility: \"public\"\r\n    propertyType: \"house\"\r\n    location: \"New York\"\r\n    mapLocation: \"40.7128,-74.0060\"\r\n    price: 500000.0\r\n    status: \"active\"\r\n    media: [{\r\n      mediaType: \"image\"\r\n      mediaData: \"SGVsbG8s=\"  # This is \"Hello\" in base64\r\n      mediaOrder: 1\r\n      caption: \"Front view\"\r\n    }]\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      title\r\n      media {\r\n        id\r\n        mediaUrl\r\n        caption\r\n      }\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createpost_with_no_media",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreatePost {\r\n  createPost(\r\n    userId: 155\r\n    title: \"Beautiful House for Sale\"\r\n    content: \"3 bedroom house with garden\"\r\n    visibility: \"public\"\r\n    propertyType: \"house\"\r\n    location: \"New York\"\r\n    mapLocation: \"40.7128,-74.0060\"\r\n    price: 500000.0\r\n    status: \"active\"\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      title\r\n      content\r\n      visibility\r\n      propertyType\r\n      location\r\n      mapLocation\r\n      price\r\n      status\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update_post",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation UpdatePost {\r\n  updatePost(\r\n    postId: 2\r\n    title: \"chikkadpally\"\r\n    price: 550000.0\r\n    status: \"pending\"\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      title\r\n      price\r\n      status\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete_post",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation DeletePost {\r\n  deletePost(postId: 2) {\r\n    success\r\n    message\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "add_media_to_post",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation AddPostMedia {\r\n  addPostMedia(\r\n    postId: 4    \r\n    media: [{\r\n      mediaType: \"image\"\r\n      mediaData: \"SGVsbG8s=\"\r\n      mediaOrder: 2\r\n      caption: \"Garden view\"\r\n    }]\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      media {\r\n        id\r\n        mediaUrl\r\n        caption\r\n      }\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deletepostmedia",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation DeletePostMedia {\r\n  deletePostMedia(mediaId: 3) {\r\n    success\r\n    message\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "likepost",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation LikePost {\r\n  likePost(postId: 4, userId: 3) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}\r\n",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unlikepost",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation UnlikePost {\r\n  unlikePost(postId: 4, userId: 3) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "createcomment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreateComment {\r\n  createComment(\r\n    postId: 4\r\n    userId: 5,\r\n    parentCommentId: 14\r\n    comment: \"Great property!\"\r\n  ) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      comment\r\n      addedAt\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "comment_reply",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation CreateCommentReply {\r\n  createComment(\r\n    postId: 4\r\n    userId: 2\r\n    comment: \"Thanks for your feedback!\"\r\n    parentCommentId: 15\r\n  ) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      parentCommentId\r\n      comment\r\n      addedAt\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "updatecomment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation UpdateComment {\r\n  updateComment(\r\n    commentId: 4\r\n    comment: \"Updated comment text\"\r\n  ) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      comment\r\n      commentedAt\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "deletecomment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation DeleteComment {\r\n  deleteComment(commentId: 99) {\r\n    success\r\n    message\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "likecomment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation LikeComment {\r\n  likeComment(commentId: 5, userId: 2) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "unlikecomment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation UnlikeComment {\r\n  unlikeComment(commentId: 1, userId: 2) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
