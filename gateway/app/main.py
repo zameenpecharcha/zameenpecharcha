@@ -1,34 +1,69 @@
-from fastapi import FastAPI
+import strawberry
+from fastapi import FastAPI, Request
+from strawberry.fastapi import GraphQLRouter
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.user_api import user_router
-from app.api.comments_api import comments_router
-from app.api.posts_api import posts_router
-from app.api.property_api import property_router
-from app.api.auth_api import router as auth_router
+from .schema.auth_schema import Query as AuthQuery, Mutation as AuthMutation
+from .schema.user_schema import Query as UserQuery, Mutation as UserMutation
+from .schema.posts_schema import Query as PostsQuery, Mutation as PostsMutation
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+@strawberry.type
+class Query(AuthQuery, UserQuery, PostsQuery):
+    pass
+
+@strawberry.type
+class Mutation(AuthMutation, UserMutation, PostsMutation):
+    pass
+
+schema = strawberry.Schema(query=Query, mutation=Mutation)
 
 app = FastAPI()
 
-# Configure CORS
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-    expose_headers=["*"]  # Expose all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.debug(f"Incoming request: {request.method} {request.url}")
+    logger.debug(f"Headers: {request.headers}")
+    body = await request.body()
+    logger.debug(f"Body: {body.decode()}")
+    response = await call_next(request)
+    return response
+
+# Add GraphQL routes
+graphql_app = GraphQLRouter(
+    schema,
+    graphiql=True,  # Enable GraphiQL interface for browser access
+    path="/graphql"  # Base path for GraphQL
+)
+
+# Mount the GraphQL app at the API path
+app.include_router(graphql_app, prefix="/api/v1")
 
 # Health check endpoint
 @app.get("/health")
 def health_check():
+    logger.debug("Health check endpoint called")
     return {"status": "healthy"}
 
 # API routes
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
-app.include_router(user_router, prefix="/api/v1/users", tags=["users"])
-app.include_router(comments_router, prefix="/api/v1/comments", tags=["comments"])
-app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"])
-app.include_router(property_router, prefix="/api/v1/properties", tags=["properties"])
+# app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"]) # This line is removed as per the new_code
+# app.include_router(user_router, prefix="/api/v1/users", tags=["users"]) # This line is removed as per the new_code
+# app.include_router(comments_router, prefix="/api/v1/comments", tags=["comments"]) # This line is removed as per the new_code
+# app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"]) # This line is removed as per the new_code
+# app.include_router(property_router, prefix="/api/v1/properties", tags=["properties"]) # This line is removed as per the new_code
 
 if __name__ == "__main__":
     import uvicorn

@@ -18,18 +18,27 @@ def generate_proto_files():
         print(f"Error: Proto file not found at {proto_file}")
         sys.exit(1)
     
-    # Define the output directory for generated files
-    output_dir = os.path.join(current_dir, "app", "proto_files")
-    
     try:
         # Generate Python files from proto
         subprocess.run([
             "python", "-m", "grpc_tools.protoc",
             f"--proto_path={proto_dir}",
-            f"--python_out={output_dir}",
-            f"--grpc_python_out={output_dir}",
+            f"--python_out={proto_dir}",
+            f"--grpc_python_out={proto_dir}",
             "post.proto"
         ], check=True)
+
+        # Fix imports in generated files
+        pb2_file = os.path.join(proto_dir, "post_pb2.py")
+        pb2_grpc_file = os.path.join(proto_dir, "post_pb2_grpc.py")
+
+        # Fix post_pb2_grpc.py
+        with open(pb2_grpc_file, 'r') as f:
+            content = f.read()
+        content = content.replace('import post_pb2 as post__pb2',
+                                'from . import post_pb2 as post__pb2')
+        with open(pb2_grpc_file, 'w') as f:
+            f.write(content)
         
         print("Proto files generated successfully!")
         
