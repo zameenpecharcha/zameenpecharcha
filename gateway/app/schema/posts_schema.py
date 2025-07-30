@@ -13,6 +13,9 @@ class Comment:
     id: int
     postId: int
     userId: int
+    userFirstName: str
+    userLastName: str
+    userRole: str
     comment: str
     parentCommentId: Optional[int]
     status: str
@@ -29,6 +32,9 @@ class Comment:
             id=data['id'],
             postId=data['postId'],
             userId=data['userId'],
+            userFirstName=data.get('userFirstName', ''),
+            userLastName=data.get('userLastName', ''),
+            userRole=data.get('userRole', ''),
             comment=data['comment'],
             parentCommentId=data.get('parentCommentId'),
             status=data['status'],
@@ -261,7 +267,46 @@ class Query:
         logger.debug(f"Query.postComments called with postId: {postId}")
         client = PostsServiceClient()
         result = client.get_comments(post_id=postId, page=page, limit=limit)
-        return [Comment.from_dict(comment) for comment in result] if result else []
+        
+        if not result or not result.success:
+            return []
+            
+        comments_data = []
+        for comment in result.comments:
+            comment_dict = {
+                'id': comment.id,
+                'postId': comment.post_id,
+                'userId': comment.user_id,
+                'userFirstName': comment.user_first_name,
+                'userLastName': comment.user_last_name,
+                'userRole': comment.user_role,
+                'comment': comment.comment,
+                'parentCommentId': comment.parent_comment_id if comment.parent_comment_id != 0 else None,
+                'status': comment.status,
+                'addedAt': datetime.fromtimestamp(comment.added_at),
+                'commentedAt': datetime.fromtimestamp(comment.commented_at),
+                'replies': [
+                    {
+                        'id': r.id,
+                        'postId': r.post_id,
+                        'userId': r.user_id,
+                        'userFirstName': r.user_first_name,
+                        'userLastName': r.user_last_name,
+                        'userRole': r.user_role,
+                        'comment': r.comment,
+                        'parentCommentId': r.parent_comment_id,
+                        'status': r.status,
+                        'addedAt': datetime.fromtimestamp(r.added_at),
+                        'commentedAt': datetime.fromtimestamp(r.commented_at),
+                        'replies': [],
+                        'likeCount': r.like_count
+                    } for r in comment.replies
+                ],
+                'likeCount': comment.like_count
+            }
+            comments_data.append(comment_dict)
+            
+        return [Comment.from_dict(comment) for comment in comments_data]
 
 @strawberry.type
 class MediaResponse:

@@ -336,20 +336,46 @@ class PostRepository:
         return get_replies(comment)
 
     def get_comments(self, post_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Comment], int]:
-        # Get only top-level comments (no parent)
-        query = self.db.query(Comment).filter(
-            Comment.post_id == post_id,
-            Comment.parent_comment_id.is_(None)
-        ).order_by(desc(Comment.commented_at))
+        try:
+            print(f"get_comments called with post_id: {post_id}, page: {page}, limit: {limit}")
+            
+            # Get only top-level comments (no parent)
+            query = self.db.query(Comment).options(
+                sqlalchemy.orm.joinedload(Comment.user)
+            ).filter(
+                Comment.post_id == post_id,
+                Comment.parent_comment_id.is_(None)
+            ).order_by(desc(Comment.commented_at))
 
-        # Get total count before pagination
-        total = query.count()
+            # Print the SQL query
+            print(f"SQL Query: {query}")
+            
+            # Get total count before pagination
+            total = query.count()
+            print(f"Total comments found: {total}")
 
-        # Apply pagination
-        offset = (page - 1) * limit
-        comments = query.offset(offset).limit(limit).all()
+            # Apply pagination
+            offset = (page - 1) * limit
+            print(f"Using offset: {offset}, limit: {limit}")
+            
+            comments = query.offset(offset).limit(limit).all()
+            print(f"Retrieved {len(comments)} comments")
+            
+            # Debug print each comment
+            for comment in comments:
+                print(f"Comment ID: {comment.id}, User ID: {comment.user_id}, "
+                      f"User: {comment.user.first_name if comment.user else 'None'} "
+                      f"{comment.user.last_name if comment.user else 'None'}, "
+                      f"Role: {comment.user.role if comment.user else 'None'}")
+                print(f"Has {len(comment.replies)} replies")
 
-        return comments, total
+            return comments, total
+        except SQLAlchemyError as e:
+            print(f"Database error in get_comments: {str(e)}")
+            raise Exception(f"Database error while getting comments: {str(e)}")
+        except Exception as e:
+            print(f"Unexpected error in get_comments: {str(e)}")
+            raise e
 
     def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like') -> Optional[Comment]:
         try:
