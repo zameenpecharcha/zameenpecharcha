@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship, backref
 from ..utils.db_connection import Base
 from datetime import datetime
 
-class CommentReference(Base):
+class Comment(Base):
     __tablename__ = "comments"
     __table_args__ = {'extend_existing': True}
 
@@ -17,9 +17,10 @@ class CommentReference(Base):
     commented_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
+    user = relationship("User", back_populates="comments")
     post = relationship("Post", foreign_keys=[post_id], back_populates="comments")
     parent = relationship(
-        "CommentReference",
+        "Comment",
         remote_side=[id],
         backref=backref("replies", cascade="all, delete-orphan"),
         foreign_keys=[parent_comment_id]

@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Text, 
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..utils.db_connection import Base
-from ..models.comment import CommentReference
+from .comment_entity import Comment
 
 class Post(Base):
     __tablename__ = "posts"
@@ -20,9 +20,10 @@ class Post(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
+    user = relationship("User", back_populates="posts")
     media = relationship("PostMedia", back_populates="post", cascade="all, delete-orphan")
     likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")
-    comments = relationship("CommentReference", back_populates="post", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
 
 class PostMedia(Base):
     __tablename__ = "post_media"
@@ -50,6 +51,7 @@ class PostLike(Base):
 
     # Relationships
     post = relationship("Post", back_populates="likes")
+    user = relationship("User", back_populates="post_likes")
 
 class CommentLike(Base):
     __tablename__ = "post_comment_likes"
@@ -61,4 +63,5 @@ class CommentLike(Base):
     liked_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
-    comment = relationship("CommentReference", back_populates="likes") 
+    comment = relationship("Comment", back_populates="likes")
+    user = relationship("User", back_populates="comment_likes") 

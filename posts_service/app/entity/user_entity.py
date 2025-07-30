@@ -2,7 +2,7 @@ from sqlalchemy import Column, BigInteger, String, TIMESTAMP, Boolean
 from sqlalchemy.orm import relationship
 from ..utils.db_connection import Base
 
-class UserReference(Base):
+class User(Base):
     __tablename__ = "users"
     __table_args__ = {'extend_existing': True}
 
@@ -17,5 +17,8 @@ class UserReference(Base):
     phone_verified = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP)
 
-    # We don't need all the fields, just enough to validate user existence
-    # No need for relationships here since we're just using this for validation 
+    # Relationships
+    posts = relationship("Post", back_populates="user", cascade="all, delete-orphan")
+    comments = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
+    post_likes = relationship("PostLike", back_populates="user", cascade="all, delete-orphan")
+    comment_likes = relationship("CommentLike", back_populates="user", cascade="all, delete-orphan") 
