@@ -232,6 +232,18 @@ class PostsServiceClient:
         self.channel = grpc.insecure_channel('localhost:50053')
         self.stub = post_pb2_grpc.PostsServiceStub(self.channel)
 
+    def get_comments(self, post_id: int, page: int = 1, limit: int = 10):
+        try:
+            request = post_pb2.GetCommentsRequest(
+                post_id=post_id,
+                page=page,
+                limit=limit
+            )
+            return self.stub.GetComments(request)
+        except grpc.RpcError as e:
+            print(f"Error in get_comments: {str(e)}")
+            return None
+
     def search_posts(self, property_type: str = None, location: str = None,
                     min_price: float = None, max_price: float = None,
                     status: str = None, page: int = 1, limit: int = 10):
@@ -882,34 +894,6 @@ class PropertyServiceClient:
                     'commentCount': post.comment_count
                 })
             return posts
-        except grpc.RpcError as e:
-            return []
-
-    def get_comments(self, post_id: int, page: int = 1, limit: int = 10) -> list:
-        try:
-            request = post_pb2.GetCommentsRequest(
-                post_id=post_id,
-                page=page,
-                limit=limit
-            )
-            response = self.stub.GetComments(request)
-            
-            # Convert the gRPC response to a list of dictionaries
-            comments = []
-            for comment in response.comments:
-                comments.append({
-                    'id': comment.id,
-                    'postId': comment.post_id,
-                    'userId': comment.user_id,
-                    'comment': comment.comment,
-                    'parentCommentId': comment.parent_comment_id if comment.parent_comment_id != 0 else None,
-                    'status': comment.status,
-                    'addedAt': datetime.fromtimestamp(comment.added_at),
-                    'commentedAt': datetime.fromtimestamp(comment.commented_at),
-                    'replies': [],  # Replies will be handled separately
-                    'likeCount': comment.like_count
-                })
-            return comments
         except grpc.RpcError as e:
             return []
 

@@ -45,11 +45,14 @@ message Comment {
     int64 parent_comment_id = 3;
     string comment = 4;
     int64 user_id = 5;
-    string status = 6;
-    int64 added_at = 7;
-    int64 commented_at = 8;
-    repeated Comment replies = 9;
-    int32 like_count = 10;
+    string user_first_name = 6;
+    string user_last_name = 7;
+    string user_role = 8;
+    string status = 9;
+    int64 added_at = 10;
+    int64 commented_at = 11;
+    repeated Comment replies = 12;
+    int32 like_count = 13;
 }
 
 // Post List Message

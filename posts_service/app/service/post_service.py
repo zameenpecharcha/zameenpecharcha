@@ -77,6 +77,9 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             parent_comment_id=comment.parent_comment_id or 0,
             comment=comment.comment,
             user_id=comment.user_id,
+            user_first_name=comment.user.first_name if comment.user else "",
+            user_last_name=comment.user.last_name if comment.user else "",
+            user_role=comment.user.role if comment.user else "",
             status=comment.status,
             added_at=self._convert_timestamp(comment.added_at),
             commented_at=self._convert_timestamp(comment.commented_at),
@@ -534,23 +537,39 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def GetComments(self, request, context):
         try:
+            print(f"GetComments called with post_id: {request.post_id}, page: {request.page}, limit: {request.limit}")
+            
             # Validate page number
-            total_pages = (self.repository.get_post_comment_count(request.post_id) + request.limit - 1) // request.limit
+            total_comments = self.repository.get_post_comment_count(request.post_id)
+            print(f"Total comments for post {request.post_id}: {total_comments}")
+            
+            total_pages = (total_comments + request.limit - 1) // request.limit
             if total_pages == 0:
                 total_pages = 1
+            print(f"Total pages: {total_pages}")
             
             # If requested page is greater than total pages, return first page
             page = min(request.page, total_pages)
             if page < 1:
                 page = 1
+            print(f"Using page: {page}")
 
             comments, total = self.repository.get_comments(
                 post_id=request.post_id,
                 page=page,
                 limit=request.limit
             )
+            print(f"Retrieved {len(comments)} comments")
+            
+            # Debug print each comment
+            for comment in comments:
+                print(f"Comment ID: {comment.id}, User ID: {comment.user_id}, "
+                      f"User: {comment.user.first_name if comment.user else 'None'} "
+                      f"{comment.user.last_name if comment.user else 'None'}, "
+                      f"Role: {comment.user.role if comment.user else 'None'}")
+                print(f"Has {len(comment.replies)} replies")
 
-            return post_pb2.CommentListResponse(
+            response = post_pb2.CommentListResponse(
                 success=True,
                 message="Comments retrieved successfully",
                 comments=[self._convert_to_proto_comment(c) for c in comments],
@@ -558,7 +577,10 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 page=page,
                 total_pages=total_pages
             )
+            print("Successfully created CommentListResponse")
+            return response
         except Exception as e:
+            print(f"Error in GetComments: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return post_pb2.CommentListResponse(
