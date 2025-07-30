@@ -186,7 +186,7 @@
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "mutation FollowUser {\r\n  followUser(\r\n    userId: 1\r\n    followingId: 2\r\n  ) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"query": "mutation FollowUser {\r\n  followUser(\r\n    userId: 99\r\n    followingId: 2\r\n  ) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
@@ -420,7 +420,7 @@
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "mutation CreatePost {\r\n  createPost(\r\n    userId: 155\r\n    title: \"Beautiful House for Sale\"\r\n    content: \"3 bedroom house with garden\"\r\n    visibility: \"public\"\r\n    propertyType: \"house\"\r\n    location: \"New York\"\r\n    mapLocation: \"40.7128,-74.0060\"\r\n    price: 500000.0\r\n    status: \"active\"\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      title\r\n      content\r\n      visibility\r\n      propertyType\r\n      location\r\n      mapLocation\r\n      price\r\n      status\r\n    }\r\n  }\r\n}",
+								"query": "mutation CreatePost {\r\n  createPost(\r\n    userId: 8\r\n    title: \"Beautiful House for Sale\"\r\n    content: \"3 bedroom house with garden\"\r\n    visibility: \"public\"\r\n    propertyType: \"house\"\r\n    location: \"New York\"\r\n    mapLocation: \"40.7128,-74.0060\"\r\n    price: 500000.0\r\n    status: \"active\"\r\n  ) {\r\n    success\r\n    message\r\n    post {\r\n      id\r\n      title\r\n      content\r\n      visibility\r\n      propertyType\r\n      location\r\n      mapLocation\r\n      price\r\n      status\r\n    }\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
@@ -749,6 +749,34 @@
 					"response": []
 				},
 				{
+					"name": "searchposts",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation LikeComment {\r\n  likeComment(commentId: 5, userId: 2) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/graphql",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"graphql"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "unlikecomment",
 					"request": {
 						"method": "POST",
@@ -756,7 +784,7 @@
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "mutation UnlikeComment {\r\n  unlikeComment(commentId: 1, userId: 2) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
+								"query": "mutation UnlikeComment {\r\n  unlikeComment(commentId: 5, userId: 2) {\r\n    success\r\n    message\r\n    comment {\r\n      id\r\n      likeCount\r\n    }\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
