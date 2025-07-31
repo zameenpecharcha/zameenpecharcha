@@ -655,28 +655,32 @@ class PostsServiceClient:
             response = self.stub.CreateComment(request)
             
             # Convert the gRPC response to a dictionary
-            if response:
+            if response and response.comment:
                 comment_dict = {
-                    'id': response.id,
-                    'postId': response.post_id,
-                    'userId': response.user_id,
-                    'comment': response.comment,
-                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
-                    'status': response.status,
-                    'addedAt': datetime.fromtimestamp(response.added_at),
-                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'id': response.comment.id,
+                    'postId': response.comment.post_id,
+                    'userId': response.comment.user_id,
+                    'userFirstName': response.comment.user_first_name,
+                    'userLastName': response.comment.user_last_name,
+                    'userRole': response.comment.user_role,
+                    'comment': response.comment.comment,
+                    'parentCommentId': response.comment.parent_comment_id if response.comment.parent_comment_id != 0 else None,
+                    'status': response.comment.status,
+                    'addedAt': datetime.fromtimestamp(response.comment.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.comment.commented_at),
                     'replies': [],  # Replies will be fetched separately if needed
-                    'likeCount': response.like_count
+                    'likeCount': response.comment.like_count
                 }
             else:
                 comment_dict = None
 
             return {
-                'success': True,
-                'message': 'Comment created successfully',
+                'success': response.success if response else False,
+                'message': response.message if response else 'Failed to create comment',
                 'comment': comment_dict
             }
         except grpc.RpcError as e:
+            print(f"Error in create_comment: {str(e)}")
             return {
                 'success': False,
                 'message': f'Error creating comment: {str(e)}',
