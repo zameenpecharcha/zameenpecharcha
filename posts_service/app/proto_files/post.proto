@@ -6,19 +6,24 @@ package posts;
 message Post {
     int64 id = 1;
     int64 user_id = 2;
-    string content = 3;
-    string title = 4;
-    string visibility = 5;
-    string property_type = 6;
-    string location = 7;
-    string map_location = 8;
-    double price = 9;
-    string status = 10;
-    int64 created_at = 11;
-    repeated PostMedia media = 12;
-    repeated Comment comments = 13;
-    int32 like_count = 14;
-    int32 comment_count = 15;
+    string user_first_name = 3;
+    string user_last_name = 4;
+    string user_email = 5;
+    string user_phone = 6;
+    string user_role = 7;
+    string content = 8;
+    string title = 9;
+    string visibility = 10;
+    string property_type = 11;
+    string location = 12;
+    string map_location = 13;
+    double price = 14;
+    string status = 15;
+    int64 created_at = 16;
+    repeated PostMedia media = 17;
+    repeated Comment comments = 18;
+    int32 like_count = 19;
+    int32 comment_count = 20;
 }
 
 // Post Media Message
@@ -40,11 +45,14 @@ message Comment {
     int64 parent_comment_id = 3;
     string comment = 4;
     int64 user_id = 5;
-    string status = 6;
-    int64 added_at = 7;
-    int64 commented_at = 8;
-    repeated Comment replies = 9;
-    int32 like_count = 10;
+    string user_first_name = 6;
+    string user_last_name = 7;
+    string user_role = 8;
+    string status = 9;
+    int64 added_at = 10;
+    int64 commented_at = 11;
+    repeated Comment replies = 12;
+    int32 like_count = 13;
 }
 
 // Post List Message
