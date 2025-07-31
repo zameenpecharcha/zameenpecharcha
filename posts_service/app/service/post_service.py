@@ -7,8 +7,8 @@ from ..proto_files import post_pb2, post_pb2_grpc
 from ..repository.post_repository import PostRepository
 from ..utils.db_connection import get_db_engine
 from sqlalchemy.orm import sessionmaker
-from ..models.user import UserReference
-from ..models.comment import CommentReference
+from ..entity.user_entity import User
+from ..entity.comment_entity import Comment
 
 # Load environment variables
 load_dotenv()
@@ -38,6 +38,11 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
         return post_pb2.Post(
             id=post.id,
             user_id=post.user_id,
+            user_first_name=post.user.first_name if post.user else "",
+            user_last_name=post.user.last_name if post.user else "",
+            user_email=post.user.email if post.user else "",
+            user_phone=post.user.phone if post.user else "",
+            user_role=post.user.role if post.user else "",
             title=post.title,
             content=post.content,
             visibility=post.visibility or "",
@@ -72,6 +77,9 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             parent_comment_id=comment.parent_comment_id or 0,
             comment=comment.comment,
             user_id=comment.user_id,
+            user_first_name=comment.user.first_name if comment.user else "",
+            user_last_name=comment.user.last_name if comment.user else "",
+            user_role=comment.user.role if comment.user else "",
             status=comment.status,
             added_at=self._convert_timestamp(comment.added_at),
             commented_at=self._convert_timestamp(comment.commented_at),
@@ -82,7 +90,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def CreatePost(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
@@ -253,23 +261,33 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def SearchPosts(self, request, context):
         try:
+            # Ensure page number is at least 1
+            page = max(1, request.page)
+            # Ensure limit is between 1 and 100
+            limit = max(1, min(100, request.limit))
+            
             posts, total = self.repository.search_posts(
                 property_type=request.property_type,
                 location=request.location,
                 min_price=request.min_price,
                 max_price=request.max_price,
                 status=request.status,
-                page=request.page,
-                limit=request.limit
+                page=page,
+                limit=limit
             )
+
+            # Calculate total pages
+            total_pages = (total + limit - 1) // limit
+            if total_pages == 0:
+                total_pages = 1
 
             return post_pb2.PostListResponse(
                 success=True,
                 message="Posts retrieved successfully",
                 posts=[self._convert_to_proto_post(p) for p in posts],
                 total_count=total,
-                page=request.page,
-                total_pages=(total + request.limit - 1) // request.limit
+                page=page,
+                total_pages=total_pages
             )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -343,7 +361,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def LikePost(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
@@ -393,7 +411,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def UnlikePost(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
@@ -441,7 +459,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def CreateComment(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
@@ -519,23 +537,39 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def GetComments(self, request, context):
         try:
+            print(f"GetComments called with post_id: {request.post_id}, page: {request.page}, limit: {request.limit}")
+            
             # Validate page number
-            total_pages = (self.repository.get_post_comment_count(request.post_id) + request.limit - 1) // request.limit
+            total_comments = self.repository.get_post_comment_count(request.post_id)
+            print(f"Total comments for post {request.post_id}: {total_comments}")
+            
+            total_pages = (total_comments + request.limit - 1) // request.limit
             if total_pages == 0:
                 total_pages = 1
+            print(f"Total pages: {total_pages}")
             
             # If requested page is greater than total pages, return first page
             page = min(request.page, total_pages)
             if page < 1:
                 page = 1
+            print(f"Using page: {page}")
 
             comments, total = self.repository.get_comments(
                 post_id=request.post_id,
                 page=page,
                 limit=request.limit
             )
+            print(f"Retrieved {len(comments)} comments")
+            
+            # Debug print each comment
+            for comment in comments:
+                print(f"Comment ID: {comment.id}, User ID: {comment.user_id}, "
+                      f"User: {comment.user.first_name if comment.user else 'None'} "
+                      f"{comment.user.last_name if comment.user else 'None'}, "
+                      f"Role: {comment.user.role if comment.user else 'None'}")
+                print(f"Has {len(comment.replies)} replies")
 
-            return post_pb2.CommentListResponse(
+            response = post_pb2.CommentListResponse(
                 success=True,
                 message="Comments retrieved successfully",
                 comments=[self._convert_to_proto_comment(c) for c in comments],
@@ -543,7 +577,10 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 page=page,
                 total_pages=total_pages
             )
+            print("Successfully created CommentListResponse")
+            return response
         except Exception as e:
+            print(f"Error in GetComments: {str(e)}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return post_pb2.CommentListResponse(
@@ -554,7 +591,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def LikeComment(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
@@ -602,7 +639,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
     def UnlikeComment(self, request, context):
         try:
             # First check if user exists
-            user = self.db.query(UserReference).filter(UserReference.id == request.user_id).first()
+            user = self.db.query(User).filter(User.id == request.user_id).first()
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")

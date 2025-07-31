@@ -13,6 +13,9 @@ class Comment:
     id: int
     postId: int
     userId: int
+    userFirstName: str
+    userLastName: str
+    userRole: str
     comment: str
     parentCommentId: Optional[int]
     status: str
@@ -29,6 +32,9 @@ class Comment:
             id=data['id'],
             postId=data['postId'],
             userId=data['userId'],
+            userFirstName=data.get('userFirstName', ''),
+            userLastName=data.get('userLastName', ''),
+            userRole=data.get('userRole', ''),
             comment=data['comment'],
             parentCommentId=data.get('parentCommentId'),
             status=data['status'],
@@ -73,6 +79,11 @@ class PostMediaInput:
 class Post:
     id: int
     userId: int
+    userFirstName: str
+    userLastName: str
+    userEmail: str
+    userPhone: str
+    userRole: str
     title: str
     content: str
     visibility: str
@@ -104,6 +115,11 @@ class Post:
         return cls(
             id=data['id'],
             userId=data['userId'],
+            userFirstName=data.get('userFirstName', ''),
+            userLastName=data.get('userLastName', ''),
+            userEmail=data.get('userEmail', ''),
+            userPhone=data.get('userPhone', ''),
+            userRole=data.get('userRole', ''),
             title=data['title'],
             content=data['content'],
             visibility=data['visibility'],
@@ -139,7 +155,34 @@ class Query:
         logger.debug(f"Query.post called with postId: {postId}")
         client = PostsServiceClient()
         result = client.get_post(post_id=postId)
-        return Post.from_dict(result.get('post')) if result else None
+        # Convert gRPC response to dictionary format
+        if result and result.success and result.post:
+            post_data = {
+                'id': result.post.id,
+                'userId': result.post.user_id,
+                'title': result.post.title,
+                'content': result.post.content,
+                'visibility': result.post.visibility,
+                'propertyType': result.post.property_type,
+                'location': result.post.location,
+                'mapLocation': result.post.map_location,
+                'price': result.post.price,
+                'status': result.post.status,
+                'createdAt': datetime.fromtimestamp(result.post.created_at),
+                'media': [{
+                    'id': m.id,
+                    'mediaType': m.media_type,
+                    'mediaUrl': m.media_url,
+                    'mediaOrder': m.media_order,
+                    'mediaSize': m.media_size,
+                    'caption': m.caption,
+                    'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                } for m in result.post.media],
+                'likeCount': result.post.like_count,
+                'commentCount': result.post.comment_count
+            }
+            return Post.from_dict(post_data)
+        return None
 
     @strawberry.field
     def postsByUser(self, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
@@ -170,7 +213,49 @@ class Query:
             page=page,
             limit=limit
         )
-        return [Post.from_dict(post) for post in result] if result else []
+        
+        if not result or not result.success:
+            logger.error("No result or unsuccessful response")
+            return []
+            
+        posts_data = []
+        for post in result.posts:
+            logger.debug(f"Processing post: {post}")
+            post_dict = {
+                'id': post.id,
+                'userId': post.user_id,
+                'userFirstName': getattr(post, 'user_first_name', ''),
+                'userLastName': getattr(post, 'user_last_name', ''),
+                'userEmail': getattr(post, 'user_email', ''),
+                'userPhone': getattr(post, 'user_phone', ''),
+                'userRole': getattr(post, 'user_role', ''),
+                'title': post.title,
+                'content': post.content,
+                'visibility': post.visibility,
+                'propertyType': post.property_type,
+                'location': post.location,
+                'mapLocation': post.map_location,
+                'price': post.price,
+                'status': post.status,
+                'createdAt': datetime.fromtimestamp(post.created_at),
+                'media': [{
+                    'id': m.id,
+                    'mediaType': m.media_type,
+                    'mediaUrl': m.media_url,
+                    'mediaOrder': m.media_order,
+                    'mediaSize': m.media_size,
+                    'caption': m.caption,
+                    'uploadedAt': datetime.fromtimestamp(m.uploaded_at)
+                } for m in post.media],
+                'likeCount': post.like_count,
+                'commentCount': post.comment_count
+            }
+            logger.debug(f"Created post dict: {post_dict}")
+            posts_data.append(post_dict)
+            
+        posts = [Post.from_dict(post) for post in posts_data]
+        logger.debug(f"Returning {len(posts)} posts")
+        return posts
 
     @strawberry.field
     def postComments(
@@ -182,7 +267,46 @@ class Query:
         logger.debug(f"Query.postComments called with postId: {postId}")
         client = PostsServiceClient()
         result = client.get_comments(post_id=postId, page=page, limit=limit)
-        return [Comment.from_dict(comment) for comment in result] if result else []
+        
+        if not result or not result.success:
+            return []
+            
+        comments_data = []
+        for comment in result.comments:
+            comment_dict = {
+                'id': comment.id,
+                'postId': comment.post_id,
+                'userId': comment.user_id,
+                'userFirstName': comment.user_first_name,
+                'userLastName': comment.user_last_name,
+                'userRole': comment.user_role,
+                'comment': comment.comment,
+                'parentCommentId': comment.parent_comment_id if comment.parent_comment_id != 0 else None,
+                'status': comment.status,
+                'addedAt': datetime.fromtimestamp(comment.added_at),
+                'commentedAt': datetime.fromtimestamp(comment.commented_at),
+                'replies': [
+                    {
+                        'id': r.id,
+                        'postId': r.post_id,
+                        'userId': r.user_id,
+                        'userFirstName': r.user_first_name,
+                        'userLastName': r.user_last_name,
+                        'userRole': r.user_role,
+                        'comment': r.comment,
+                        'parentCommentId': r.parent_comment_id,
+                        'status': r.status,
+                        'addedAt': datetime.fromtimestamp(r.added_at),
+                        'commentedAt': datetime.fromtimestamp(r.commented_at),
+                        'replies': [],
+                        'likeCount': r.like_count
+                    } for r in comment.replies
+                ],
+                'likeCount': comment.like_count
+            }
+            comments_data.append(comment_dict)
+            
+        return [Comment.from_dict(comment) for comment in comments_data]
 
 @strawberry.type
 class MediaResponse:
