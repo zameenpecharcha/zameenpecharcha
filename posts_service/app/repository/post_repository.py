@@ -4,8 +4,9 @@ from sqlalchemy import desc, func
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError
 from ..entity.post_entity import Post, PostMedia, PostLike, CommentLike
-from ..models.comment import CommentReference
-from ..models.user import UserReference
+from ..entity.comment_entity import Comment
+from ..entity.user_entity import User
+import sqlalchemy.orm
 
 class PostRepository:
     def __init__(self, db: Session):
@@ -38,7 +39,9 @@ class PostRepository:
 
     def get_post(self, post_id: int) -> Optional[Post]:
         try:
-            return self.db.query(Post).filter(Post.id == post_id).first()
+            return self.db.query(Post).options(
+                sqlalchemy.orm.joinedload(Post.user)
+            ).filter(Post.id == post_id).first()
         except SQLAlchemyError as e:
             raise Exception(f"Database error while fetching post: {str(e)}")
 
@@ -97,23 +100,57 @@ class PostRepository:
                     min_price: float = None, max_price: float = None,
                     status: str = None, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
         try:
-            query = self.db.query(Post)
-            if property_type:
+            print("Starting search_posts in repository")
+            # Join with User table to get user information
+            query = self.db.query(Post).join(User, Post.user_id == User.id)
+            
+            # Only apply filters if they are explicitly provided
+            if property_type and property_type.strip():
+                print(f"Filtering by property_type: {property_type}")
                 query = query.filter(Post.property_type == property_type)
-            if location:
+            if location and location.strip():
+                print(f"Filtering by location: {location}")
                 query = query.filter(Post.location.ilike(f"%{location}%"))
-            if min_price is not None:
+            if min_price is not None and min_price > 0:
+                print(f"Filtering by min_price: {min_price}")
                 query = query.filter(Post.price >= min_price)
-            if max_price is not None:
+            if max_price is not None and max_price > 0:
+                print(f"Filtering by max_price: {max_price}")
                 query = query.filter(Post.price <= max_price)
-            if status:
+            if status and status.strip():
+                print(f"Filtering by status: {status}")
                 query = query.filter(Post.status == status)
             
             total = query.count()
-            posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
+            print(f"Total posts before pagination: {total}")
+
+            # Calculate total pages
+            total_pages = (total + limit - 1) // limit
+            
+            # Validate and adjust page number
+            if total_pages == 0:
+                total_pages = 1
+            if page > total_pages:
+                page = 1  # Reset to first page if requested page is beyond total pages
+            
+            # Calculate offset
+            offset = (page - 1) * limit
+            
+            # Add options to eagerly load the user relationship
+            query = query.options(
+                sqlalchemy.orm.joinedload(Post.user)
+            )
+            
+            posts = query.order_by(desc(Post.created_at)).offset(offset).limit(limit).all()
+            print(f"Retrieved {len(posts)} posts after pagination")
+            
             return posts, total
         except SQLAlchemyError as e:
+            print(f"Database error in search_posts: {str(e)}")
             raise Exception(f"Database error while searching posts: {str(e)}")
+        except Exception as e:
+            print(f"Unexpected error in search_posts: {str(e)}")
+            raise e
 
     # Media Operations
     def add_post_media(self, post_id: int, media_type: str, media_url: str,
@@ -217,7 +254,7 @@ class PostRepository:
 
     # Comment Operations
     def create_comment(self, post_id: int, user_id: int, comment_text: str,
-                      parent_comment_id: int = None) -> CommentReference:
+                      parent_comment_id: int = None) -> Comment:
         try:
             # For replies (parent_comment_id > 0), verify parent comment exists
             if parent_comment_id and parent_comment_id > 0:
@@ -232,7 +269,7 @@ class PostRepository:
                 parent_comment_id = None
 
             # Create the comment
-            comment = CommentReference(
+            comment = Comment(
                 post_id=post_id,
                 user_id=user_id,
                 comment=comment_text,
@@ -252,19 +289,19 @@ class PostRepository:
             self.db.rollback()
             raise e
 
-    def get_comment(self, comment_id: int) -> Optional[CommentReference]:
-        return self.db.query(CommentReference).filter(CommentReference.id == comment_id).first()
+    def get_comment(self, comment_id: int) -> Optional[Comment]:
+        return self.db.query(Comment).filter(Comment.id == comment_id).first()
 
-    def get_comment_replies(self, comment_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CommentReference], int]:
-        query = self.db.query(CommentReference).filter(
-            CommentReference.parent_comment_id == comment_id
+    def get_comment_replies(self, comment_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Comment], int]:
+        query = self.db.query(Comment).filter(
+            Comment.parent_comment_id == comment_id
         )
         total = query.count()
-        replies = query.order_by(desc(CommentReference.commented_at)).offset((page - 1) * limit).limit(limit).all()
+        replies = query.order_by(desc(Comment.commented_at)).offset((page - 1) * limit).limit(limit).all()
         return replies, total
 
     def update_comment(self, comment_id: int, comment_text: str = None,
-                      status: str = None) -> Optional[CommentReference]:
+                      status: str = None) -> Optional[Comment]:
         comment = self.get_comment(comment_id)
         if comment:
             if comment_text is not None:
@@ -284,7 +321,7 @@ class PostRepository:
             return True
         return False
 
-    def get_comment_thread(self, comment_id: int) -> List[CommentReference]:
+    def get_comment_thread(self, comment_id: int) -> List[Comment]:
         """Get a comment and all its nested replies in a flat list"""
         def get_replies(comment):
             result = [comment]
@@ -298,23 +335,49 @@ class PostRepository:
         
         return get_replies(comment)
 
-    def get_comments(self, post_id: int, page: int = 1, limit: int = 10) -> Tuple[List[CommentReference], int]:
-        # Get only top-level comments (no parent)
-        query = self.db.query(CommentReference).filter(
-            CommentReference.post_id == post_id,
-            CommentReference.parent_comment_id.is_(None)
-        ).order_by(desc(CommentReference.commented_at))
+    def get_comments(self, post_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Comment], int]:
+        try:
+            print(f"get_comments called with post_id: {post_id}, page: {page}, limit: {limit}")
+            
+            # Get only top-level comments (no parent)
+            query = self.db.query(Comment).options(
+                sqlalchemy.orm.joinedload(Comment.user)
+            ).filter(
+                Comment.post_id == post_id,
+                Comment.parent_comment_id.is_(None)
+            ).order_by(desc(Comment.commented_at))
 
-        # Get total count before pagination
-        total = query.count()
+            # Print the SQL query
+            print(f"SQL Query: {query}")
+            
+            # Get total count before pagination
+            total = query.count()
+            print(f"Total comments found: {total}")
 
-        # Apply pagination
-        offset = (page - 1) * limit
-        comments = query.offset(offset).limit(limit).all()
+            # Apply pagination
+            offset = (page - 1) * limit
+            print(f"Using offset: {offset}, limit: {limit}")
+            
+            comments = query.offset(offset).limit(limit).all()
+            print(f"Retrieved {len(comments)} comments")
+            
+            # Debug print each comment
+            for comment in comments:
+                print(f"Comment ID: {comment.id}, User ID: {comment.user_id}, "
+                      f"User: {comment.user.first_name if comment.user else 'None'} "
+                      f"{comment.user.last_name if comment.user else 'None'}, "
+                      f"Role: {comment.user.role if comment.user else 'None'}")
+                print(f"Has {len(comment.replies)} replies")
 
-        return comments, total
+            return comments, total
+        except SQLAlchemyError as e:
+            print(f"Database error in get_comments: {str(e)}")
+            raise Exception(f"Database error while getting comments: {str(e)}")
+        except Exception as e:
+            print(f"Unexpected error in get_comments: {str(e)}")
+            raise e
 
-    def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like') -> Optional[CommentReference]:
+    def like_comment(self, comment_id: int, user_id: int, reaction_type: str = 'like') -> Optional[Comment]:
         try:
             # First check if comment exists
             comment = self.get_comment(comment_id)
@@ -352,7 +415,7 @@ class PostRepository:
             self.db.rollback()
             raise e
 
-    def unlike_comment(self, comment_id: int, user_id: int) -> Optional[CommentReference]:
+    def unlike_comment(self, comment_id: int, user_id: int) -> Optional[Comment]:
         try:
             # First check if comment exists
             comment = self.get_comment(comment_id)
@@ -393,7 +456,7 @@ class PostRepository:
 
     def get_post_comment_count(self, post_id: int) -> int:
         # Count only top-level comments
-        return self.db.query(CommentReference).filter(
-            CommentReference.post_id == post_id,
-            CommentReference.parent_comment_id.is_(None)
+        return self.db.query(Comment).filter(
+            Comment.post_id == post_id,
+            Comment.parent_comment_id.is_(None)
         ).count() 
