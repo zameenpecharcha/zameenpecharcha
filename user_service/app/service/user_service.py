@@ -4,8 +4,8 @@ from concurrent import futures
 from user_service.app.proto_files import user_pb2, user_pb2_grpc
 from user_service.app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
-    create_user_rating, get_user_ratings,
-    create_user_follower, get_user_followers, get_user_following,
+    create_rating, get_user_ratings,
+    create_follower, get_user_followers, get_user_following,
     check_following_status
 )
 
@@ -106,12 +106,14 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("One or both users not found")
                 return user_pb2.UserRatingResponse()
 
-            rating_id = create_user_rating(
+            rating_id = create_rating(
                 rated_user_id=request.rated_user_id,
                 rated_by_user_id=request.rated_by_user_id,
                 rating_value=request.rating_value,
-                review=request.review,
-                rating_type=request.rating_type
+                title=request.title if request.title else None,
+                review=request.review if request.review else None,
+                rating_type=request.rating_type if request.rating_type else None,
+                is_anonymous=request.is_anonymous if hasattr(request, 'is_anonymous') else False
             )
 
             # Get the created rating
@@ -123,8 +125,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                         rated_user_id=rating.rated_user_id,
                         rated_by_user_id=rating.rated_by_user_id,
                         rating_value=rating.rating_value,
+                        title=rating.title if rating.title else "",
                         review=rating.review if rating.review else "",
                         rating_type=rating.rating_type if rating.rating_type else "",
+                        is_anonymous=rating.is_anonymous,
                         created_at=str(rating.created_at),
                         updated_at=str(rating.updated_at)
                     )
@@ -151,8 +155,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     rated_user_id=rating.rated_user_id,
                     rated_by_user_id=rating.rated_by_user_id,
                     rating_value=rating.rating_value,
+                    title=rating.title if rating.title else "",
                     review=rating.review if rating.review else "",
                     rating_type=rating.rating_type if rating.rating_type else "",
+                    is_anonymous=rating.is_anonymous,
                     created_at=str(rating.created_at),
                     updated_at=str(rating.updated_at)
                 ))
@@ -179,15 +185,17 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             if existing:
                 return user_pb2.FollowUserResponse(
                     id=existing.id,
-                    user_id=existing.user_id,
+                    follower_id=existing.follower_id,
                     following_id=existing.following_id,
-                    status=existing.status,
+                    followee_type=existing.followee_type if existing.followee_type else "",
+                    status=existing.status if existing.status else "",
                     followed_at=str(existing.followed_at)
                 )
 
-            follower_id = create_user_follower(
-                user_id=request.user_id,
-                following_id=request.following_id
+            follower_id = create_follower(
+                follower_id=request.user_id,
+                following_id=request.following_id,
+                followee_type=request.followee_type if hasattr(request, 'followee_type') else None
             )
 
             # Get the created follower relationship
@@ -195,9 +203,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             if follower:
                 return user_pb2.FollowUserResponse(
                     id=follower.id,
-                    user_id=follower.user_id,
+                    follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    status=follower.status,
+                    followee_type=follower.followee_type if follower.followee_type else "",
+                    status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 )
 
@@ -220,9 +229,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             for follower in followers:
                 follower_responses.append(user_pb2.FollowUserResponse(
                     id=follower.id,
-                    user_id=follower.user_id,
+                    follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    status=follower.status,
+                    followee_type=follower.followee_type if follower.followee_type else "",
+                    status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 ))
 
@@ -245,9 +255,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             for follow in following:
                 following_responses.append(user_pb2.FollowUserResponse(
                     id=follow.id,
-                    user_id=follow.user_id,
+                    follower_id=follow.follower_id,
                     following_id=follow.following_id,
-                    status=follow.status,
+                    followee_type=follow.followee_type if follow.followee_type else "",
+                    status=follow.status if follow.status else "",
                     followed_at=str(follow.followed_at)
                 ))
 
@@ -278,8 +289,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
 
             return user_pb2.FollowUserResponse(
                 id=status.id,
-                user_id=status.user_id,
+                follower_id=status.follower_id,
                 following_id=status.following_id,
+                followee_type=status.followee_type if status.followee_type else "",
                 status=status.status if status.status else "",
                 followed_at=str(status.followed_at) if status.followed_at else ""
             )

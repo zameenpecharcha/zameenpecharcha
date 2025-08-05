@@ -52,8 +52,10 @@ message CreateUserRatingRequest {
   int64 rated_user_id = 1;
   int64 rated_by_user_id = 2;
   int32 rating_value = 3;
-  string review = 4;
-  string rating_type = 5;
+  string title = 4;
+  string review = 5;
+  string rating_type = 6;
+  bool is_anonymous = 7;
 }
 
 message UserRatingResponse {
@@ -61,10 +63,12 @@ message UserRatingResponse {
   int64 rated_user_id = 2;
   int64 rated_by_user_id = 3;
   int32 rating_value = 4;
-  string review = 5;
-  string rating_type = 6;
-  string created_at = 7;
-  string updated_at = 8;
+  string title = 5;
+  string review = 6;
+  string rating_type = 7;
+  bool is_anonymous = 8;
+  string created_at = 9;
+  string updated_at = 10;
 }
 
 message UserRatingsResponse {
@@ -74,14 +78,16 @@ message UserRatingsResponse {
 message FollowUserRequest {
   int64 user_id = 1;
   int64 following_id = 2;
+  string followee_type = 3;
 }
 
 message FollowUserResponse {
   int64 id = 1;
-  int64 user_id = 2;
+  int64 follower_id = 2;
   int64 following_id = 3;
-  string status = 4;
-  string followed_at = 5;
+  string followee_type = 4;
+  string status = 5;
+  string followed_at = 6;
 }
 
 message UserFollowersResponse {

@@ -24,6 +24,7 @@ message Post {
     repeated Comment comments = 18;
     int32 like_count = 19;
     int32 comment_count = 20;
+    bool is_anonymous = 21;
 }
 
 // Post Media Message
@@ -53,6 +54,8 @@ message Comment {
     int64 commented_at = 11;
     repeated Comment replies = 12;
     int32 like_count = 13;
+    bool is_anonymous = 14;
+    int64 edited_at = 15;
 }
 
 // Post List Message
@@ -77,6 +80,7 @@ message PostCreateRequest {
     double price = 8;
     string status = 9;
     repeated PostMediaUpload media = 10;
+    bool is_anonymous = 11;
 }
 
 // Post Media Upload Message
@@ -98,6 +102,7 @@ message PostUpdateRequest {
     string map_location = 7;
     double price = 8;
     string status = 9;
+    bool is_anonymous = 10;
 }
 
 // Post Media Request Message
@@ -126,6 +131,7 @@ message CommentCreateRequest {
     int64 parent_comment_id = 2;
     string comment = 3;
     int64 user_id = 4;
+    bool is_anonymous = 5;
 }
 
 // Comment Update Request Message

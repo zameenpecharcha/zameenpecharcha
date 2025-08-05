@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Text, Numeric, Integer
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Text, Numeric, Integer, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..utils.db_connection import Base
@@ -9,14 +9,15 @@ class Post(Base):
 
     id = Column(BigInteger, primary_key=True, index=True)
     user_id = Column(BigInteger, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    content = Column(String(2000))
-    title = Column(String(255))
-    visibility = Column(String(20))
-    property_type = Column(String(50))
-    location = Column(String(255))
-    map_location = Column(String(100))
+    content = Column(String)  # VARCHAR2
+    title = Column(String)    # VARCHAR2
+    visibility = Column(String)
+    property_type = Column(String)
+    location = Column(Text)
+    map_location = Column(String)
     price = Column(Numeric(15,2))
-    status = Column(String(20))
+    status = Column(String)
+    is_anonymous = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
@@ -45,7 +46,7 @@ class PostLike(Base):
 
     id = Column(BigInteger, primary_key=True)
     post_id = Column(BigInteger, ForeignKey('posts.id', ondelete='CASCADE'), nullable=False)
-    reaction_type = Column(String(20))
+    reaction_type = Column(String)
     user_id = Column(BigInteger, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     liked_at = Column(TIMESTAMP, default=datetime.utcnow)
 
@@ -58,7 +59,7 @@ class CommentLike(Base):
 
     id = Column(BigInteger, primary_key=True)
     comment_id = Column(BigInteger, ForeignKey('comments.id', ondelete='CASCADE'), nullable=False)
-    reaction_type = Column(String(20))
+    reaction_type = Column(String)
     user_id = Column(BigInteger, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     liked_at = Column(TIMESTAMP, default=datetime.utcnow)
 

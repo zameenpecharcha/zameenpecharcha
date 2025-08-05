@@ -24,23 +24,26 @@ users = Table('users', meta,
     Column('created_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 )
 
-# User Ratings table
-user_ratings = Table('user_ratings', meta,
+# Ratings table (updated schema)
+ratings = Table('ratings', meta,
     Column('id', BigInteger, primary_key=True),
-    Column('rated_user_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('rated_by_user_id', BigInteger, ForeignKey('users.id'), nullable=False),
+    Column('rated_user_id', Integer, ForeignKey('users.id'), nullable=False),
+    Column('rated_by_user_id', Integer, ForeignKey('users.id'), nullable=False),
     Column('rating_value', Integer, nullable=False),
+    Column('title', String),
     Column('review', String),
-    Column('rating_type', String(50)),
+    Column('rating_type', String),
+    Column('is_anonymous', Boolean, default=False),
     Column('created_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP')),
     Column('updated_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 )
 
-# User Followers table
-user_followers = Table('user_followers', meta,
+# Followers table (updated schema)
+followers = Table('followers', meta,
     Column('id', BigInteger, primary_key=True),
-    Column('user_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('following_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('status', String(20), server_default='active'),
+    Column('follower_id', Integer, ForeignKey('users.id'), nullable=False),
+    Column('following_id', Integer, ForeignKey('users.id'), nullable=False),
+    Column('followee_type', String),
+    Column('status', String),
     Column('followed_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 )
