@@ -2,72 +2,111 @@ syntax = "proto3";
 
 package property;
 
-// Property Type Enum
-enum PropertyType {
-    APARTMENT = 0;
-    VILLA = 1;
-    HOUSE = 2;
-    LAND = 3;
+// Property Document Message
+message PropertyDocument {
+    int64 id = 1;
+    int64 property_id = 2;
+    string doc_name = 3;
+    string doc_url = 4;
+    int64 uploaded_by = 5;
+    bool is_verified = 6;
 }
 
-// Property Status Enum
-enum PropertyStatus {
-    ACTIVE = 0;
-    INACTIVE = 1;
-    SOLD = 2;
-    RENTED = 3;
+// Property Feature Message
+message PropertyFeature {
+    int64 id = 1;
+    int64 property_id = 2;
+    string feature_name = 3;
+    string feature_value = 4;
+}
+
+// Media Message
+message Media {
+    int64 id = 1;
+    int64 context_id = 2;
+    string context_type = 3;
+    string media_type = 4;
+    string media_url = 5;
+    int32 media_order = 6;
+    int32 media_size = 7;
+    string caption = 8;
+    int64 uploaded_at = 9;
+}
+
+// User Property Message
+message UserProperty {
+    int64 id = 1;
+    int64 user_id = 2;
+    int64 property_id = 3;
+    string role = 4;
+    bool is_primary = 5;
+    int64 added_at = 6;
 }
 
 // Property Message
 message Property {
-    string property_id = 1;
-    string user_id = 2;
-    string title = 3;
-    string description = 4;
-    double price = 5;
-    string location = 6;
-    PropertyType property_type = 7;
-    PropertyStatus status = 8;
-    int32 bedrooms = 9;
-    int32 bathrooms = 10;
-    double area = 11;
-    int32 year_built = 12;
-    repeated string images = 13;
-    repeated string amenities = 14;
-    int64 created_at = 15;
-    int64 updated_at = 16;
-    int32 view_count = 17;
-    double latitude = 18;
-    double longitude = 19;
-    string address = 20;
-    string city = 21;
-    string state = 22;
-    string country = 23;
-    string zip_code = 24;
-    bool is_active = 25;
-}
-
-// Property List Message
-message PropertyList {
-    repeated Property properties = 1;
-}
-
-// Property Request Message
-message PropertyRequest {
-    string property_id = 1;
+    int64 id = 1;
+    string title = 2;
+    string builder_name = 3;
+    string project_name = 4;
+    string rera_id = 5;
+    int32 year_build = 6;
+    int32 no_of_floors = 7;
+    int32 no_of_units = 8;
+    string building_amenities = 9;
+    string verification_status = 10;
+    int64 verified_by = 11;
+    int32 like_count = 12;
+    bool is_flagged = 13;
+    float average_rating = 14;
+    int32 review_count = 15;
+    string description = 16;
+    string property_type = 17;
+    string listing_type = 18;
+    float price = 19;
+    float area_size = 20;
+    int32 bathroom_count = 21;
+    string construction_status = 22;
+    int64 availability_date = 23;
+    string location = 24;
+    string city = 25;
+    string state = 26;
+    string country = 27;
+    string pin_code = 28;
+    float latitude = 29;
+    float longitude = 30;
+    string status = 31;
+    int64 created_at = 32;
+    int64 updated_at = 33;
+    repeated PropertyDocument documents = 34;
+    repeated PropertyFeature features = 35;
+    repeated Media media = 36;
+    repeated UserProperty user_properties = 37;
 }
 
 // Property Search Request Message
 message PropertySearchRequest {
     string query = 1;
-    PropertyType property_type = 2;
-    double min_price = 3;
-    double max_price = 4;
-    string location = 5;
-    int32 min_bedrooms = 6;
-    int32 min_bathrooms = 7;
-    double min_area = 8;
-    double max_area = 9;
+    string property_type = 2;
+    string listing_type = 3;
+    float min_price = 4;
+    float max_price = 5;
+    string location = 6;
+    string city = 7;
+    string state = 8;
+    string country = 9;
+    int32 min_bathrooms = 10;
+    float min_area = 11;
+    float max_area = 12;
+    string construction_status = 13;
+    string verification_status = 14;
+    int32 page = 15;
+    int32 limit = 16;
+}
+
+// Property Request Message
+message PropertyRequest {
+    int64 id = 1;
 }
 
 // Property Response Message
@@ -81,7 +120,44 @@ message PropertyResponse {
 message PropertyListResponse {
     bool success = 1;
     string message = 2;
-    PropertyList properties = 3;
+    repeated Property properties = 3;
+    int32 total_count = 4;
+    int32 page = 5;
+    int32 total_pages = 6;
+}
+
+// Property Document Request Message
+message PropertyDocumentRequest {
+    int64 property_id = 1;
+    string doc_name = 2;
+    string doc_url = 3;
+    int64 uploaded_by = 4;
+}
+
+// Property Feature Request Message
+message PropertyFeatureRequest {
+    int64 property_id = 1;
+    string feature_name = 2;
+    string feature_value = 3;
+}
+
+// Media Request Message
+message MediaRequest {
+    int64 context_id = 1;
+    string context_type = 2;
+    string media_type = 3;
+    string media_url = 4;
+    int32 media_order = 5;
+    int32 media_size = 6;
+    string caption = 7;
+}
+
+// User Property Request Message
+message UserPropertyRequest {
+    int64 user_id = 1;
+    int64 property_id = 2;
+    string role = 3;
+    bool is_primary = 4;
 }
 
 // Property Service Definition
@@ -91,6 +167,10 @@ service PropertyService {
     rpc UpdateProperty(Property) returns (PropertyResponse) {}
     rpc DeleteProperty(PropertyRequest) returns (PropertyResponse) {}
     rpc SearchProperties(PropertySearchRequest) returns (PropertyListResponse) {}
-    rpc ListProperties(PropertyRequest) returns (PropertyListResponse) {}
-    rpc IncrementViewCount(PropertyRequest) returns (PropertyResponse) {}
+    rpc AddPropertyDocument(PropertyDocumentRequest) returns (PropertyResponse) {}
+    rpc AddPropertyFeature(PropertyFeatureRequest) returns (PropertyResponse) {}
+    rpc AddMedia(MediaRequest) returns (PropertyResponse) {}
+    rpc AddUserProperty(UserPropertyRequest) returns (PropertyResponse) {}
+    rpc VerifyProperty(PropertyRequest) returns (PropertyResponse) {}
+    rpc FlagProperty(PropertyRequest) returns (PropertyResponse) {}
 } 
