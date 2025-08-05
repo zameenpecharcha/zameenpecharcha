@@ -7,6 +7,13 @@ DROP TABLE IF EXISTS Posts CASCADE;
 DROP TABLE IF EXISTS ratings CASCADE;
 DROP TABLE IF EXISTS followers CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
+-- Drop property tables if they exist
+DROP TABLE IF EXISTS user_property;
+DROP TABLE IF EXISTS property_documents;
+DROP TABLE IF EXISTS property_features;
+DROP TABLE IF EXISTS media;
+DROP TABLE IF EXISTS properties;
+
 
 -- Drop sequences if they exist
 DROP SEQUENCE IF EXISTS users_id_seq CASCADE;
@@ -17,6 +24,11 @@ DROP SEQUENCE IF EXISTS followers_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS post_likes_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS comments_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS post_comment_likes_id_seq CASCADE;
+DROP SEQUENCE IF EXISTS properties_id_seq;
+DROP SEQUENCE IF EXISTS property_documents_id_seq;
+DROP SEQUENCE IF EXISTS property_features_id_seq;
+DROP SEQUENCE IF EXISTS media_id_seq;
+DROP SEQUENCE IF EXISTS user_property_id_seq;
 
 -- Drop custom domain if exists
 DROP DOMAIN IF EXISTS Base64 CASCADE;
@@ -81,6 +93,13 @@ CREATE SEQUENCE post_comment_likes_id_seq
     NO MAXVALUE
     NO CYCLE
     CACHE 1;
+
+-- Create sequences
+CREATE SEQUENCE properties_id_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE property_documents_id_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE property_features_id_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE media_id_seq START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE user_property_id_seq START WITH 1 INCREMENT BY 1;
 
 -- Create users table
 CREATE TABLE users (
@@ -218,3 +237,105 @@ CREATE INDEX idx_comments_post_id ON Comments(post_id);
 CREATE INDEX idx_comments_user_id ON Comments(user_id);
 CREATE INDEX idx_post_comment_likes_comment_id ON post_comment_likes(comment_id);
 CREATE INDEX idx_post_comment_likes_user_id ON post_comment_likes(user_id); 
+
+-- Property Service Tables
+
+
+-- Create properties table
+CREATE TABLE properties (
+    id BIGINT PRIMARY KEY DEFAULT nextval('properties_id_seq'),
+    title VARCHAR,
+    builder_name VARCHAR,
+    project_name VARCHAR,
+    rera_id VARCHAR,
+    year_build INTEGER,
+    no_of_floors INTEGER,
+    no_of_units INTEGER,
+    building_amenities TEXT,
+    verification_status VARCHAR,
+    verified_by BIGINT,
+    like_count INTEGER DEFAULT 0,
+    is_flagged BOOLEAN DEFAULT FALSE,
+    average_rating FLOAT DEFAULT 0.0,
+    review_count INTEGER DEFAULT 0,
+    description VARCHAR,
+    property_type VARCHAR,
+    listing_type VARCHAR,
+    price FLOAT,
+    area_size FLOAT,
+    bathroom_count INTEGER,
+    construction_status VARCHAR,
+    availability_date TIMESTAMP,
+    location TEXT,
+    city VARCHAR,
+    state VARCHAR,
+    country VARCHAR,
+    pin_code VARCHAR,
+    latitude FLOAT,
+    longitude FLOAT,
+    status VARCHAR,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create property_documents table
+CREATE TABLE property_documents (
+    id BIGINT PRIMARY KEY DEFAULT nextval('property_documents_id_seq'),
+    property_id BIGINT NOT NULL,
+    doc_name VARCHAR,
+    doc_url TEXT,
+    uploaded_by BIGINT,
+    is_verified BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+);
+
+-- Create property_features table
+CREATE TABLE property_features (
+    id BIGINT PRIMARY KEY DEFAULT nextval('property_features_id_seq'),
+    property_id BIGINT NOT NULL,
+    feature_name VARCHAR,
+    feature_value VARCHAR,
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+);
+
+-- Create media table
+CREATE TABLE media (
+    id BIGINT PRIMARY KEY DEFAULT nextval('media_id_seq'),
+    context_id BIGINT,
+    context_type VARCHAR,
+    media_type VARCHAR,
+    media_url VARCHAR,
+    media_order INTEGER DEFAULT 0,
+    media_size INTEGER,
+    caption TEXT,
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create user_property table
+CREATE TABLE user_property (
+    id BIGINT PRIMARY KEY DEFAULT nextval('user_property_id_seq'),
+    user_id BIGINT NOT NULL,
+    property_id BIGINT NOT NULL,
+    role VARCHAR,
+    is_primary BOOLEAN DEFAULT FALSE,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE
+);
+
+-- Create indexes for property tables
+CREATE INDEX idx_properties_city ON properties(city);
+CREATE INDEX idx_properties_state ON properties(state);
+CREATE INDEX idx_properties_property_type ON properties(property_type);
+CREATE INDEX idx_properties_listing_type ON properties(listing_type);
+CREATE INDEX idx_properties_price ON properties(price);
+CREATE INDEX idx_properties_verification_status ON properties(verification_status);
+CREATE INDEX idx_properties_construction_status ON properties(construction_status);
+CREATE INDEX idx_properties_created_at ON properties(created_at);
+CREATE INDEX idx_property_documents_property_id ON property_documents(property_id);
+CREATE INDEX idx_property_documents_uploaded_by ON property_documents(uploaded_by);
+CREATE INDEX idx_property_features_property_id ON property_features(property_id);
+CREATE INDEX idx_media_context ON media(context_id, context_type);
+CREATE INDEX idx_media_uploaded_at ON media(uploaded_at);
+CREATE INDEX idx_user_property_user_id ON user_property(user_id);
+CREATE INDEX idx_user_property_property_id ON user_property(property_id);
+CREATE INDEX idx_user_property_role ON user_property(role); 
