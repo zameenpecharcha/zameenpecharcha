@@ -5,7 +5,7 @@ import warnings
 
 from app.proto_files import auth_pb2 as auth__pb2
 
-GRPC_GENERATED_VERSION = '1.73.1'
+GRPC_GENERATED_VERSION = '1.71.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -39,6 +39,11 @@ class AuthServiceStub(object):
                 request_serializer=auth__pb2.LoginRequest.SerializeToString,
                 response_deserializer=auth__pb2.LoginResponse.FromString,
                 _registered_method=True)
+        self.Logout = channel.unary_unary(
+                '/auth.AuthService/Logout',
+                request_serializer=auth__pb2.LogoutRequest.SerializeToString,
+                response_deserializer=auth__pb2.LogoutResponse.FromString,
+                _registered_method=True)
         self.SendOTP = channel.unary_unary(
                 '/auth.AuthService/SendOTP',
                 request_serializer=auth__pb2.OTPRequest.SerializeToString,
@@ -59,12 +64,23 @@ class AuthServiceStub(object):
                 request_serializer=auth__pb2.ResetPasswordRequest.SerializeToString,
                 response_deserializer=auth__pb2.ResetPasswordResponse.FromString,
                 _registered_method=True)
+        self.ValidateToken = channel.unary_unary(
+                '/auth.AuthService/ValidateToken',
+                request_serializer=auth__pb2.ValidateTokenRequest.SerializeToString,
+                response_deserializer=auth__pb2.ValidateTokenResponse.FromString,
+                _registered_method=True)
 
 
 class AuthServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def Login(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Logout(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -94,6 +110,12 @@ class AuthServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ValidateToken(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_AuthServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -101,6 +123,11 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     servicer.Login,
                     request_deserializer=auth__pb2.LoginRequest.FromString,
                     response_serializer=auth__pb2.LoginResponse.SerializeToString,
+            ),
+            'Logout': grpc.unary_unary_rpc_method_handler(
+                    servicer.Logout,
+                    request_deserializer=auth__pb2.LogoutRequest.FromString,
+                    response_serializer=auth__pb2.LogoutResponse.SerializeToString,
             ),
             'SendOTP': grpc.unary_unary_rpc_method_handler(
                     servicer.SendOTP,
@@ -121,6 +148,11 @@ def add_AuthServiceServicer_to_server(servicer, server):
                     servicer.ResetPassword,
                     request_deserializer=auth__pb2.ResetPasswordRequest.FromString,
                     response_serializer=auth__pb2.ResetPasswordResponse.SerializeToString,
+            ),
+            'ValidateToken': grpc.unary_unary_rpc_method_handler(
+                    servicer.ValidateToken,
+                    request_deserializer=auth__pb2.ValidateTokenRequest.FromString,
+                    response_serializer=auth__pb2.ValidateTokenResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -150,6 +182,33 @@ class AuthService(object):
             '/auth.AuthService/Login',
             auth__pb2.LoginRequest.SerializeToString,
             auth__pb2.LoginResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Logout(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/auth.AuthService/Logout',
+            auth__pb2.LogoutRequest.SerializeToString,
+            auth__pb2.LogoutResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -258,6 +317,33 @@ class AuthService(object):
             '/auth.AuthService/ResetPassword',
             auth__pb2.ResetPasswordRequest.SerializeToString,
             auth__pb2.ResetPasswordResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ValidateToken(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/auth.AuthService/ValidateToken',
+            auth__pb2.ValidateTokenRequest.SerializeToString,
+            auth__pb2.ValidateTokenResponse.FromString,
             options,
             channel_credentials,
             insecure,

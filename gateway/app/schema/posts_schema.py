@@ -1,10 +1,12 @@
 import strawberry
 from typing import List, Optional
 from datetime import datetime
-from ..utils.grpc_client import PostsServiceClient
 import logging
-from dataclasses import dataclass
 import typing
+from app.clients.post.post_client import post_service_client
+
+from app.utils.jwt_utils import get_token
+from strawberry.types import Info
 
 logger = logging.getLogger(__name__)
 
@@ -151,10 +153,10 @@ class PostResponse:
 @strawberry.type
 class Query:
     @strawberry.field
-    def post(self, postId: int) -> Optional[Post]:
+    def post(self, info: Info, postId: int) -> Optional[Post]:
         logger.debug(f"Query.post called with postId: {postId}")
-        client = PostsServiceClient()
-        result = client.get_post(post_id=postId)
+        token = get_token(info)
+        result = post_service_client.get_post(post_id=postId, token=token)
         # Convert gRPC response to dictionary format
         if result and result.success and result.post:
             post_data = {
@@ -185,15 +187,15 @@ class Query:
         return None
 
     @strawberry.field
-    def postsByUser(self, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
+    def postsByUser(self,info: Info,  userId: int, page: int = 1, limit: int = 10) -> List[Post]:
         logger.debug(f"Query.postsByUser called with userId: {userId}, page: {page}, limit: {limit}")
-        client = PostsServiceClient()
-        result = client.get_posts_by_user(user_id=userId, page=page, limit=limit)
+        token = get_token(info)
+        result = post_service_client.get_posts_by_user(user_id=userId, page=page, limit=limit, token=token)
         return [Post.from_dict(post) for post in result] if result else []
 
     @strawberry.field
     def searchPosts(
-        self,
+        self, info: Info,
         propertyType: Optional[str] = None,
         location: Optional[str] = None,
         minPrice: Optional[float] = None,
@@ -203,15 +205,16 @@ class Query:
         limit: int = 10
     ) -> List[Post]:
         logger.debug(f"Query.searchPosts called with propertyType: {propertyType}, location: {location}")
-        client = PostsServiceClient()
-        result = client.search_posts(
+        token = get_token(info)
+        result = post_service_client.search_posts(
             property_type=propertyType,
             location=location,
             min_price=minPrice,
             max_price=maxPrice,
             status=status,
             page=page,
-            limit=limit
+            limit=limit,
+            token = token
         )
         
         if not result or not result.success:
@@ -259,14 +262,14 @@ class Query:
 
     @strawberry.field
     def postComments(
-        self,
+        self,info: Info,
         postId: int,
         page: int = 1,
         limit: int = 10
     ) -> List[Comment]:
         logger.debug(f"Query.postComments called with postId: {postId}")
-        client = PostsServiceClient()
-        result = client.get_comments(post_id=postId, page=page, limit=limit)
+        token = get_token(info)
+        result = post_service_client.get_comments(post_id=postId, page=page, limit=limit, token=token)
         
         if not result or not result.success:
             return []
@@ -324,7 +327,7 @@ class MediaResponse:
 class Mutation:
     @strawberry.mutation
     def createPost(
-        self,
+        self,info: Info,
         userId: int,
         title: str,
         content: str,
@@ -337,8 +340,8 @@ class Mutation:
         media: typing.Optional[typing.List[PostMediaInput]] = None
     ) -> PostResponse:
         logger.debug(f"Mutation.createPost called with userId: {userId}, title: {title}")
-        client = PostsServiceClient()
-        result = client.create_post(
+        token = get_token(info)
+        result = post_service_client.create_post(
             user_id=userId,
             title=title,
             content=content,
@@ -348,14 +351,15 @@ class Mutation:
             map_location=mapLocation,
             price=price,
             status=status,
-            media=media or []
+            media=media or [],
+            token = token
         )
         logger.debug(f"CreatePost result: {result}")
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
     def updatePost(
-        self,
+        self,info: Info,
         postId: int,
         title: Optional[str] = None,
         content: Optional[str] = None,
@@ -367,8 +371,8 @@ class Mutation:
         status: Optional[str] = None
     ) -> PostResponse:
         logger.debug(f"Mutation.updatePost called with postId: {postId}")
-        client = PostsServiceClient()
-        result = client.update_post(
+        token = get_token(info)
+        result = post_service_client.update_post(
             post_id=postId,
             title=title,
             content=content,
@@ -377,124 +381,130 @@ class Mutation:
             location=location,
             map_location=mapLocation,
             price=price,
-            status=status
+            status=status,
+            token=token
         )
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    def deletePost(self, postId: int) -> PostResponse:
+    def deletePost(self, info: Info, postId: int) -> PostResponse:
         logger.debug(f"Mutation.deletePost called with postId: {postId}")
-        client = PostsServiceClient()
-        result = client.delete_post(post_id=postId)
+        token = get_token(info)
+        result = post_service_client.delete_post(post_id=postId, token=token)
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    def likePost(self, postId: int, userId: int) -> PostResponse:
+    def likePost(self, info: Info, postId: int, userId: int) -> PostResponse:
         logger.debug(f"Mutation.likePost called with postId: {postId}, userId: {userId}")
-        client = PostsServiceClient()
-        result = client.like_post(post_id=postId, user_id=userId)
+        token = get_token(info)
+        result = post_service_client.like_post(post_id=postId, user_id=userId, token=token)
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
-    def unlikePost(self, postId: int, userId: int) -> PostResponse:
+    def unlikePost(self, info: Info, postId: int, userId: int) -> PostResponse:
         logger.debug(f"Mutation.unlikePost called with postId: {postId}, userId: {userId}")
-        client = PostsServiceClient()
-        result = client.unlike_post(post_id=postId, user_id=userId)
+        token = get_token(info)
+        result = post_service_client.unlike_post(post_id=postId, user_id=userId, token=token)
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
     def createComment(
-        self,
+        self,info: Info,
         postId: int,
         userId: int,
         comment: str,
         parentCommentId: Optional[int] = None
     ) -> CommentResponse:
         logger.debug(f"Mutation.createComment called with postId: {postId}, userId: {userId}")
-        client = PostsServiceClient()
-        result = client.create_comment(
+        token = get_token(info)
+        result = post_service_client.create_comment(
             post_id=postId,
             user_id=userId,
             comment=comment,
-            parent_comment_id=parentCommentId
+            parent_comment_id=parentCommentId,
+            token = token
         )
         logger.debug(f"CreateComment result: {result}")
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def updateComment(
-        self,
+        self,info: Info,
         commentId: int,
         comment: Optional[str] = None,
         status: Optional[str] = None
     ) -> CommentResponse:
         logger.debug(f"Mutation.updateComment called with commentId: {commentId}")
-        client = PostsServiceClient()
-        result = client.update_comment(
+        token = get_token(info)
+        result = post_service_client.update_comment(
             comment_id=commentId,
             comment=comment,
-            status=status
+            status=status,
+            token = token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def deleteComment(
-        self,
+        self,info: Info,
         commentId: int
     ) -> CommentResponse:
         logger.debug(f"Mutation.deleteComment called with commentId: {commentId}")
-        client = PostsServiceClient()
-        result = client.delete_comment(comment_id=commentId)
+        token = get_token(info)
+        result = post_service_client.delete_comment(comment_id=commentId, token=token)
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def likeComment(
-        self,
+        self,info: Info,
         commentId: int,
         userId: int
     ) -> CommentResponse:
         logger.debug(f"Mutation.likeComment called with commentId: {commentId}, userId: {userId}")
-        client = PostsServiceClient()
-        result = client.like_comment(
+        token = get_token(info)
+        result = post_service_client.like_comment(
             comment_id=commentId,
-            user_id=userId
+            user_id=userId,
+            token = token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def unlikeComment(
-        self,
+        self,info: Info,
         commentId: int,
         userId: int
     ) -> CommentResponse:
         logger.debug(f"Mutation.unlikeComment called with commentId: {commentId}, userId: {userId}")
-        client = PostsServiceClient()
-        result = client.unlike_comment(
+        token = get_token(info)
+        result = post_service_client.unlike_comment(
             comment_id=commentId,
-            user_id=userId
+            user_id=userId,
+            token = token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def addPostMedia(
-        self,
+        self,info: Info,
         postId: int,
         media: List[PostMediaInput]
     ) -> PostResponse:
         logger.debug(f"Mutation.addPostMedia called with postId: {postId}")
-        client = PostsServiceClient()
-        result = client.add_post_media(
+        token = get_token(info)
+        result = post_service_client.add_post_media(
             post_id=postId,
-            media=media
+            media=media,
+            token = token
         )
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
     def deletePostMedia(
-        self,
+        self,info: Info,
         mediaId: int
     ) -> MediaResponse:
         logger.debug(f"Mutation.deletePostMedia called with mediaId: {mediaId}")
-        client = PostsServiceClient()
-        result = client.delete_post_media(media_id=mediaId)
+        token = get_token(info)
+        result = post_service_client.delete_post_media(media_id=mediaId, token=token)
         return MediaResponse.from_dict(result) 

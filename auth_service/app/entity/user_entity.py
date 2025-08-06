@@ -1,7 +1,6 @@
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import Column, Integer, String, TIMESTAMP, Boolean, Float, BigInteger, text
 from app.utils.db_connection import get_db_engine
-from datetime import datetime
 
 Base = declarative_base()
 
