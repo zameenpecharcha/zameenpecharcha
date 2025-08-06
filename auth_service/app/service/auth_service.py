@@ -2,8 +2,11 @@ import grpc
 import bcrypt
 import jwt
 import random
-import os
-import logging
+from app.utils.token_blacklist import (
+    store_blacklisted_session_id,
+    store_blacklisted_refresh_jti,
+    is_token_blacklisted
+)
 from concurrent import futures
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
@@ -14,8 +17,8 @@ from app.utils.otp_utils import send_otp_email, send_otp_sms
 from app.utils.redis_utils import store_otp, get_otp, delete_otp
 from app.utils.log_utils import log_msg
 
-# Load secret key from environment variables
-SECRET_KEY = os.getenv("SECRET_KEY", "your_super_secret_key_here")
+from app.utils.jwt_utils import generate_tokens, decode_token, verify_jwt_token
+
 
 def create_user_info(user):
     """Helper function to create UserInfo message from User model"""
@@ -77,28 +80,12 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             # Update last login time
             user.last_login_at = datetime.utcnow()
             db.commit()
-
-            # Generate tokens with user information
-            token_data = {
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "exp": datetime.utcnow() + timedelta(hours=1)
-            }
-            refresh_token_data = {
-                "user_id": user.id,
-                "email": user.email,
-                "exp": datetime.utcnow() + timedelta(days=7)
-            }
-
-            token = jwt.encode(token_data, SECRET_KEY, algorithm="HS256")
-            refresh_token = jwt.encode(refresh_token_data, SECRET_KEY, algorithm="HS256")
-
+            access_token, refresh_token = generate_tokens(user)
             print(f"Login successful for user: {request.email}")
             log_msg("info", "User logged in successfully", user_id=request.email, correlation_id=correlation_id)
             
             return auth_pb2.LoginResponse(
-                token=token,
+                token=access_token,
                 refresh_token=refresh_token,
                 user_info=create_user_info(user)
             )
@@ -108,6 +95,82 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Internal server error: {str(e)}")
             return auth_pb2.LoginResponse()
+        finally:
+            db.close()
+
+    def Logout(self, request, context):
+        correlation_id = context.peer()
+        try:
+            print("Logout attempt")
+
+            if request.token:
+                try:
+                    access_payload = decode_token(request.token)
+                    session_id = access_payload.get("session_id")
+                    if session_id:
+                        store_blacklisted_session_id(session_id)
+                        print(f"Blacklisted session_id: {session_id}")
+                except Exception as e:
+                    print(f"Access token decode error (ignored): {e}")
+
+            if request.refresh_token:
+                try:
+                    refresh_payload = decode_token(request.refresh_token)
+                    refresh_jti = refresh_payload.get("jti")
+                    if refresh_jti:
+                        store_blacklisted_refresh_jti(refresh_jti)
+                        print(f"Blacklisted refresh jti: {refresh_jti}")
+                except Exception as e:
+                    print(f"Refresh token decode error (ignored): {e}")
+
+            return auth_pb2.LogoutResponse(
+                success=True,
+                message="Logged out successfully"
+            )
+
+        except Exception as e:
+            print(f"Logout error: {str(e)}")
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Internal server error: {str(e)}")
+            return auth_pb2.LogoutResponse(success=False, message=str(e))
+
+    def ValidateToken(self, request, context):
+        correlation_id = context.peer()
+        db: Session = SessionLocal()
+        try:
+            print(f"Token validation attempt")
+            
+            # Verify token
+            payload, error = verify_jwt_token(request.token)
+            if error:
+                context.set_code(grpc.StatusCode.UNAUTHENTICATED)
+                context.set_details(error)
+                return auth_pb2.ValidateTokenResponse(valid=False, message=error)
+            
+            # Get user from database
+            user = db.query(User).filter(User.email == payload['email']).first()
+            if not user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details("User not found")
+                return auth_pb2.ValidateTokenResponse(valid=False, message="User not found")
+            
+            if not user.isactive:
+                context.set_code(grpc.StatusCode.PERMISSION_DENIED)
+                context.set_details("User account is inactive")
+                return auth_pb2.ValidateTokenResponse(valid=False, message="User account is inactive")
+            
+            log_msg("info", "Token validated successfully", user_id=user.email, correlation_id=correlation_id)
+            return auth_pb2.ValidateTokenResponse(
+                valid=True,
+                user_info=create_user_info(user),
+                message="Token is valid"
+            )
+        except Exception as e:
+            print(f"Token validation error: {str(e)}")
+            log_msg("error", f"Token validation error: {str(e)}", correlation_id=correlation_id)
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Internal server error: {str(e)}")
+            return auth_pb2.ValidateTokenResponse(valid=False, message=str(e))
         finally:
             db.close()
 

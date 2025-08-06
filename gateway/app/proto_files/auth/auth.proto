@@ -4,10 +4,12 @@ package auth;
 
 service AuthService {
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc SendOTP(OTPRequest) returns (OTPResponse);
   rpc VerifyOTP(VerifyOTPRequest) returns (VerifyOTPResponse);
   rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
   rpc ResetPassword(ResetPasswordRequest) returns (ResetPasswordResponse);
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
 }
 
 message LoginRequest {
@@ -93,4 +95,24 @@ message ResetPasswordResponse {
   bool success = 1;
   string message = 2;  // Added for more detailed response
   UserInfo user_info = 3;  // Optional user info after reset
-} 
+}
+
+message LogoutRequest {
+  string token = 1;
+  string refresh_token = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  UserInfo user_info = 2;
+  string message = 3;
+}

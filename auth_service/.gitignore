@@ -1,2 +1,45 @@
-./venv
-.idea
+# Python cache
+# Ignore Python cache and compiled files everywhere
+**/__pycache__/
+**/*.py[cod]
+
+
+
+# Virtual environment
+venv/
+.env/
+*.env
+
+# IDEs
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Byte-compiled and temporary files
+*.swp
+*.bak
+*.tmp
+*.DS_Store
+*.egg-info/
+
+# SQLite or local databases
+*.db
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+.pytest_cache/
+
+# Uvicorn reload artifact
+.reload
+
+# Mypy, pylint, pyright
+.mypy_cache/
+.pyright/
+
+# System files
+Thumbs.db
+.DS_Store
