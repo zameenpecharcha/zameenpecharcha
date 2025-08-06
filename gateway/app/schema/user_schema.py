@@ -2,10 +2,11 @@ import typing
 import strawberry
 from app.exception.UserException import REException
 from app.utils.log_utils import log_msg
-from app.utils.grpc_client import UserServiceClient
-from datetime import datetime
+from app.clients.user.user_client import user_service_client
+from strawberry.types import Info
 
-client = UserServiceClient()
+from app.utils.jwt_utils import get_token
+
 
 @strawberry.type
 class User:
@@ -50,16 +51,17 @@ class UserFollower:
 @strawberry.type
 class Query:
     @strawberry.field
-    def user(self, id: int) -> typing.Optional[User]:
+    def user(self, info: Info, id: int) -> typing.Optional[User]:
         try:
             log_msg("info", f"Fetching user with ID {id}")
-            response = client.get_user(id)
+            token = get_token(info)
+            response = user_service_client.get_user(id, token=token)
 
             if response is None:
                 raise REException("USER_NOT_FOUND", "User does not exist", "Invalid ID provided")
 
             # Get user ratings
-            ratings_response = client.get_user_ratings(id)
+            ratings_response = user_service_client.get_user_ratings(id,token=token)
             ratings = [
                 UserRating(
                     id=rating.id,
@@ -74,8 +76,8 @@ class Query:
             ]
 
             # Get followers/following count
-            followers = client.get_user_followers(id)
-            following = client.get_user_following(id)
+            followers = user_service_client.get_user_followers(id,token=token)
+            following = user_service_client.get_user_following(id,token=token)
 
             return User(
                 id=response.id,
@@ -107,10 +109,11 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def user_ratings(self, user_id: int) -> typing.List[UserRating]:
+    def user_ratings(self, info: Info, user_id: int) -> typing.List[UserRating]:
         try:
             log_msg("info", f"Fetching ratings for user {user_id}")
-            response = client.get_user_ratings(user_id)
+            token = get_token(info)
+            response = user_service_client.get_user_ratings(user_id,token=token)
             return [
                 UserRating(
                     id=rating.id,
@@ -132,10 +135,11 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def user_followers(self, user_id: int) -> typing.List[UserFollower]:
+    def user_followers(self, info: Info, user_id: int) -> typing.List[UserFollower]:
         try:
             log_msg("info", f"Fetching followers for user {user_id}")
-            response = client.get_user_followers(user_id)
+            token = get_token(info)
+            response = user_service_client.get_user_followers(user_id,token=token)
             return [
                 UserFollower(
                     id=follower.id,
@@ -154,10 +158,11 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def user_following(self, user_id: int) -> typing.List[UserFollower]:
+    def user_following(self,info: Info, user_id: int) -> typing.List[UserFollower]:
         try:
             log_msg("info", f"Fetching following for user {user_id}")
-            response = client.get_user_following(user_id)
+            token = get_token(info)
+            response = user_service_client.get_user_following(user_id,token=token)
             return [
                 UserFollower(
                     id=follow.id,
@@ -176,10 +181,11 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def check_following_status(self, user_id: int, following_id: int) -> typing.Optional[UserFollower]:
+    def check_following_status(self,info: Info, user_id: int, following_id: int) -> typing.Optional[UserFollower]:
         try:
             log_msg("info", f"Checking following status for user {user_id} -> {following_id}")
-            response = client.check_following_status(user_id, following_id)
+            token = get_token(info)
+            response = user_service_client.check_following_status(user_id, following_id,token=token)
             if not response or not response.id:
                 return None
             return UserFollower(
@@ -201,7 +207,8 @@ class Query:
 class Mutation:
     @strawberry.mutation
     async def create_user(
-        self, 
+        self,
+        info: Info,
         first_name: str,
         last_name: str,
         email: str,
@@ -215,7 +222,8 @@ class Mutation:
     ) -> User:
         try:
             log_msg("info", f"Creating user {email}")
-            response = client.create_user(
+            token = get_token(info)
+            response = user_service_client.create_user(
                 first_name=first_name,
                 last_name=last_name,
                 email=email,
@@ -225,7 +233,8 @@ class Mutation:
                 address=address,
                 latitude=latitude,
                 longitude=longitude,
-                bio=bio
+                bio=bio,
+                token=token
             )
             return User(
                 id=response.id,
@@ -274,6 +283,7 @@ class Mutation:
     @strawberry.mutation
     async def create_user_rating(
         self,
+        info: Info,
         rated_user_id: int,
         rated_by_user_id: int,
         rating_value: int,
@@ -282,12 +292,14 @@ class Mutation:
     ) -> UserRating:
         try:
             log_msg("info", f"Creating rating for user {rated_user_id}")
-            response = client.create_user_rating(
+            token = get_token(info)
+            response = user_service_client.create_user_rating(
                 rated_user_id=rated_user_id,
                 rated_by_user_id=rated_by_user_id,
                 rating_value=rating_value,
                 review=review,
-                rating_type=rating_type
+                rating_type=rating_type,
+                token=token
             )
             return UserRating(
                 id=response.id,
@@ -310,12 +322,14 @@ class Mutation:
     @strawberry.mutation
     async def follow_user(
         self,
+        info: Info,
         user_id: int,
         following_id: int
     ) -> UserFollower:
         try:
             log_msg("info", f"User {user_id} following user {following_id}")
-            response = client.follow_user(user_id, following_id)
+            token = get_token(info)
+            response = user_service_client.follow_user(user_id, following_id,token=token)
             return UserFollower(
                 id=response.id,
                 user_id=response.user_id,
@@ -330,4 +344,5 @@ class Mutation:
                 "Failed to follow user",
                 str(e)
             ).to_graphql_error()
+
 

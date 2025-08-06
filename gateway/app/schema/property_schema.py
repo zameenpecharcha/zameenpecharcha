@@ -3,7 +3,7 @@ import strawberry
 from enum import Enum
 from app.exception.UserException import REException
 from app.utils.log_utils import log_msg
-from app.utils.grpc_client import property_client
+from app.clients.property.property_client import property_service_client
 
 @strawberry.enum
 class PropertyType(Enum):
@@ -52,7 +52,7 @@ class Query:
     @strawberry.field
     def property(self, propertyId: str) -> typing.Optional[Property]:
         try:
-            response = property_client.get_property(propertyId)
+            response = property_service_client.get_property(propertyId)
             if not response.success:
                 raise REException("PROPERTY_NOT_FOUND", response.message, "Property not found")
             
@@ -105,7 +105,7 @@ class Query:
         maxArea: typing.Optional[float] = None
     ) -> typing.List[Property]:
         try:
-            response = property_client.search_properties(
+            response = property_service_client.search_properties(
                 query=query or "",
                 property_type=propertyType if propertyType is not None else 0,
                 min_price=minPrice or 0,
@@ -186,7 +186,7 @@ class Mutation:
         isActive: bool = True
     ) -> Property:
         try:
-            response = property_client.create_property(
+            response = property_service_client.create_property(
                 user_id=userId,
                 title=title,
                 description=description,
@@ -275,12 +275,12 @@ class Mutation:
     ) -> Property:
         try:
             # Get current property first
-            current = property_client.get_property(propertyId)
+            current = property_service_client.get_property(propertyId)
             if not current.success:
                 raise REException("PROPERTY_NOT_FOUND", current.message, "Property not found")
             
             # Update with new values or keep current ones
-            response = property_client.update_property(
+            response = property_service_client.update_property(
                 property_id=propertyId,
                 title=title or current.property.title,
                 description=description or current.property.description,
@@ -345,7 +345,7 @@ class Mutation:
     @strawberry.mutation
     async def delete_property(self, propertyId: str) -> bool:
         try:
-            response = property_client.delete_property(propertyId)
+            response = property_service_client.delete_property(propertyId)
             if not response.success:
                 raise REException("PROPERTY_DELETION_FAILED", response.message, "Failed to delete property")
             return True
@@ -360,7 +360,7 @@ class Mutation:
     @strawberry.mutation
     async def increment_view_count(self, propertyId: str) -> Property:
         try:
-            response = property_client.increment_view_count(propertyId)
+            response = property_service_client.increment_view_count(propertyId)
             if not response.success:
                 raise REException("VIEW_COUNT_UPDATE_FAILED", response.message, "Failed to update view count")
             
