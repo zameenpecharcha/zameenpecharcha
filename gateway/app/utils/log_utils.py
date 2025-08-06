@@ -48,4 +48,4 @@ def log_msg(level: str, message: str, user_id: str = None, correlation_id: str =
     if level in log_methods:
         log_methods[level](message)
     else:
-        raise ValueError(f"Invalid logging level: {level}")
+        log_methods['info'](message)

@@ -1,6 +1,6 @@
 import typing
 import strawberry
-from app.utils.grpc_client import auth_client
+from app.clients.auth.auth_client import auth_service_client
 from app.utils.log_utils import log_msg
 import grpc
 from enum import Enum
@@ -50,7 +50,7 @@ class Mutation:
     async def login(self, email: str, password: str) -> AuthResponse:
         try:
             log_msg("info", f"Login attempt for {email}")
-            response = auth_client.login(email, password)
+            response = auth_service_client.login(email, password)
             return AuthResponse(
                 success=True,
                 token=response.token,
@@ -93,7 +93,7 @@ class Mutation:
     ) -> AuthResponse:
         try:
             log_msg("info", f"Sending OTP to {email}")
-            response = auth_client.send_otp(email, phone, type)
+            response = auth_service_client.send_otp(email, phone, type)
             return AuthResponse(
                 success=response.success,
                 message=response.message,
@@ -118,7 +118,7 @@ class Mutation:
     ) -> AuthResponse:
         try:
             log_msg("info", f"Verifying OTP for {email}")
-            response = auth_client.verify_otp(email, otp_code, type)
+            response = auth_service_client.verify_otp(email, otp_code, type)
             return AuthResponse(
                 success=response.success,
                 token=response.token,
@@ -159,7 +159,7 @@ class Mutation:
     ) -> AuthResponse:
         try:
             log_msg("info", f"Forgot password request for {email}")
-            response = auth_client.forgot_password(email, phone)
+            response = auth_service_client.forgot_password(email, phone)
             return AuthResponse(
                 success=response.success,
                 message=response.message,
@@ -186,7 +186,7 @@ class Mutation:
                 return AuthResponse(success=False, message="Passwords do not match")
 
             log_msg("info", f"Reset password request for {email}")
-            response = auth_client.reset_password(
+            response = auth_service_client.reset_password(
                 email,
                 otp_code,
                 new_password,
@@ -221,4 +221,21 @@ class Mutation:
                 return AuthResponse(success=False, message="Account is inactive")
             if e.code() == grpc.StatusCode.INVALID_ARGUMENT:
                 return AuthResponse(success=False, message="Invalid or expired OTP")
-            return AuthResponse(success=False, message="Failed to reset password") 
+            return AuthResponse(success=False, message="Failed to reset password")
+
+    @strawberry.mutation
+    async def logout(
+        self, 
+        token: str,
+        refresh_token: typing.Optional[str] = None
+    ) -> AuthResponse:
+        try:
+            log_msg("info", "Logout request")
+            response = auth_service_client.logout(token, refresh_token)
+            return AuthResponse(
+                success=response.success,
+                message=response.message
+            )
+        except grpc.RpcError as e:
+            log_msg("error", f"Logout error: {str(e)}")
+            return AuthResponse(success=False, message="Failed to logout") 

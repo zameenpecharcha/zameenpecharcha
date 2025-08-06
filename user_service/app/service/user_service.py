@@ -8,6 +8,8 @@ from user_service.app.repository.user_repository import (
     create_user_follower, get_user_followers, get_user_following,
     check_following_status
 )
+from app.interceptors.auth_interceptor import AuthServerInterceptor
+
 
 class UserService(user_pb2_grpc.UserServiceServicer):
     def GetUser(self, request, context):
@@ -290,7 +292,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             return user_pb2.FollowUserResponse()
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        interceptors=[AuthServerInterceptor()]
+    )
     user_pb2_grpc.add_UserServiceServicer_to_server(UserService(), server)
     server.add_insecure_port('localhost:50051')
     print("Starting user service on port 50051...")

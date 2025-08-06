@@ -1,15 +1,12 @@
 import grpc
 from concurrent import futures
-from datetime import datetime
-import os
 from dotenv import load_dotenv
 from ..proto_files import post_pb2, post_pb2_grpc
 from ..repository.post_repository import PostRepository
 from ..utils.db_connection import get_db_engine
 from sqlalchemy.orm import sessionmaker
 from ..entity.user_entity import User
-from ..entity.comment_entity import Comment
-
+from app.interceptors.auth_interceptor import AuthServerInterceptor
 # Load environment variables
 load_dotenv()
 
@@ -684,7 +681,10 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             )
 
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        interceptors=[AuthServerInterceptor()]
+    )
     post_pb2_grpc.add_PostsServiceServicer_to_server(PostsService(), server)
     server.add_insecure_port('localhost:50053')  # Using port 50053 for posts service
     server.start()

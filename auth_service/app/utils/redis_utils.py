@@ -72,10 +72,8 @@ class OTPStore:
             del OTPStore._store[key]
             print(f"Cleaned up expired OTP for key: {key}")
 
-# Create the singleton instance
+# Create the singleton instances
 otp_store = OTPStore()
-print("OTP Store singleton created")
-
 def get_redis_client():
     try:
         load_dotenv()
@@ -167,5 +165,3 @@ def delete_otp(phone_or_email):
         otp_store.delete(phone_or_email)
     finally:
         print("=== delete_otp END ===\n")
-
-print("\nRedis utils initialized with memory store fallback")
