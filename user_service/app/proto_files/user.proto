@@ -3,14 +3,23 @@ syntax = "proto3";
 package user;
 
 service UserService {
+  // User management
   rpc GetUser (UserRequest) returns (UserResponse);
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
-  rpc CreateUserRating (CreateUserRatingRequest) returns (UserRatingResponse);
-  rpc GetUserRatings (UserRequest) returns (UserRatingsResponse);
+  
+  // Rating system
+  rpc CreateRating (CreateRatingRequest) returns (RatingResponse);
+  rpc GetUserRatings (UserRequest) returns (RatingsResponse);
+  
+  // Following system
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
-  rpc GetUserFollowers (UserRequest) returns (UserFollowersResponse);
-  rpc GetUserFollowing (UserRequest) returns (UserFollowersResponse);
-  rpc CheckFollowingStatus (CheckFollowingRequest) returns (FollowUserResponse);
+  rpc GetUserFollowers (UserRequest) returns (FollowUserResponse);
+  rpc GetUserFollowing (UserRequest) returns (FollowUserResponse);
+  rpc CheckFollowingStatus (FollowUserRequest) returns (FollowUserResponse);
+  
+  // Media management
+  rpc UploadMedia (MediaRequest) returns (MediaResponse);
+  rpc GetMedia (UserRequest) returns (MediaResponse);
 }
 
 message UserRequest {
@@ -28,6 +37,10 @@ message CreateUserRequest {
   float latitude = 8;
   float longitude = 9;
   string bio = 10;
+  string gst_no = 11;
+  int64 cover_photo_id = 12;
+  int64 profile_photo_id = 13;
+
 }
 
 message UserResponse {
@@ -36,7 +49,7 @@ message UserResponse {
   string last_name = 3;
   string email = 4;
   string phone = 5;
-  string profile_photo = 6;
+
   string role = 7;
   string address = 8;
   float latitude = 9;
@@ -46,44 +59,76 @@ message UserResponse {
   bool email_verified = 13;
   bool phone_verified = 14;
   string created_at = 15;
+  string gst_no = 16;
+  int64 cover_photo_id = 17;
+  int64 profile_photo_id = 18;
+  string last_login_at = 19;
 }
 
-message CreateUserRatingRequest {
+message CreateRatingRequest {
   int64 rated_user_id = 1;
   int64 rated_by_user_id = 2;
   int32 rating_value = 3;
-  string review = 4;
-  string rating_type = 5;
+  string title = 4;
+  string review = 5;
+  string rating_type = 6;
+  bool is_anonymous = 7;
 }
 
-message UserRatingResponse {
+message RatingResponse {
   int64 id = 1;
   int64 rated_user_id = 2;
   int64 rated_by_user_id = 3;
   int32 rating_value = 4;
-  string review = 5;
-  string rating_type = 6;
-  string created_at = 7;
-  string updated_at = 8;
+  string title = 5;
+  string review = 6;
+  string rating_type = 7;
+  bool is_anonymous = 8;
+  string created_at = 9;
+  string updated_at = 10;
 }
 
-message UserRatingsResponse {
-  repeated UserRatingResponse ratings = 1;
+message RatingsResponse {
+  repeated RatingResponse ratings = 1;
 }
 
 message FollowUserRequest {
-  int64 user_id = 1;
+  int64 follower_id = 1;
   int64 following_id = 2;
+  string followee_type = 3;
+  string status = 4;
 }
 
 message FollowUserResponse {
   int64 id = 1;
-  int64 user_id = 2;
+  int64 follower_id = 2;
   int64 following_id = 3;
-  string status = 4;
-  string followed_at = 5;
+  string followee_type = 4;
+  string status = 5;
+  string followed_at = 6;
 }
 
+message MediaRequest {
+  int64 context_id = 1;
+  string context_type = 2;  // e.g., 'user_profile', 'user_cover'
+  string media_type = 3;    // e.g., 'image', 'video'
+  string media_url = 4;
+  int32 media_order = 5;
+  int64 media_size = 6;
+  string caption = 7;
+}
+
+message MediaResponse {
+  int64 id = 1;
+  int64 context_id = 2;
+  string context_type = 3;
+  string media_type = 4;
+  string media_url = 5;
+  int32 media_order = 6;
+  int64 media_size = 7;
+  string caption = 8;
+  string uploaded_at = 9;
+}
 message UserFollowersResponse {
   repeated FollowUserResponse followers = 1;
 }

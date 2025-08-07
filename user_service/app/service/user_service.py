@@ -1,12 +1,12 @@
 import grpc
 import bcrypt
 from concurrent import futures
-from user_service.app.proto_files import user_pb2, user_pb2_grpc
-from user_service.app.repository.user_repository import (
+from app.proto_files import user_pb2, user_pb2_grpc
+from app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
-    create_user_rating, get_user_ratings,
-    create_user_follower, get_user_followers, get_user_following,
-    check_following_status
+    create_rating, get_ratings,
+    create_follower, get_followers, get_following,
+    check_following_status, create_media, get_media_by_id
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
 
@@ -31,7 +31,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 last_name=user.last_name,
                 email=user.email,
                 phone=user.phone,
-                profile_photo=user.profile_photo if user.profile_photo else "",
+
                 role=user.role if user.role else "",
                 address=user.address if user.address else "",
                 latitude=user.latitude if user.latitude else 0.0,
@@ -40,7 +40,11 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 isActive=user.isactive,
                 email_verified=user.email_verified,
                 phone_verified=user.phone_verified,
-                created_at=str(user.created_at) if user.created_at else ""
+                created_at=str(user.created_at) if user.created_at else "",
+                gst_no=user.gst_no if user.gst_no else "",
+                cover_photo_id=user.cover_photo_id if user.cover_photo_id else 0,
+                profile_photo_id=user.profile_photo_id if user.profile_photo_id else 0,
+                last_login_at=str(user.last_login_at) if user.last_login_at else ""
             )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
@@ -81,7 +85,11 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 address=request.address,
                 latitude=request.latitude,
                 longitude=request.longitude,
-                bio=request.bio
+                bio=request.bio,
+                gst_no=request.gst_no,
+                profile_photo=request.profile_photo,
+                cover_photo_id=request.cover_photo_id,
+                profile_photo_id=request.profile_photo_id
             )
             
             # Return the created user
@@ -91,13 +99,13 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_details(f"Error creating user: {str(e)}")
             return user_pb2.UserResponse()
 
-    def CreateUserRating(self, request, context):
+    def CreateRating(self, request, context):
         try:
             # Validate rating value
             if not 1 <= request.rating_value <= 5:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details("Rating value must be between 1 and 5")
-                return user_pb2.UserRatingResponse()
+                return user_pb2.RatingResponse()
 
             # Check if users exist
             rated_user = get_user_by_id(request.rated_user_id)
@@ -106,36 +114,40 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             if not rated_user or not rating_user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("One or both users not found")
-                return user_pb2.UserRatingResponse()
+                return user_pb2.RatingResponse()
 
             rating_id = create_user_rating(
                 rated_user_id=request.rated_user_id,
                 rated_by_user_id=request.rated_by_user_id,
                 rating_value=request.rating_value,
+                title=request.title,
                 review=request.review,
-                rating_type=request.rating_type
+                rating_type=request.rating_type,
+                is_anonymous=request.is_anonymous
             )
 
             # Get the created rating
             ratings = get_user_ratings(request.rated_user_id)
             for rating in ratings:
                 if rating.id == rating_id:
-                    return user_pb2.UserRatingResponse(
+                    return user_pb2.RatingResponse(
                         id=rating.id,
                         rated_user_id=rating.rated_user_id,
                         rated_by_user_id=rating.rated_by_user_id,
                         rating_value=rating.rating_value,
+                        title=rating.title if rating.title else "",
                         review=rating.review if rating.review else "",
                         rating_type=rating.rating_type if rating.rating_type else "",
+                        is_anonymous=rating.is_anonymous,
                         created_at=str(rating.created_at),
                         updated_at=str(rating.updated_at)
                     )
 
-            return user_pb2.UserRatingResponse()
+            return user_pb2.RatingResponse()
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error creating rating: {str(e)}")
-            return user_pb2.UserRatingResponse()
+            return user_pb2.RatingResponse()
 
     def GetUserRatings(self, request, context):
         try:
@@ -148,18 +160,20 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             ratings = get_user_ratings(request.id)
             rating_responses = []
             for rating in ratings:
-                rating_responses.append(user_pb2.UserRatingResponse(
+                rating_responses.append(user_pb2.RatingResponse(
                     id=rating.id,
                     rated_user_id=rating.rated_user_id,
                     rated_by_user_id=rating.rated_by_user_id,
                     rating_value=rating.rating_value,
+                    title=rating.title if rating.title else "",
                     review=rating.review if rating.review else "",
                     rating_type=rating.rating_type if rating.rating_type else "",
+                    is_anonymous=rating.is_anonymous,
                     created_at=str(rating.created_at),
                     updated_at=str(rating.updated_at)
                 ))
 
-            return user_pb2.UserRatingsResponse(ratings=rating_responses)
+            return user_pb2.RatingsResponse(ratings=rating_responses)
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error getting ratings: {str(e)}")
@@ -290,6 +304,77 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error checking following status: {str(e)}")
             return user_pb2.FollowUserResponse()
+
+    def UploadMedia(self, request, context):
+        try:
+            # Validate required fields
+            if not request.media_type or not request.media_url:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Media type and URL are required")
+                return user_pb2.MediaResponse()
+
+            # Validate media type
+            valid_media_types = ['image', 'video']
+            if request.media_type not in valid_media_types:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details(f"Media type must be one of: {', '.join(valid_media_types)}")
+                return user_pb2.MediaResponse()
+
+            # Create media record
+            media_id = create_media(
+                context_id=request.context_id,
+                context_type=request.context_type,
+                media_type=request.media_type,
+                media_url=request.media_url,
+                media_order=request.media_order,
+                media_size=request.media_size,
+                caption=request.caption
+            )
+
+            # Get and return the created media
+            media = get_media_by_id(media_id)
+            if media:
+                return user_pb2.MediaResponse(
+                    id=media.id,
+                    context_id=media.context_id,
+                    context_type=media.context_type,
+                    media_type=media.media_type,
+                    media_url=media.media_url,
+                    media_order=media.media_order,
+                    media_size=media.media_size,
+                    caption=media.caption if media.caption else "",
+                    uploaded_at=str(media.uploaded_at)
+                )
+
+            return user_pb2.MediaResponse()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error uploading media: {str(e)}")
+            return user_pb2.MediaResponse()
+
+    def GetMedia(self, request, context):
+        try:
+            media = get_media_by_id(request.id)
+            if not media:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"Media with ID {request.id} not found")
+                return user_pb2.MediaResponse()
+
+            return user_pb2.MediaResponse(
+                id=media.id,
+                context_id=media.context_id,
+                context_type=media.context_type,
+                media_type=media.media_type,
+                media_url=media.media_url,
+                media_order=media.media_order,
+                media_size=media.media_size,
+                caption=media.caption if media.caption else "",
+                uploaded_at=str(media.uploaded_at)
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error getting media: {str(e)}")
+            return user_pb2.MediaResponse()
 
 def serve():
     server = grpc.server(
