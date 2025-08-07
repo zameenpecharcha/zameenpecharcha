@@ -5,9 +5,18 @@ from datetime import datetime, timedelta
 from auth_service.app.utils.token_blacklist import is_token_blacklisted
 
 # Load your private key once at module level
-with open("config/private.pem", "r") as f:
+import os
+
+# Get the auth_service directory path
+AUTH_SERVICE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Construct absolute paths to the key files
+private_key_path = os.path.join(AUTH_SERVICE_DIR, "config", "private.pem")
+public_key_path = os.path.join(AUTH_SERVICE_DIR, "config", "public.pem")
+
+with open(private_key_path, "r") as f:
     PRIVATE_KEY = f.read()
-with open("config/public.pem", "r") as f:
+with open(public_key_path, "r") as f:
     PUBLIC_KEY = f.read()
 
 

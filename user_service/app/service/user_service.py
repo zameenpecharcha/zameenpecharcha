@@ -31,13 +31,12 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 last_name=user.last_name,
                 email=user.email,
                 phone=user.phone,
-
                 role=user.role if user.role else "",
                 address=user.address if user.address else "",
                 latitude=user.latitude if user.latitude else 0.0,
                 longitude=user.longitude if user.longitude else 0.0,
                 bio=user.bio if user.bio else "",
-                isActive=user.isactive,
+                isactive=user.isactive,
                 email_verified=user.email_verified,
                 phone_verified=user.phone_verified,
                 created_at=str(user.created_at) if user.created_at else "",
@@ -87,9 +86,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 longitude=request.longitude,
                 bio=request.bio,
                 gst_no=request.gst_no,
-                profile_photo=request.profile_photo,
-                cover_photo_id=request.cover_photo_id,
-                profile_photo_id=request.profile_photo_id
+
+                cover_photo_id=None if not request.HasField('cover_photo_id') else request.cover_photo_id,
+                profile_photo_id=None if not request.HasField('profile_photo_id') else request.profile_photo_id
             )
             
             # Return the created user
@@ -375,6 +374,78 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error getting media: {str(e)}")
             return user_pb2.MediaResponse()
+
+    def UpdateProfilePhoto(self, request, context):
+        try:
+            # First upload the media
+            media_request = request.media
+            media_request.context_type = 'user_profile'  # Force context type for profile photo
+            
+            # Create media record
+            media_id = create_media(
+                context_id=request.user_id,  # Use user_id as context_id
+                context_type='user_profile',
+                media_type=media_request.media_type,
+                media_url=media_request.media_url,
+                media_order=media_request.media_order,
+                media_size=media_request.media_size,
+                caption=media_request.caption
+            )
+
+            if not media_id:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to create media record")
+                return user_pb2.UserResponse()
+
+            # Update user's profile photo ID
+            success = update_user_photo(request.user_id, media_id, is_profile_photo=True)
+            if not success:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to update user's profile photo")
+                return user_pb2.UserResponse()
+
+            # Return updated user
+            return self.GetUser(user_pb2.UserRequest(id=request.user_id), context)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error updating profile photo: {str(e)}")
+            return user_pb2.UserResponse()
+
+    def UpdateCoverPhoto(self, request, context):
+        try:
+            # First upload the media
+            media_request = request.media
+            media_request.context_type = 'user_cover'  # Force context type for cover photo
+            
+            # Create media record
+            media_id = create_media(
+                context_id=request.user_id,  # Use user_id as context_id
+                context_type='user_cover',
+                media_type=media_request.media_type,
+                media_url=media_request.media_url,
+                media_order=media_request.media_order,
+                media_size=media_request.media_size,
+                caption=media_request.caption
+            )
+
+            if not media_id:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to create media record")
+                return user_pb2.UserResponse()
+
+            # Update user's cover photo ID
+            success = update_user_photo(request.user_id, media_id, is_profile_photo=False)
+            if not success:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to update user's cover photo")
+                return user_pb2.UserResponse()
+
+            # Return updated user
+            return self.GetUser(user_pb2.UserRequest(id=request.user_id), context)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error updating cover photo: {str(e)}")
+            return user_pb2.UserResponse()
 
 def serve():
     server = grpc.server(

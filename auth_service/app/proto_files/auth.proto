@@ -29,8 +29,9 @@ message UserInfo {
   string last_name = 3;
   string email = 4;
   string phone = 5;
-  string profile_photo = 6;
-  string role = 7;
+  int64 profile_photo_id = 6;
+  int64 cover_photo_id = 7;
+  string role = 17;
   string address = 8;
   float latitude = 9;
   float longitude = 10;
