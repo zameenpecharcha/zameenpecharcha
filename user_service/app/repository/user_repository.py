@@ -29,6 +29,7 @@ class UserRow:
         self.last_login_at = last_login_at
         self.created_at = created_at
 
+
 class RatingRow:
     def __init__(self, id, rated_user_id, rated_by_user_id, rating_value, title,
                  review, rating_type, is_anonymous, created_at, updated_at):
@@ -264,5 +265,56 @@ def get_media_by_id(media_id):
     try:
         result = session.execute(select(media).where(media.c.id == media_id)).fetchone()
         return MediaRow(*result) if result else None
+    finally:
+        session.close()
+
+def update_user_photo(user_id, photo_id, is_profile_photo=True):
+    """
+    Update user's profile or cover photo ID
+    Args:
+        user_id: ID of the user
+        photo_id: ID of the media
+        is_profile_photo: True for profile photo, False for cover photo
+    """
+    if not isinstance(user_id, (int, str)) or not isinstance(photo_id, (int, str)):
+        return False
+    try:
+        user_id = int(user_id)
+        photo_id = int(photo_id)
+    except (ValueError, TypeError):
+        return False
+
+    session = SessionLocal()
+    try:
+        # Verify user exists
+        user = session.execute(select(users).where(users.c.id == user_id)).fetchone()
+        if not user:
+            return False
+
+        # Verify media exists
+        media_item = session.execute(select(media).where(media.c.id == photo_id)).fetchone()
+        if not media_item:
+            return False
+
+        # Update the appropriate photo ID
+        if is_profile_photo:
+            session.execute(
+                users.update()
+                .where(users.c.id == user_id)
+                .values(profile_photo_id=photo_id)
+            )
+        else:
+            session.execute(
+                users.update()
+                .where(users.c.id == user_id)
+                .values(cover_photo_id=photo_id)
+            )
+        
+        session.commit()
+        return True
+    except Exception as e:
+        print(f"Error updating user photo: {str(e)}")
+        session.rollback()
+        return False
     finally:
         session.close()

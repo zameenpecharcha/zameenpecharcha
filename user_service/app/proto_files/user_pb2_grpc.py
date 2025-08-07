@@ -84,6 +84,16 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.UserRequest.SerializeToString,
                 response_deserializer=user__pb2.MediaResponse.FromString,
                 _registered_method=True)
+        self.UpdateProfilePhoto = channel.unary_unary(
+                '/user.UserService/UpdateProfilePhoto',
+                request_serializer=user__pb2.UpdateUserPhotoRequest.SerializeToString,
+                response_deserializer=user__pb2.UserResponse.FromString,
+                _registered_method=True)
+        self.UpdateCoverPhoto = channel.unary_unary(
+                '/user.UserService/UpdateCoverPhoto',
+                request_serializer=user__pb2.UpdateUserPhotoRequest.SerializeToString,
+                response_deserializer=user__pb2.UserResponse.FromString,
+                _registered_method=True)
 
 
 class UserServiceServicer(object):
@@ -153,6 +163,18 @@ class UserServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdateProfilePhoto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateCoverPhoto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_UserServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -205,6 +227,16 @@ def add_UserServiceServicer_to_server(servicer, server):
                     servicer.GetMedia,
                     request_deserializer=user__pb2.UserRequest.FromString,
                     response_serializer=user__pb2.MediaResponse.SerializeToString,
+            ),
+            'UpdateProfilePhoto': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateProfilePhoto,
+                    request_deserializer=user__pb2.UpdateUserPhotoRequest.FromString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
+            ),
+            'UpdateCoverPhoto': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateCoverPhoto,
+                    request_deserializer=user__pb2.UpdateUserPhotoRequest.FromString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -477,6 +509,60 @@ class UserService(object):
             '/user.UserService/GetMedia',
             user__pb2.UserRequest.SerializeToString,
             user__pb2.MediaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateProfilePhoto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/UpdateProfilePhoto',
+            user__pb2.UpdateUserPhotoRequest.SerializeToString,
+            user__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateCoverPhoto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/UpdateCoverPhoto',
+            user__pb2.UpdateUserPhotoRequest.SerializeToString,
+            user__pb2.UserResponse.FromString,
             options,
             channel_credentials,
             insecure,
