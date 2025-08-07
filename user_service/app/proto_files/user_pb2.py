@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nuser.proto\x12\x04user\"\x19\n\x0bUserRequest\x12\n\n\x02id\x18\x01 \x01(\x03\"\xbb\x01\n\x11\x43reateUserRequest\x12\x12\n\nfirst_name\x18\x01 \x01(\t\x12\x11\n\tlast_name\x18\x02 \x01(\t\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\r\n\x05phone\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x07 \x01(\t\x12\x10\n\x08latitude\x18\x08 \x01(\x02\x12\x11\n\tlongitude\x18\t \x01(\x02\x12\x0b\n\x03\x62io\x18\n \x01(\t\"\x9d\x02\n\x0cUserResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\nfirst_name\x18\x02 \x01(\t\x12\x11\n\tlast_name\x18\x03 \x01(\t\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\r\n\x05phone\x18\x05 \x01(\t\x12\x15\n\rprofile_photo\x18\x06 \x01(\t\x12\x0c\n\x04role\x18\x07 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x08 \x01(\t\x12\x10\n\x08latitude\x18\t \x01(\x02\x12\x11\n\tlongitude\x18\n \x01(\x02\x12\x0b\n\x03\x62io\x18\x0b \x01(\t\x12\x10\n\x08isActive\x18\x0c \x01(\x08\x12\x16\n\x0e\x65mail_verified\x18\r \x01(\x08\x12\x16\n\x0ephone_verified\x18\x0e \x01(\x08\x12\x12\n\ncreated_at\x18\x0f \x01(\t\"\x85\x01\n\x17\x43reateUserRatingRequest\x12\x15\n\rrated_user_id\x18\x01 \x01(\x03\x12\x18\n\x10rated_by_user_id\x18\x02 \x01(\x03\x12\x14\n\x0crating_value\x18\x03 \x01(\x05\x12\x0e\n\x06review\x18\x04 \x01(\t\x12\x13\n\x0brating_type\x18\x05 \x01(\t\"\xb4\x01\n\x12UserRatingResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x15\n\rrated_user_id\x18\x02 \x01(\x03\x12\x18\n\x10rated_by_user_id\x18\x03 \x01(\x03\x12\x14\n\x0crating_value\x18\x04 \x01(\x05\x12\x0e\n\x06review\x18\x05 \x01(\t\x12\x13\n\x0brating_type\x18\x06 \x01(\t\x12\x12\n\ncreated_at\x18\x07 \x01(\t\x12\x12\n\nupdated_at\x18\x08 \x01(\t\"@\n\x13UserRatingsResponse\x12)\n\x07ratings\x18\x01 \x03(\x0b\x32\x18.user.UserRatingResponse\":\n\x11\x46ollowUserRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x02 \x01(\x03\"l\n\x12\x46ollowUserResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x03 \x01(\x03\x12\x0e\n\x06status\x18\x04 \x01(\t\x12\x13\n\x0b\x66ollowed_at\x18\x05 \x01(\t\"D\n\x15UserFollowersResponse\x12+\n\tfollowers\x18\x01 \x03(\x0b\x32\x18.user.FollowUserResponse\">\n\x15\x43heckFollowingRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x02 \x01(\x03\x32\x9f\x04\n\x0bUserService\x12\x30\n\x07GetUser\x12\x11.user.UserRequest\x1a\x12.user.UserResponse\x12\x39\n\nCreateUser\x12\x17.user.CreateUserRequest\x1a\x12.user.UserResponse\x12K\n\x10\x43reateUserRating\x12\x1d.user.CreateUserRatingRequest\x1a\x18.user.UserRatingResponse\x12>\n\x0eGetUserRatings\x12\x11.user.UserRequest\x1a\x19.user.UserRatingsResponse\x12?\n\nFollowUser\x12\x17.user.FollowUserRequest\x1a\x18.user.FollowUserResponse\x12\x42\n\x10GetUserFollowers\x12\x11.user.UserRequest\x1a\x1b.user.UserFollowersResponse\x12\x42\n\x10GetUserFollowing\x12\x11.user.UserRequest\x1a\x1b.user.UserFollowersResponse\x12M\n\x14\x43heckFollowingStatus\x12\x1b.user.CheckFollowingRequest\x1a\x18.user.FollowUserResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nuser.proto\x12\x04user\"\x19\n\x0bUserRequest\x12\n\n\x02id\x18\x01 \x01(\x03\"\xfd\x01\n\x11\x43reateUserRequest\x12\x12\n\nfirst_name\x18\x01 \x01(\t\x12\x11\n\tlast_name\x18\x02 \x01(\t\x12\r\n\x05\x65mail\x18\x03 \x01(\t\x12\r\n\x05phone\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x06 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x07 \x01(\t\x12\x10\n\x08latitude\x18\x08 \x01(\x02\x12\x11\n\tlongitude\x18\t \x01(\x02\x12\x0b\n\x03\x62io\x18\n \x01(\t\x12\x0e\n\x06gst_no\x18\x0b \x01(\t\x12\x16\n\x0e\x63over_photo_id\x18\x0c \x01(\x03\x12\x18\n\x10profile_photo_id\x18\r \x01(\x03\"\xdf\x02\n\x0cUserResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\nfirst_name\x18\x02 \x01(\t\x12\x11\n\tlast_name\x18\x03 \x01(\t\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\r\n\x05phone\x18\x05 \x01(\t\x12\x0c\n\x04role\x18\x07 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x08 \x01(\t\x12\x10\n\x08latitude\x18\t \x01(\x02\x12\x11\n\tlongitude\x18\n \x01(\x02\x12\x0b\n\x03\x62io\x18\x0b \x01(\t\x12\x10\n\x08isActive\x18\x0c \x01(\x08\x12\x16\n\x0e\x65mail_verified\x18\r \x01(\x08\x12\x16\n\x0ephone_verified\x18\x0e \x01(\x08\x12\x12\n\ncreated_at\x18\x0f \x01(\t\x12\x0e\n\x06gst_no\x18\x10 \x01(\t\x12\x16\n\x0e\x63over_photo_id\x18\x11 \x01(\x03\x12\x18\n\x10profile_photo_id\x18\x12 \x01(\x03\x12\x15\n\rlast_login_at\x18\x13 \x01(\t\"\xa6\x01\n\x13\x43reateRatingRequest\x12\x15\n\rrated_user_id\x18\x01 \x01(\x03\x12\x18\n\x10rated_by_user_id\x18\x02 \x01(\x03\x12\x14\n\x0crating_value\x18\x03 \x01(\x05\x12\r\n\x05title\x18\x04 \x01(\t\x12\x0e\n\x06review\x18\x05 \x01(\t\x12\x13\n\x0brating_type\x18\x06 \x01(\t\x12\x14\n\x0cis_anonymous\x18\x07 \x01(\x08\"\xd5\x01\n\x0eRatingResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x15\n\rrated_user_id\x18\x02 \x01(\x03\x12\x18\n\x10rated_by_user_id\x18\x03 \x01(\x03\x12\x14\n\x0crating_value\x18\x04 \x01(\x05\x12\r\n\x05title\x18\x05 \x01(\t\x12\x0e\n\x06review\x18\x06 \x01(\t\x12\x13\n\x0brating_type\x18\x07 \x01(\t\x12\x14\n\x0cis_anonymous\x18\x08 \x01(\x08\x12\x12\n\ncreated_at\x18\t \x01(\t\x12\x12\n\nupdated_at\x18\n \x01(\t\"8\n\x0fRatingsResponse\x12%\n\x07ratings\x18\x01 \x03(\x0b\x32\x14.user.RatingResponse\"e\n\x11\x46ollowUserRequest\x12\x13\n\x0b\x66ollower_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x02 \x01(\x03\x12\x15\n\rfollowee_type\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"\x87\x01\n\x12\x46ollowUserResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x13\n\x0b\x66ollower_id\x18\x02 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x03 \x01(\x03\x12\x15\n\rfollowee_type\x18\x04 \x01(\t\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\x13\n\x0b\x66ollowed_at\x18\x06 \x01(\t\"\x99\x01\n\x0cMediaRequest\x12\x12\n\ncontext_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x63ontext_type\x18\x02 \x01(\t\x12\x12\n\nmedia_type\x18\x03 \x01(\t\x12\x11\n\tmedia_url\x18\x04 \x01(\t\x12\x13\n\x0bmedia_order\x18\x05 \x01(\x05\x12\x12\n\nmedia_size\x18\x06 \x01(\x03\x12\x0f\n\x07\x63\x61ption\x18\x07 \x01(\t\"\xbb\x01\n\rMediaResponse\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x12\n\ncontext_id\x18\x02 \x01(\x03\x12\x14\n\x0c\x63ontext_type\x18\x03 \x01(\t\x12\x12\n\nmedia_type\x18\x04 \x01(\t\x12\x11\n\tmedia_url\x18\x05 \x01(\t\x12\x13\n\x0bmedia_order\x18\x06 \x01(\x05\x12\x12\n\nmedia_size\x18\x07 \x01(\x03\x12\x0f\n\x07\x63\x61ption\x18\x08 \x01(\t\x12\x13\n\x0buploaded_at\x18\t \x01(\t\"D\n\x15UserFollowersResponse\x12+\n\tfollowers\x18\x01 \x03(\x0b\x32\x18.user.FollowUserResponse\">\n\x15\x43heckFollowingRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x66ollowing_id\x18\x02 \x01(\x03\x32\xf1\x04\n\x0bUserService\x12\x30\n\x07GetUser\x12\x11.user.UserRequest\x1a\x12.user.UserResponse\x12\x39\n\nCreateUser\x12\x17.user.CreateUserRequest\x1a\x12.user.UserResponse\x12?\n\x0c\x43reateRating\x12\x19.user.CreateRatingRequest\x1a\x14.user.RatingResponse\x12:\n\x0eGetUserRatings\x12\x11.user.UserRequest\x1a\x15.user.RatingsResponse\x12?\n\nFollowUser\x12\x17.user.FollowUserRequest\x1a\x18.user.FollowUserResponse\x12?\n\x10GetUserFollowers\x12\x11.user.UserRequest\x1a\x18.user.FollowUserResponse\x12?\n\x10GetUserFollowing\x12\x11.user.UserRequest\x1a\x18.user.FollowUserResponse\x12I\n\x14\x43heckFollowingStatus\x12\x17.user.FollowUserRequest\x1a\x18.user.FollowUserResponse\x12\x36\n\x0bUploadMedia\x12\x12.user.MediaRequest\x1a\x13.user.MediaResponse\x12\x32\n\x08GetMedia\x12\x11.user.UserRequest\x1a\x13.user.MediaResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,23 +34,27 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_USERREQUEST']._serialized_start=20
   _globals['_USERREQUEST']._serialized_end=45
   _globals['_CREATEUSERREQUEST']._serialized_start=48
-  _globals['_CREATEUSERREQUEST']._serialized_end=235
-  _globals['_USERRESPONSE']._serialized_start=238
-  _globals['_USERRESPONSE']._serialized_end=523
-  _globals['_CREATEUSERRATINGREQUEST']._serialized_start=526
-  _globals['_CREATEUSERRATINGREQUEST']._serialized_end=659
-  _globals['_USERRATINGRESPONSE']._serialized_start=662
-  _globals['_USERRATINGRESPONSE']._serialized_end=842
-  _globals['_USERRATINGSRESPONSE']._serialized_start=844
-  _globals['_USERRATINGSRESPONSE']._serialized_end=908
-  _globals['_FOLLOWUSERREQUEST']._serialized_start=910
-  _globals['_FOLLOWUSERREQUEST']._serialized_end=968
-  _globals['_FOLLOWUSERRESPONSE']._serialized_start=970
-  _globals['_FOLLOWUSERRESPONSE']._serialized_end=1078
-  _globals['_USERFOLLOWERSRESPONSE']._serialized_start=1080
-  _globals['_USERFOLLOWERSRESPONSE']._serialized_end=1148
-  _globals['_CHECKFOLLOWINGREQUEST']._serialized_start=1150
-  _globals['_CHECKFOLLOWINGREQUEST']._serialized_end=1212
-  _globals['_USERSERVICE']._serialized_start=1215
-  _globals['_USERSERVICE']._serialized_end=1758
+  _globals['_CREATEUSERREQUEST']._serialized_end=301
+  _globals['_USERRESPONSE']._serialized_start=304
+  _globals['_USERRESPONSE']._serialized_end=655
+  _globals['_CREATERATINGREQUEST']._serialized_start=658
+  _globals['_CREATERATINGREQUEST']._serialized_end=824
+  _globals['_RATINGRESPONSE']._serialized_start=827
+  _globals['_RATINGRESPONSE']._serialized_end=1040
+  _globals['_RATINGSRESPONSE']._serialized_start=1042
+  _globals['_RATINGSRESPONSE']._serialized_end=1098
+  _globals['_FOLLOWUSERREQUEST']._serialized_start=1100
+  _globals['_FOLLOWUSERREQUEST']._serialized_end=1201
+  _globals['_FOLLOWUSERRESPONSE']._serialized_start=1204
+  _globals['_FOLLOWUSERRESPONSE']._serialized_end=1339
+  _globals['_MEDIAREQUEST']._serialized_start=1342
+  _globals['_MEDIAREQUEST']._serialized_end=1495
+  _globals['_MEDIARESPONSE']._serialized_start=1498
+  _globals['_MEDIARESPONSE']._serialized_end=1685
+  _globals['_USERFOLLOWERSRESPONSE']._serialized_start=1687
+  _globals['_USERFOLLOWERSRESPONSE']._serialized_end=1755
+  _globals['_CHECKFOLLOWINGREQUEST']._serialized_start=1757
+  _globals['_CHECKFOLLOWINGREQUEST']._serialized_end=1819
+  _globals['_USERSERVICE']._serialized_start=1822
+  _globals['_USERSERVICE']._serialized_end=2447
 # @@protoc_insertion_point(module_scope)
