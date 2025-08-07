@@ -61,8 +61,8 @@ CREATE TABLE users (
     email_verified boolean DEFAULT false,
     phone_verified boolean DEFAULT false,
     gst_no VARCHAR(255),
-    cover_photo_id BIGINT,
-    profile_photo_id BIGINT,
+    cover_photo_id BIGINT NULL,
+    profile_photo_id BIGINT NULL,
     last_login_at TIMESTAMP,
     CONSTRAINT fk_user_cover_photo FOREIGN KEY (cover_photo_id) 
         REFERENCES media(id) 
