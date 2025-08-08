@@ -6,7 +6,7 @@ from app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
     create_rating, get_ratings,
     create_follower, get_followers, get_following,
-    check_following_status, create_media, get_media_by_id
+    check_following_status, create_media, get_media_by_id, update_user_photo
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
 
@@ -115,7 +115,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("One or both users not found")
                 return user_pb2.RatingResponse()
 
-            rating_id = create_user_rating(
+            rating_id = create_rating(
                 rated_user_id=request.rated_user_id,
                 rated_by_user_id=request.rated_by_user_id,
                 rating_value=request.rating_value,
@@ -126,7 +126,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             )
 
             # Get the created rating
-            ratings = get_user_ratings(request.rated_user_id)
+            ratings = get_ratings(request.rated_user_id)
             for rating in ratings:
                 if rating.id == rating_id:
                     return user_pb2.RatingResponse(
@@ -154,9 +154,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with ID {request.id} not found")
-                return user_pb2.UserRatingsResponse()
+                return user_pb2.RatingsResponse()
 
-            ratings = get_user_ratings(request.id)
+            ratings = get_ratings(request.id)
             rating_responses = []
             for rating in ratings:
                 rating_responses.append(user_pb2.RatingResponse(
@@ -176,43 +176,47 @@ class UserService(user_pb2_grpc.UserServiceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error getting ratings: {str(e)}")
-            return user_pb2.UserRatingsResponse()
+            return user_pb2.RatingsResponse()
 
     def FollowUser(self, request, context):
         try:
             # Check if users exist
-            user = get_user_by_id(request.user_id)
-            following = get_user_by_id(request.following_id)
+            follower_user = get_user_by_id(request.follower_id)
+            following_user = get_user_by_id(request.following_id)
             
-            if not user or not following:
+            if not follower_user or not following_user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("One or both users not found")
                 return user_pb2.FollowUserResponse()
 
             # Check if already following
-            existing = check_following_status(request.user_id, request.following_id)
+            existing = check_following_status(request.follower_id, request.following_id)
             if existing:
                 return user_pb2.FollowUserResponse(
                     id=existing.id,
-                    user_id=existing.user_id,
+                    follower_id=existing.follower_id,
                     following_id=existing.following_id,
-                    status=existing.status,
+                    followee_type=existing.followee_type if existing.followee_type else "",
+                    status=existing.status if existing.status else "",
                     followed_at=str(existing.followed_at)
                 )
 
-            follower_id = create_user_follower(
-                user_id=request.user_id,
-                following_id=request.following_id
+            follower_row_id = create_follower(
+                follower_id=request.follower_id,
+                following_id=request.following_id,
+                followee_type=request.followee_type if request.followee_type else None,
+                status=request.status if request.status else 'active'
             )
 
             # Get the created follower relationship
-            follower = check_following_status(request.user_id, request.following_id)
+            follower = check_following_status(request.follower_id, request.following_id)
             if follower:
                 return user_pb2.FollowUserResponse(
                     id=follower.id,
-                    user_id=follower.user_id,
+                    follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    status=follower.status,
+                    followee_type=follower.followee_type if follower.followee_type else "",
+                    status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 )
 
@@ -230,14 +234,15 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details(f"User with ID {request.id} not found")
                 return user_pb2.UserFollowersResponse()
 
-            followers = get_user_followers(request.id)
+            followers = get_followers(request.id)
             follower_responses = []
             for follower in followers:
                 follower_responses.append(user_pb2.FollowUserResponse(
                     id=follower.id,
-                    user_id=follower.user_id,
+                    follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    status=follower.status,
+                    followee_type=follower.followee_type if follower.followee_type else "",
+                    status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 ))
 
@@ -255,14 +260,15 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details(f"User with ID {request.id} not found")
                 return user_pb2.UserFollowersResponse()
 
-            following = get_user_following(request.id)
+            following = get_following(request.id)
             following_responses = []
             for follow in following:
                 following_responses.append(user_pb2.FollowUserResponse(
                     id=follow.id,
-                    user_id=follow.user_id,
+                    follower_id=follow.follower_id,
                     following_id=follow.following_id,
-                    status=follow.status,
+                    followee_type=follow.followee_type if follow.followee_type else "",
+                    status=follow.status if follow.status else "",
                     followed_at=str(follow.followed_at)
                 ))
 
@@ -275,7 +281,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
     def CheckFollowingStatus(self, request, context):
         try:
             # First check if both users exist
-            user = get_user_by_id(request.user_id)
+            user = get_user_by_id(request.follower_id)
             following_user = get_user_by_id(request.following_id)
             
             if not user or not following_user:
@@ -284,7 +290,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 return user_pb2.FollowUserResponse()
 
             # Check following status
-            status = check_following_status(request.user_id, request.following_id)
+            status = check_following_status(request.follower_id, request.following_id)
             if not status:
                 # Return empty response with NOT_FOUND status if no following relationship exists
                 context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -293,7 +299,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
 
             return user_pb2.FollowUserResponse(
                 id=status.id,
-                user_id=status.user_id,
+                follower_id=status.follower_id,
                 following_id=status.following_id,
                 status=status.status if status.status else "",
                 followed_at=str(status.followed_at) if status.followed_at else ""
