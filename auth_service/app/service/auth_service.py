@@ -309,14 +309,11 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             else:  # LOGIN
                 message = "OTP verified successfully"
 
-            # Generate token with user information
-            token_data = {
-                "user_id": user.id,
-                "email": user.email,
-                "role": user.role,
-                "exp": datetime.utcnow() + timedelta(hours=1)
-            }
-            token = jwt.encode(token_data, SECRET_KEY, algorithm="HS256")
+            # Only generate token for LOGIN type
+            token = ""
+            if request.type == auth_pb2.LOGIN:
+                access_token, refresh_token = generate_tokens(user)
+                token = access_token
 
             log_msg("info", message, user_id=request.email, correlation_id=correlation_id)
             return auth_pb2.VerifyOTPResponse(
