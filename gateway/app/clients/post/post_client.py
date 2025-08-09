@@ -9,7 +9,7 @@ from app.clients.grpc_base_client import GRPCBaseClient
 
 class PostsServiceClient(GRPCBaseClient):
     def __init__(self):
-        super().__init__(post_pb2_grpc.PostsServiceStub, target='localhost:50052')
+        super().__init__(post_pb2_grpc.PostsServiceStub, target='localhost:50053')
 
     def get_comments(self, post_id: int, page: int = 1, limit: int = 10,token=None):
         try:
@@ -28,7 +28,7 @@ class PostsServiceClient(GRPCBaseClient):
                      status: str = None, page: int = 1, limit: int = 10,token=None):
         try:
             request = post_pb2.SearchPostsRequest(
-                property_type=property_type or "",
+                type=property_type or "",
                 location=location or "",
                 min_price=min_price or 0.0,
                 max_price=max_price or 0.0,
@@ -61,7 +61,10 @@ class PostsServiceClient(GRPCBaseClient):
                         media_type=m.mediaType,
                         media_data=media_data,
                         media_order=m.mediaOrder,
-                        caption=m.caption
+                        caption=m.caption,
+                        base64_data=getattr(m, 'base64Data', None) or '',
+                        file_name=getattr(m, 'fileName', None) or '',
+                        content_type=getattr(m, 'contentType', None) or ''
                     )
                     media_list.append(media_upload)
 
@@ -70,7 +73,7 @@ class PostsServiceClient(GRPCBaseClient):
                 title=title,
                 content=content,
                 visibility=visibility,
-                property_type=property_type,
+                type=property_type,
                 location=location,
                 map_location=map_location,
                 price=price,
@@ -99,7 +102,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.property_type,
+                    'propertyType': response.post.type,
                     'location': response.post.location,
                     'mapLocation': response.post.map_location,
                     'price': response.post.price,
@@ -138,7 +141,7 @@ class PostsServiceClient(GRPCBaseClient):
 
             # Convert camelCase to snake_case for property_type and map_location
             if 'propertyType' in update_data:
-                update_data['property_type'] = update_data.pop('propertyType')
+                update_data['type'] = update_data.pop('propertyType')
             if 'mapLocation' in update_data:
                 update_data['map_location'] = update_data.pop('mapLocation')
 
@@ -168,7 +171,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.property_type,
+                    'propertyType': response.post.type,
                     'location': response.post.location,
                     'mapLocation': response.post.map_location,
                     'price': response.post.price,
@@ -258,7 +261,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.property_type,
+                    'propertyType': response.post.type,
                     'location': response.post.location,
                     'mapLocation': response.post.map_location,
                     'price': response.post.price,
@@ -338,7 +341,7 @@ class PostsServiceClient(GRPCBaseClient):
 
     def delete_post_media(self, media_id: int,token=None) -> dict:
         try:
-            request = post_pb2.PostRequest(post_id=media_id)
+            request = post_pb2.MediaIdRequest(media_id=media_id)
             response = self._call(self.stub.DeletePostMedia, request,token=token)
 
             return {
@@ -507,7 +510,7 @@ class PostsServiceClient(GRPCBaseClient):
 
     def delete_comment(self, comment_id: int,token=None) -> dict:
         try:
-            request = post_pb2.PostRequest(post_id=comment_id)  # Using PostRequest for comment_id
+            request = post_pb2.CommentRequest(comment_id=comment_id)
             response = self._call(self.stub.DeleteComment, request,token=token)
             return {
                 'success': True,

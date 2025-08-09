@@ -14,7 +14,7 @@ message Post {
     string content = 8;
     string title = 9;
     string visibility = 10;
-    string property_type = 11;
+    string type = 11;
     string location = 12;
     string map_location = 13;
     double price = 14;
@@ -24,6 +24,7 @@ message Post {
     repeated Comment comments = 18;
     int32 like_count = 19;
     int32 comment_count = 20;
+    bool is_anonymous = 21;
 }
 
 // Post Media Message
@@ -53,6 +54,8 @@ message Comment {
     int64 commented_at = 11;
     repeated Comment replies = 12;
     int32 like_count = 13;
+    bool is_anonymous = 14;
+    int64 edited_at = 15;
 }
 
 // Post List Message
@@ -71,7 +74,7 @@ message PostCreateRequest {
     string title = 2;
     string content = 3;
     string visibility = 4;
-    string property_type = 5;
+    string type = 5;
     string location = 6;
     string map_location = 7;
     double price = 8;
@@ -85,6 +88,9 @@ message PostMediaUpload {
     bytes media_data = 2;
     int32 media_order = 3;
     string caption = 4;
+    string base64_data = 5;
+    string file_name = 6;
+    string content_type = 7;
 }
 
 // Post Update Request Message
@@ -93,7 +99,7 @@ message PostUpdateRequest {
     string title = 2;
     string content = 3;
     string visibility = 4;
-    string property_type = 5;
+    string type = 5;
     string location = 6;
     string map_location = 7;
     double price = 8;
@@ -104,6 +110,10 @@ message PostUpdateRequest {
 message PostMediaRequest {
     int64 post_id = 1;
     repeated PostMediaUpload media = 2;
+}
+
+message MediaIdRequest {
+    int64 media_id = 1;
 }
 
 // Like Request Message
@@ -135,6 +145,10 @@ message CommentUpdateRequest {
     string status = 3;
 }
 
+message CommentRequest {
+    int64 comment_id = 1;
+}
+
 // Get Comments Request Message
 message GetCommentsRequest {
     int64 post_id = 1;
@@ -151,7 +165,7 @@ message GetPostsByUserRequest {
 
 // Search Posts Request Message
 message SearchPostsRequest {
-    string property_type = 1;
+    string type = 1;
     string location = 2;
     double min_price = 3;
     double max_price = 4;
@@ -212,7 +226,7 @@ service PostsService {
 
     // Media Operations
     rpc AddPostMedia(PostMediaRequest) returns (PostResponse) {}
-    rpc DeletePostMedia(PostRequest) returns (GenericResponse) {}
+    rpc DeletePostMedia(MediaIdRequest) returns (GenericResponse) {}
 
     // Like Operations
     rpc LikePost(LikeRequest) returns (PostResponse) {}
@@ -221,7 +235,7 @@ service PostsService {
     // Comment Operations
     rpc CreateComment(CommentCreateRequest) returns (CommentResponse) {}
     rpc UpdateComment(CommentUpdateRequest) returns (CommentResponse) {}
-    rpc DeleteComment(PostRequest) returns (GenericResponse) {}
+    rpc DeleteComment(CommentRequest) returns (GenericResponse) {}
     rpc GetComments(GetCommentsRequest) returns (CommentListResponse) {}
     rpc LikeComment(CommentLikeRequest) returns (CommentResponse) {}
     rpc UnlikeComment(CommentLikeRequest) returns (CommentResponse) {}

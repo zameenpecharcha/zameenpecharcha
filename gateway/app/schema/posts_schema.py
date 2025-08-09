@@ -235,7 +235,7 @@ class Query:
                 'title': post.title,
                 'content': post.content,
                 'visibility': post.visibility,
-                'propertyType': post.property_type,
+                'propertyType': getattr(post, 'type', ''),
                 'location': post.location,
                 'mapLocation': post.map_location,
                 'price': post.price,
