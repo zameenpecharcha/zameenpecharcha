@@ -6,7 +6,7 @@ from user_service.app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
     create_user_rating, get_user_ratings,
     create_user_follower, get_user_followers, get_user_following,
-    check_following_status
+    check_following_status, delete_user
 )
 
 class UserService(user_pb2_grpc.UserServiceServicer):
@@ -88,6 +88,44 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error creating user: {str(e)}")
             return user_pb2.UserResponse()
+
+    def DeleteUser(self, request, context):
+        try:
+            # Validate user ID
+            if not isinstance(request.user_id, int):
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("User ID must be an integer")
+                return user_pb2.DeleteUserResponse()
+
+            # Check if user exists
+            user = get_user_by_id(request.user_id)
+            if not user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.user_id} not found")
+                return user_pb2.DeleteUserResponse()
+
+            # Delete user and all associated data
+            success, message = delete_user(request.user_id)
+            
+            if success:
+                return user_pb2.DeleteUserResponse(
+                    success=True,
+                    message=message
+                )
+            else:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(message)
+                return user_pb2.DeleteUserResponse(
+                    success=False,
+                    message=message
+                )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error deleting user: {str(e)}")
+            return user_pb2.DeleteUserResponse(
+                success=False,
+                message=f"Error deleting user: {str(e)}"
+            )
 
     def CreateUserRating(self, request, context):
         try:

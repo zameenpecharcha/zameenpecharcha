@@ -5,6 +5,7 @@ package user;
 service UserService {
   rpc GetUser (UserRequest) returns (UserResponse);
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
   rpc CreateUserRating (CreateUserRatingRequest) returns (UserRatingResponse);
   rpc GetUserRatings (UserRequest) returns (UserRatingsResponse);
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
@@ -28,6 +29,15 @@ message CreateUserRequest {
   float latitude = 8;
   float longitude = 9;
   string bio = 10;
+}
+
+message DeleteUserRequest {
+  int64 user_id = 1;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+  string message = 2;
 }
 
 message UserResponse {

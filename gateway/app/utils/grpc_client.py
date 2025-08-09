@@ -176,6 +176,16 @@ class UserServiceClient:
             log_msg("error", f"gRPC error in check_following_status: {str(e)}")
             raise e
 
+    def delete_user(self, user_id: int):
+        try:
+            request = user_pb2.DeleteUserRequest(user_id=user_id)
+            return self.stub.DeleteUser(request)
+        except grpc.RpcError as e:
+            return user_pb2.DeleteUserResponse(
+                success=False,
+                message=f"Error deleting user: {str(e)}"
+            )
+
 class CommentsServiceClient:
     def __init__(self, host='localhost', port=50053):
         self.channel = grpc.insecure_channel(f'{host}:{port}')

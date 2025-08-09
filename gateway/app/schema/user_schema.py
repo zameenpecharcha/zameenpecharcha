@@ -48,6 +48,11 @@ class UserFollower:
     followed_at: str
 
 @strawberry.type
+class DeleteUserResponse:
+    success: bool
+    message: str
+
+@strawberry.type
 class Query:
     @strawberry.field
     def user(self, id: int) -> typing.Optional[User]:
@@ -268,6 +273,30 @@ class Mutation:
                 raise REException(
                     "USER_CREATION_FAILED",
                     "Failed to create user",
+                    "Please try again later"
+                ).to_graphql_error()
+
+    @strawberry.mutation
+    async def delete_user(self, user_id: int) -> DeleteUserResponse:
+        try:
+            log_msg("info", f"Deleting user {user_id}")
+            response = client.delete_user(user_id=user_id)
+            return DeleteUserResponse(
+                success=response.success,
+                message=response.message
+            )
+        except Exception as e:
+            error_message = str(e)
+            if "not found" in error_message.lower():
+                raise REException(
+                    "USER_NOT_FOUND",
+                    "User not found",
+                    "The specified user does not exist"
+                ).to_graphql_error()
+            else:
+                raise REException(
+                    "USER_DELETION_FAILED",
+                    "Failed to delete user",
                     "Please try again later"
                 ).to_graphql_error()
 

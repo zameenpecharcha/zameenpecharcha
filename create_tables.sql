@@ -116,7 +116,7 @@ CREATE TABLE Posts (
     price NUMERIC(15,2),
     status VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create post_media table
@@ -129,7 +129,7 @@ CREATE TABLE post_media (
     media_size BIGINT,
     caption TEXT,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES Posts(id)
+    FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE
 );
 
 -- Create user_ratings table
@@ -142,8 +142,8 @@ CREATE TABLE user_ratings (
     rating_type VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (rated_user_id) REFERENCES users(id),
-    FOREIGN KEY (rated_by_user_id) REFERENCES users(id)
+    FOREIGN KEY (rated_user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (rated_by_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create user_followers table
@@ -153,8 +153,8 @@ CREATE TABLE user_followers (
     following_id BIGINT NOT NULL,
     status VARCHAR(20) DEFAULT 'active',
     followed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (following_id) REFERENCES users(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create post_likes table
@@ -164,8 +164,8 @@ CREATE TABLE post_likes (
     reaction_type VARCHAR(20),
     user_id BIGINT NOT NULL,
     liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES Posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create Comments table
@@ -191,8 +191,8 @@ CREATE TABLE post_comment_likes (
     reaction_type VARCHAR(20),
     user_id BIGINT NOT NULL,
     liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (comment_id) REFERENCES Comments(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (comment_id) REFERENCES Comments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Add unique constraints

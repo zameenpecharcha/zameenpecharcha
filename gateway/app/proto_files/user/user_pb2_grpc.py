@@ -44,6 +44,11 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.CreateUserRequest.SerializeToString,
                 response_deserializer=user__pb2.UserResponse.FromString,
                 _registered_method=True)
+        self.DeleteUser = channel.unary_unary(
+                '/user.UserService/DeleteUser',
+                request_serializer=user__pb2.DeleteUserRequest.SerializeToString,
+                response_deserializer=user__pb2.DeleteUserResponse.FromString,
+                _registered_method=True)
         self.CreateUserRating = channel.unary_unary(
                 '/user.UserService/CreateUserRating',
                 request_serializer=user__pb2.CreateUserRatingRequest.SerializeToString,
@@ -86,6 +91,12 @@ class UserServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def CreateUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteUser(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -139,6 +150,11 @@ def add_UserServiceServicer_to_server(servicer, server):
                     servicer.CreateUser,
                     request_deserializer=user__pb2.CreateUserRequest.FromString,
                     response_serializer=user__pb2.UserResponse.SerializeToString,
+            ),
+            'DeleteUser': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteUser,
+                    request_deserializer=user__pb2.DeleteUserRequest.FromString,
+                    response_serializer=user__pb2.DeleteUserResponse.SerializeToString,
             ),
             'CreateUserRating': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateUserRating,
@@ -225,6 +241,33 @@ class UserService(object):
             '/user.UserService/CreateUser',
             user__pb2.CreateUserRequest.SerializeToString,
             user__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteUser(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/DeleteUser',
+            user__pb2.DeleteUserRequest.SerializeToString,
+            user__pb2.DeleteUserResponse.FromString,
             options,
             channel_credentials,
             insecure,

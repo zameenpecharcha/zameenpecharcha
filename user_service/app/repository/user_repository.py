@@ -2,6 +2,7 @@ from sqlalchemy.orm import sessionmaker
 from user_service.app.utils.db_connection import get_db_engine
 from sqlalchemy import select, and_
 from user_service.app.entity.user_entity import users, user_ratings, user_followers
+from sqlalchemy import text
 
 SessionLocal = sessionmaker(bind=get_db_engine())
 
@@ -155,36 +156,103 @@ def get_user_following(user_id):
         session.close()
 
 def check_following_status(user_id, following_id):
-    if not isinstance(user_id, (int, str)) or not isinstance(following_id, (int, str)):
-        return None
-    try:
-        user_id = int(user_id)
-        following_id = int(following_id)
-    except (ValueError, TypeError):
-        return None
-
     session = SessionLocal()
     try:
-        # First verify both users exist
-        user = session.execute(select(users).where(users.c.id == user_id)).fetchone()
-        following = session.execute(select(users).where(users.c.id == following_id)).fetchone()
-        
-        if not user or not following:
-            return None
-
-        # Check following status
         result = session.execute(
             select(user_followers).where(
                 and_(
                     user_followers.c.user_id == user_id,
-                    user_followers.c.following_id == following_id
+                    user_followers.c.following_id == following_id,
+                    user_followers.c.status == 'active'
                 )
             )
         ).fetchone()
-        
         return UserFollowerRow(*result) if result else None
+    finally:
+        session.close()
+
+def delete_user(user_id):
+    """
+    Delete a user and all associated data manually.
+    This function deletes all related data in the correct order to avoid foreign key violations.
+    """
+    session = SessionLocal()
+    try:
+        # First check if user exists
+        user = get_user_by_id(user_id)
+        if not user:
+            return False, "User not found"
+        
+        # Delete in the correct order to avoid foreign key violations
+        
+        # 1. Delete post comment likes (references comments)
+        session.execute(
+            text("DELETE FROM post_comment_likes WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 2. Delete comment likes for comments that will be deleted
+        session.execute(
+            text("DELETE FROM post_comment_likes WHERE comment_id IN (SELECT id FROM comments WHERE user_id = :user_id)"),
+            {"user_id": user_id}
+        )
+        
+        # 3. Delete comment replies to the user's comments (comments that have parent_comment_id pointing to user's comments)
+        session.execute(
+            text("DELETE FROM comments WHERE parent_comment_id IN (SELECT id FROM comments WHERE user_id = :user_id)"),
+            {"user_id": user_id}
+        )
+        
+        # 4. Delete comments by this user
+        session.execute(
+            text("DELETE FROM comments WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 5. Delete post likes by this user
+        session.execute(
+            text("DELETE FROM post_likes WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 6. Delete user ratings (both given and received)
+        session.execute(
+            text("DELETE FROM user_ratings WHERE rated_user_id = :user_id OR rated_by_user_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 7. Delete user followers (both following and followers)
+        session.execute(
+            text("DELETE FROM user_followers WHERE user_id = :user_id OR following_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 8. Delete post media (references posts)
+        session.execute(
+            text("DELETE FROM post_media WHERE post_id IN (SELECT id FROM posts WHERE user_id = :user_id)"),
+            {"user_id": user_id}
+        )
+        
+        # 9. Delete posts by this user
+        session.execute(
+            text("DELETE FROM posts WHERE user_id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        # 10. Finally delete the user
+        result = session.execute(
+            text("DELETE FROM users WHERE id = :user_id"),
+            {"user_id": user_id}
+        )
+        
+        session.commit()
+        
+        if result.rowcount > 0:
+            return True, "User and all associated data deleted successfully"
+        else:
+            return False, "Failed to delete user"
     except Exception as e:
-        print(f"Error checking following status: {str(e)}")
-        return None
+        session.rollback()
+        return False, f"Error deleting user: {str(e)}"
     finally:
         session.close()
