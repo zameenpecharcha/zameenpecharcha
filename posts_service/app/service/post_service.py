@@ -6,7 +6,10 @@ from ..repository.post_repository import PostRepository
 from ..utils.db_connection import get_db_engine
 from sqlalchemy.orm import sessionmaker
 from ..entity.user_entity import User
-from app.interceptors.auth_interceptor import AuthServerInterceptor
+from ..interceptors.auth_interceptor import AuthServerInterceptor
+from ..utils.s3_utils import upload_base64_to_s3, build_post_key
+
+from uuid import uuid4
 # Load environment variables
 load_dotenv()
 
@@ -32,6 +35,12 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
         if not post:
             return None
 
+        # Load media rows for this post from the shared media table
+        try:
+            media_rows = self.repository.get_post_media(post.id)
+        except Exception:
+            media_rows = []
+
         return post_pb2.Post(
             id=post.id,
             user_id=post.user_id,
@@ -43,28 +52,37 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             title=post.title,
             content=post.content,
             visibility=post.visibility or "",
-            property_type=post.property_type or "",
+            type=post.type or "",
             location=post.location or "",
             map_location=post.map_location or "",
             price=float(post.price) if post.price else 0.0,
             status=post.status or "",
             created_at=self._convert_timestamp(post.created_at),
-            media=[self._convert_to_proto_media(m) for m in post.media],
+            media=[self._convert_to_proto_media(m, post_id=post.id) for m in media_rows],
             comments=[self._convert_to_proto_comment(c) for c in post.comments],
             like_count=len(post.likes),
             comment_count=len(post.comments)
         )
 
-    def _convert_to_proto_media(self, media):
+    def _convert_to_proto_media(self, media, post_id: int = 0):
+        # Support SQLAlchemy ORM objects and Core Row objects
+        def _get(field):
+            if hasattr(media, field):
+                return getattr(media, field)
+            mapping = getattr(media, "_mapping", None)
+            if mapping and field in mapping:
+                return mapping[field]
+            return None
+
         return post_pb2.PostMedia(
-            id=media.id,
-            post_id=media.post_id,
-            media_type=media.media_type,
-            media_url=media.media_url,
-            media_order=media.media_order,
-            media_size=media.media_size,
-            caption=media.caption or "",
-            uploaded_at=self._convert_timestamp(media.uploaded_at)
+            id=_get('id') or 0,
+            post_id=post_id or _get('post_id') or 0,
+            media_type=_get('media_type') or "",
+            media_url=_get('media_url') or "",
+            media_order=_get('media_order') or 0,
+            media_size=_get('media_size') or 0,
+            caption=_get('caption') or "",
+            uploaded_at=self._convert_timestamp(_get('uploaded_at'))
         )
 
     def _convert_to_proto_comment(self, comment):
@@ -102,30 +120,55 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     title=request.title,
                     content=request.content,
                     visibility=request.visibility,
-                    property_type=request.property_type,
+                    type=request.type,
                     location=request.location,
                     map_location=request.map_location,
                     price=request.price,
-                    status=request.status
+                    status=request.status,
+                    is_anonymous=getattr(request, 'is_anonymous', False)
                 )
 
                 # Handle media uploads if any
                 for media in request.media:
-                    # For now, we'll create a simple URL from the media data
-                    # In a real implementation, you would save the media data to a file/S3
-                    # and use the resulting URL
-                    media_url = f"/media/{post.id}/{media.media_order}"
-                    
                     try:
-                        self.repository.add_post_media(
+                        # Determine source: base64_data preferred; fallback to bytes media_data
+                        base64_data = getattr(media, 'base64_data', None)
+                        content_type = getattr(media, 'content_type', None)
+                        file_name = getattr(media, 'file_name', None)
+
+                        # 1) Create media row first to obtain media_id
+                        temp_url = ""
+                        media_id = self.repository.add_post_media(
                             post_id=post.id,
-                            media_type=media.media_type,
-                            media_url=media_url,
+                            media_type=media.media_type or 'image',
+                            media_url=temp_url,
                             media_order=media.media_order,
+                            media_size=0,
                             caption=media.caption
                         )
+
+                        # 2) Build S3 key using media_id
+                        fn = file_name or 'image'
+                        if base64_data:
+                            key = build_post_key(post.id, media_id, fn, content_type)
+                            public_url, size_bytes = upload_base64_to_s3(
+                                base64_string=base64_data,
+                                key=key,
+                                content_type=content_type,
+                            )
+                        else:
+                            import base64 as _b64
+                            b64 = _b64.b64encode(media.media_data).decode('utf-8') if media.media_data else ''
+                            key = build_post_key(post.id, media_id, fn, content_type)
+                            public_url, size_bytes = upload_base64_to_s3(
+                                base64_string=b64,
+                                key=key,
+                                content_type=content_type or 'application/octet-stream',
+                            )
+
+                        # 3) Update media row with final URL and size
+                        self.repository.update_media_url_size(media_id, public_url, size_bytes)
                     except Exception as media_error:
-                        # Log the error but continue with other media
                         print(f"Error adding media: {str(media_error)}")
                         continue
 
@@ -182,11 +225,12 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 title=request.title,
                 content=request.content,
                 visibility=request.visibility,
-                property_type=request.property_type,
+                type=request.type,
                 location=request.location,
                 map_location=request.map_location,
                 price=request.price,
-                status=request.status
+                status=request.status,
+                is_anonymous=getattr(request, 'is_anonymous', None)
             )
             if not post:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
@@ -264,7 +308,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             limit = max(1, min(100, request.limit))
             
             posts, total = self.repository.search_posts(
-                property_type=request.property_type,
+                type=request.type,
                 location=request.location,
                 min_price=request.min_price,
                 max_price=request.max_price,
@@ -334,7 +378,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def DeletePostMedia(self, request, context):
         try:
-            success = self.repository.delete_post_media(request.post_id)
+            success = self.repository.delete_post_media(request.media_id)
             if not success:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("Media not found")
@@ -511,7 +555,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def DeleteComment(self, request, context):
         try:
-            success = self.repository.delete_comment(request.post_id)  # Using post_id as comment_id
+            success = self.repository.delete_comment(request.comment_id)
             if not success:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("Comment not found")

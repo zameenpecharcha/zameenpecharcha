@@ -2,7 +2,6 @@
 DROP TABLE IF EXISTS post_comment_likes CASCADE;
 DROP TABLE IF EXISTS Comments CASCADE;
 DROP TABLE IF EXISTS post_likes CASCADE;
-DROP TABLE IF EXISTS post_media CASCADE;
 DROP TABLE IF EXISTS Posts CASCADE;
 DROP TABLE IF EXISTS ratings CASCADE;
 DROP TABLE IF EXISTS followers CASCADE;
@@ -12,7 +11,6 @@ DROP TABLE IF EXISTS users CASCADE;
 -- Drop sequences if they exist
 DROP SEQUENCE IF EXISTS users_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS posts_id_seq CASCADE;
-DROP SEQUENCE IF EXISTS post_media_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS ratings_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS followers_id_seq CASCADE;
 DROP SEQUENCE IF EXISTS post_likes_id_seq CASCADE;
@@ -23,7 +21,6 @@ DROP SEQUENCE IF EXISTS media_id_seq CASCADE;
 -- Create sequences for each table
 CREATE SEQUENCE users_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
 CREATE SEQUENCE posts_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
-CREATE SEQUENCE post_media_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
 CREATE SEQUENCE ratings_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
 CREATE SEQUENCE followers_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
 CREATE SEQUENCE post_likes_id_seq START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 1;
@@ -75,34 +72,23 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Posts table
+-- Create Posts table (updated per new design)
 CREATE TABLE Posts (
     id BIGINT NOT NULL DEFAULT nextval('posts_id_seq') PRIMARY KEY,
     user_id BIGINT NOT NULL,
     content VARCHAR(2000),
     title VARCHAR(255),
-    visibility VARCHAR(20),
-    property_type VARCHAR(50),
-    location VARCHAR(255),
+    visibility VARCHAR(50),
+    "type" VARCHAR(50),
+    location TEXT,
     map_location VARCHAR(100),
     price NUMERIC(15,2),
-    status VARCHAR(20),
+    status VARCHAR(50),
+    is_anonymous BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Create post_media table
-CREATE TABLE post_media (
-    id BIGINT NOT NULL DEFAULT nextval('post_media_id_seq') PRIMARY KEY,
-    post_id BIGINT NOT NULL,
-    media_type VARCHAR(50),
-    media_url TEXT,
-    media_order INT,
-    media_size BIGINT,
-    caption TEXT,
-    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES Posts(id)
-);
 
 -- Create ratings table (renamed from user_ratings)
 CREATE TABLE ratings (
@@ -143,15 +129,17 @@ CREATE TABLE post_likes (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Create Comments table
+-- Create Comments table (updated per new design)
 CREATE TABLE Comments (
     id BIGINT NOT NULL DEFAULT nextval('comments_id_seq') PRIMARY KEY,
     post_id BIGINT NOT NULL,
     parent_comment_id BIGINT NULL,
     comment VARCHAR(1000),
     user_id BIGINT NOT NULL,
-    status VARCHAR(20) DEFAULT 'active',
+    status VARCHAR(50) DEFAULT 'active',
+    is_anonymous BOOLEAN DEFAULT false,
     added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    edited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     commented_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_comment_id) REFERENCES Comments(id) ON DELETE CASCADE,
@@ -180,7 +168,6 @@ CREATE INDEX idx_media_context_type ON media(context_type);
 CREATE INDEX idx_users_profile_photo_id ON users(profile_photo_id);
 CREATE INDEX idx_users_cover_photo_id ON users(cover_photo_id);
 CREATE INDEX idx_posts_user_id ON Posts(user_id);
-CREATE INDEX idx_post_media_post_id ON post_media(post_id);
 CREATE INDEX idx_ratings_rated_user_id ON ratings(rated_user_id);
 CREATE INDEX idx_ratings_rated_by_user_id ON ratings(rated_by_user_id);
 CREATE INDEX idx_followers_follower_id ON followers(follower_id);
