@@ -299,7 +299,7 @@ Example Response:
 curl -X POST http://localhost:8000/api/v1/users/graphql \
 -H "Content-Type: application/json" \
 -d '{
-  "query": "mutation CreateUserRating { createUserRating(ratedUserId: 2, ratedByUserId: 1, ratingValue: 5, review: \"Excellent service!\", ratingType: \"PROFESSIONAL\") { id ratedUserId ratedByUserId ratingValue review ratingType createdAt updatedAt } }"
+  "query": "mutation CreateUserRating { createUserRating(ratedUserId: 2, ratedByUserId: 1, ratingValue: 5, title: \"Great experience\", review: \"Excellent service!\", ratingType: \"PROFESSIONAL\", isAnonymous: false) { id ratedUserId ratedByUserId ratingValue review ratingType createdAt updatedAt } }"
 }'
 ```
 
@@ -363,6 +363,36 @@ curl -X POST http://localhost:8000/api/v1/users/graphql \
 -H "Content-Type: application/json" \
 -d '{
   "query": "query CheckFollowingStatus { checkFollowingStatus(userId: 1, followingId: 2) { id userId followingId status followedAt } }"
+}'
+```
+
+### 9. Update Profile Photo
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation UpdateProfilePhoto($userId:Int!, $data:String!, $file:String, $ctype:String) { updateProfilePhoto(userId:$userId, base64Data:$data, fileName:$file, contentType:$ctype, caption:\"Profile picture\") { id firstName lastName email createdAt } }",
+  "variables": {
+    "userId": 1,
+    "data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",
+    "file": "profile.jpg",
+    "ctype": "image/jpeg"
+  }
+}'
+```
+
+### 10. Update Cover Photo
+```bash
+curl -X POST http://localhost:8000/api/v1/users/graphql \
+-H "Content-Type: application/json" \
+-d '{
+  "query": "mutation UpdateCoverPhoto($userId:Int!, $data:String!, $file:String, $ctype:String) { updateCoverPhoto(userId:$userId, base64Data:$data, fileName:$file, contentType:$ctype, caption:\"Cover photo\") { id firstName lastName email createdAt } }",
+  "variables": {
+    "userId": 1,
+    "data": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...",
+    "file": "cover.jpg",
+    "ctype": "image/jpeg"
+  }
 }'
 ```
 
@@ -560,7 +590,7 @@ mutation {
     media: [
       {
         mediaType: "image"
-        mediaData: "base64_encoded_image_data"
+        mediaData: "<base64 bytes>"
         mediaOrder: 1
         caption: "Front view"
       }
@@ -594,7 +624,7 @@ Response:
         "media": [
           {
             "id": 1,
-            "mediaUrl": "/media/1/1",
+            "mediaUrl": "https://<bucket>.s3.<region>.amazonaws.com/post/1/1/front.jpg",
             "caption": "Front view"
           }
         ]
