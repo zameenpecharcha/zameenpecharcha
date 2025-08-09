@@ -237,6 +237,18 @@ def create_media(context_id, context_type, media_type, media_url, media_order=No
                 media_size=None, caption=None):
     session = SessionLocal()
     try:
+        # Auto-increment media_order within same (context_id, context_type) if not provided
+        if media_order is None:
+            try:
+                max_order_row = session.execute(
+                    select(media.c.media_order)
+                    .where(and_(media.c.context_id == context_id, media.c.context_type == context_type))
+                    .order_by(media.c.media_order.desc())
+                ).fetchone()
+                media_order = (max_order_row[0] + 1) if (max_order_row and max_order_row[0] is not None) else 1
+            except Exception:
+                media_order = 1
+
         result = session.execute(
             media.insert().returning(media.c.id).values(
                 context_id=context_id,

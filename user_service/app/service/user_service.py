@@ -9,6 +9,8 @@ from app.repository.user_repository import (
     check_following_status, create_media, get_media_by_id, update_user_photo
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
+from app.utils.s3_utils import upload_bytes_and_get_url, build_user_media_key, get_bucket_name, verify_s3_connection
+from app.utils.log_utils import log_msg
 
 
 class UserService(user_pb2_grpc.UserServiceServicer):
@@ -311,11 +313,29 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             return user_pb2.FollowUserResponse()
 
     def UploadMedia(self, request, context):
+        print("=== Raw Request Debug ===")
+        print(f"Request type: {type(request)}")
+        print(f"Request dict: {request.__dict__}")
+        print("=== Request Fields ===")
+        print(f"context_id: {request.context_id}")
+        print(f"context_type: {request.context_type!r}")
+        print(f"media_type: {request.media_type!r}")
+        print(f"file_name: {request.file_name!r}")
+        print(f"content_type: {request.content_type!r}")
+        print(f"file_content length: {len(request.file_content) if request.file_content else 0}")
+        print(f"caption: {request.caption!r}")
+        print("=== End Debug ===")
         try:
             # Validate required fields
-            if not request.media_type or not request.media_url:
+            if not request.media_type:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("Media type and URL are required")
+                context.set_details("Media type is required")
+                return user_pb2.MediaResponse()
+
+            # Require file_content for uploads
+            if not request.file_content:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("File content is required for uploads")
                 return user_pb2.MediaResponse()
 
             # Validate media type
@@ -325,12 +345,52 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details(f"Media type must be one of: {', '.join(valid_media_types)}")
                 return user_pb2.MediaResponse()
 
+            # Prepare for S3 upload
+            media_url = request.media_url
+            log_msg("info", f"[MEDIA] Starting media upload. Context: {request.context_type}, Type: {request.media_type}")
+            log_msg("info", f"[MEDIA] File content present: {bool(request.file_content)}, Content length: {len(request.file_content) if request.file_content else 0}")
+            log_msg("info", f"[MEDIA] File name: {request.file_name}, Content type: {request.content_type}")
+            
+            # Upload to S3
+            bucket = get_bucket_name()
+            log_msg("info", f"[DEBUG] Got bucket name: '{bucket}'")
+            if not bucket:
+                raise ValueError("Missing AWS_S3_BUCKET_NAME env var")
+            
+            # Verify bucket access once per request
+            log_msg("info", "[DEBUG] Attempting to verify S3 connection...")
+            if not verify_s3_connection(bucket):
+                raise ValueError("Cannot access S3 bucket. Check credentials/permissions.")
+            
+            # Build S3 key under user/{context_id}/...
+            file_name = request.file_name if request.file_name else 'upload.bin'
+            if (request.context_type or '').lower() in ['profile photo', 'profile_photo', 'user_profile']:
+                key = build_user_media_key(request.context_id, is_profile=True, file_name=file_name)
+            elif (request.context_type or '').lower() in ['cover photo', 'cover_photo', 'user_cover']:
+                key = build_user_media_key(request.context_id, is_profile=False, file_name=file_name)
+            else:
+                folder = request.context_type if request.context_type else 'misc'
+                key = f"user/{request.context_id}/{folder}/{file_name}"
+            
+            try:
+                uploaded_url = upload_bytes_and_get_url(
+                    bucket=bucket,
+                    key=key,
+                    content_bytes=request.file_content,
+                    content_type=request.content_type if request.content_type else 'application/octet-stream'
+                )
+                media_url = uploaded_url
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(f"S3 upload failed: {str(e)}")
+                return user_pb2.MediaResponse()
+
             # Create media record
             media_id = create_media(
                 context_id=request.context_id,
                 context_type=request.context_type,
                 media_type=request.media_type,
-                media_url=request.media_url,
+                media_url=media_url,
                 media_order=request.media_order,
                 media_size=request.media_size,
                 caption=request.caption
@@ -382,17 +442,79 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             return user_pb2.MediaResponse()
 
     def UpdateProfilePhoto(self, request, context):
+        print("=== UpdateProfilePhoto Request Debug ===")
+        print(f"Request type: {type(request)}")
+        print(f"Request dict: {request.__dict__}")
+        print("=== Request Fields ===")
+        print(f"user_id: {request.user_id}")
+        print("Media fields:")
+        print(f"  context_id: {request.media.context_id}")
+        print(f"  context_type: {request.media.context_type!r}")
+        print(f"  media_type: {request.media.media_type!r}")
+        print(f"  file_name: {request.media.file_name!r}")
+        print(f"  content_type: {request.media.content_type!r}")
+        print(f"  file_content length: {len(request.media.file_content) if request.media.file_content else 0}")
+        print(f"  caption: {request.media.caption!r}")
+        print("=== End Debug ===")
         try:
             # First upload the media
             media_request = request.media
+            
+            # Require file_content for uploads
+            if not media_request.file_content:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("File content is required for profile photo")
+                return user_pb2.UserResponse()
+                
+            # Set default media type if not provided
+            if not media_request.media_type:
+                media_request.media_type = 'image'
+
+            # Verify user exists
+            user = get_user_by_id(request.user_id)
+            if not user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.user_id} not found")
+                return user_pb2.UserResponse()
+
             media_request.context_type = 'user_profile'  # Force context type for profile photo
             
+            # Prepare for S3 upload
+            log_msg("info", f"[PROFILE] Starting profile photo upload for user {request.user_id}")
+            log_msg("info", f"[PROFILE] File content present: {bool(media_request.file_content)}, Content length: {len(media_request.file_content) if media_request.file_content else 0}")
+            log_msg("info", f"[PROFILE] File name: {media_request.file_name}, Content type: {media_request.content_type}")
+
+            # Upload to S3
+            bucket = get_bucket_name()
+            log_msg("info", f"[DEBUG] Got bucket name: '{bucket}'")
+            if not bucket:
+                raise ValueError("Missing AWS_S3_BUCKET_NAME env var")
+            
+            # Verify bucket access
+            log_msg("info", "[DEBUG] Attempting to verify S3 connection...")
+            if not verify_s3_connection(bucket):
+                raise ValueError("Cannot access S3 bucket. Check credentials/permissions.")
+
+            # Upload file
+            key = build_user_media_key(request.user_id, is_profile=True, file_name=(media_request.file_name or 'profile.jpg'))
+            try:
+                media_url = upload_bytes_and_get_url(
+                    bucket=bucket,
+                    key=key,
+                    content_bytes=media_request.file_content,
+                    content_type=media_request.content_type if media_request.content_type else 'image/jpeg'
+                )
+            except Exception as e:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details(f"S3 upload failed: {str(e)}")
+                return user_pb2.UserResponse()
+
             # Create media record
             media_id = create_media(
                 context_id=request.user_id,  # Use user_id as context_id
                 context_type='user_profile',
                 media_type=media_request.media_type,
-                media_url=media_request.media_url,
+                media_url=media_url,
                 media_order=media_request.media_order,
                 media_size=media_request.media_size,
                 caption=media_request.caption
@@ -423,12 +545,32 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             media_request = request.media
             media_request.context_type = 'user_cover'  # Force context type for cover photo
             
+            # Upload to S3 if bytes provided
+            media_url = media_request.media_url
+            if media_request.file_content:
+                bucket = get_bucket_name()
+                if not bucket:
+                    context.set_code(grpc.StatusCode.INTERNAL)
+                    context.set_details("Missing AWS_S3_BUCKET_NAME env var")
+                    return user_pb2.UserResponse()
+                if not verify_s3_connection(bucket):
+                    context.set_code(grpc.StatusCode.INTERNAL)
+                    context.set_details("Cannot access S3 bucket. Check credentials/permissions.")
+                    return user_pb2.UserResponse()
+                key = build_user_media_key(request.user_id, is_profile=False, file_name=(media_request.file_name or 'cover.jpg'))
+                media_url = upload_bytes_and_get_url(
+                    bucket=bucket,
+                    key=key,
+                    content_bytes=media_request.file_content,
+                    content_type=media_request.content_type if media_request.content_type else 'image/jpeg'
+                )
+
             # Create media record
             media_id = create_media(
                 context_id=request.user_id,  # Use user_id as context_id
                 context_type='user_cover',
                 media_type=media_request.media_type,
-                media_url=media_request.media_url,
+                media_url=media_url,
                 media_order=media_request.media_order,
                 media_size=media_request.media_size,
                 caption=media_request.caption
@@ -454,6 +596,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             return user_pb2.UserResponse()
 
 def serve():
+    # Set up logging
+    log_msg("info", "Initializing user service...")
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[AuthServerInterceptor()]

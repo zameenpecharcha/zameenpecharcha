@@ -117,6 +117,9 @@ message MediaRequest {
   int32 media_order = 5;
   int64 media_size = 6;
   string caption = 7;
+  string file_name = 8;     // optional: original filename
+  bytes file_content = 9;   // optional: raw bytes to upload
+  string content_type = 10; // optional: MIME type for S3
 }
 
 message MediaResponse {
