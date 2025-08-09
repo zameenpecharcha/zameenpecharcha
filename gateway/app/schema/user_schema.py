@@ -287,8 +287,10 @@ class Mutation:
         rated_user_id: int,
         rated_by_user_id: int,
         rating_value: int,
+        title: typing.Optional[str] = None,
         review: typing.Optional[str] = None,
-        rating_type: typing.Optional[str] = None
+        rating_type: typing.Optional[str] = None,
+        is_anonymous: typing.Optional[bool] = False
     ) -> UserRating:
         try:
             log_msg("info", f"Creating rating for user {rated_user_id}")
@@ -297,8 +299,10 @@ class Mutation:
                 rated_user_id=rated_user_id,
                 rated_by_user_id=rated_by_user_id,
                 rating_value=rating_value,
+                title=title,
                 review=review,
                 rating_type=rating_type,
+                is_anonymous=is_anonymous,
                 token=token
             )
             return UserRating(
@@ -318,6 +322,84 @@ class Mutation:
                 "Failed to create rating",
                 str(e)
             ).to_graphql_error()
+
+    @strawberry.mutation
+    async def updateProfilePhoto(
+        self,
+        info: Info,
+        userId: int,
+        base64Data: str,
+        fileName: typing.Optional[str] = None,
+        contentType: typing.Optional[str] = None,
+        caption: typing.Optional[str] = None,
+        mediaOrder: typing.Optional[int] = 1,
+    ) -> User:
+        token = get_token(info)
+        response = user_service_client.update_profile_photo(
+            user_id=userId,
+            base64_data=base64Data,
+            file_name=fileName,
+            content_type=contentType,
+            caption=caption,
+            media_order=mediaOrder or 1,
+            token=token,
+        )
+        return User(
+            id=response.id,
+            first_name=response.first_name,
+            last_name=response.last_name,
+            email=response.email,
+            phone=response.phone,
+            profile_photo=None,
+            role=response.role,
+            address=response.address,
+            latitude=response.latitude,
+            longitude=response.longitude,
+            bio=response.bio,
+            isactive=response.isactive,
+            email_verified=response.email_verified,
+            phone_verified=response.phone_verified,
+            created_at=response.created_at,
+        )
+
+    @strawberry.mutation
+    async def updateCoverPhoto(
+        self,
+        info: Info,
+        userId: int,
+        base64Data: str,
+        fileName: typing.Optional[str] = None,
+        contentType: typing.Optional[str] = None,
+        caption: typing.Optional[str] = None,
+        mediaOrder: typing.Optional[int] = 1,
+    ) -> User:
+        token = get_token(info)
+        response = user_service_client.update_cover_photo(
+            user_id=userId,
+            base64_data=base64Data,
+            file_name=fileName,
+            content_type=contentType,
+            caption=caption,
+            media_order=mediaOrder or 1,
+            token=token,
+        )
+        return User(
+            id=response.id,
+            first_name=response.first_name,
+            last_name=response.last_name,
+            email=response.email,
+            phone=response.phone,
+            profile_photo=None,
+            role=response.role,
+            address=response.address,
+            latitude=response.latitude,
+            longitude=response.longitude,
+            bio=response.bio,
+            isactive=response.isactive,
+            email_verified=response.email_verified,
+            phone_verified=response.phone_verified,
+            created_at=response.created_at,
+        )
 
     @strawberry.mutation
     async def follow_user(

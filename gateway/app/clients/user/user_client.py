@@ -26,26 +26,80 @@ class UserServiceClient(GRPCBaseClient):
         )
         return self._call(self.stub.CreateUser, request,token=token)
 
-    def create_user_rating(self, rated_user_id, rated_by_user_id, rating_value, review=None, rating_type=None,token=None):
-        request = user_pb2.CreateUserRatingRequest(
+    def create_user_rating(self, rated_user_id, rated_by_user_id, rating_value, title=None, review=None, rating_type=None, is_anonymous=False, token=None):
+        request = user_pb2.CreateRatingRequest(
             rated_user_id=rated_user_id,
             rated_by_user_id=rated_by_user_id,
             rating_value=rating_value,
+            title=title or "",
             review=review,
-            rating_type=rating_type
+            rating_type=rating_type,
+            is_anonymous=is_anonymous
         )
-        return self._call(self.stub.CreateUserRating, request,token=token)
+        return self._call(self.stub.CreateRating, request,token=token)
 
     def get_user_ratings(self, user_id,token=None):
         request = user_pb2.UserRequest(id=user_id)
         return self._call(self.stub.GetUserRatings, request,token=token)
 
-    def follow_user(self, user_id, following_id,token=None):
+    def follow_user(self, user_id, following_id, followee_type: str = "", status: str = "active", token=None):
         request = user_pb2.FollowUserRequest(
-            user_id=user_id,
-            following_id=following_id
+            follower_id=user_id,
+            following_id=following_id,
+            followee_type=followee_type,
+            status=status
         )
         return self._call(self.stub.FollowUser, request,token=token)
+
+    def update_profile_photo(
+        self,
+        user_id: int,
+        base64_data: str,
+        file_name: str = None,
+        content_type: str = None,
+        caption: str = None,
+        media_order: int = 1,
+        token=None,
+    ):
+        request = user_pb2.UpdateUserPhotoRequest(
+            user_id=user_id,
+            media=user_pb2.MediaRequest(
+                context_id=user_id,
+                context_type="user_profile",
+                media_type="image",
+                base64_data=base64_data,
+                file_name=file_name or "",
+                content_type=content_type or "",
+                media_order=media_order,
+                caption=caption or "",
+            ),
+        )
+        return self._call(self.stub.UpdateProfilePhoto, request, token=token)
+
+    def update_cover_photo(
+        self,
+        user_id: int,
+        base64_data: str,
+        file_name: str = None,
+        content_type: str = None,
+        caption: str = None,
+        media_order: int = 1,
+        token=None,
+    ):
+        request = user_pb2.UpdateUserPhotoRequest(
+            user_id=user_id,
+            media=user_pb2.MediaRequest(
+                context_id=user_id,
+                context_type="user_cover",
+                media_type="image",
+                base64_data=base64_data,
+                file_name=file_name or "",
+                content_type=content_type or "",
+                media_order=media_order,
+                caption=caption or "",
+            ),
+        )
+        return self._call(self.stub.UpdateCoverPhoto, request, token=token)
 
     def get_user_followers(self, user_id,token=None):
         request = user_pb2.UserRequest(id=user_id)
