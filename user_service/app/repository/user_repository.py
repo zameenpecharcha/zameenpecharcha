@@ -1,6 +1,7 @@
 from sqlalchemy.orm import sessionmaker
 from app.utils.db_connection import get_db_engine
 from sqlalchemy import select, and_
+from sqlalchemy import desc
 from app.entity.user_entity import users, ratings, followers, media
 
 SessionLocal = sessionmaker(bind=get_db_engine())
@@ -264,6 +265,27 @@ def get_media_by_id(media_id):
     session = SessionLocal()
     try:
         result = session.execute(select(media).where(media.c.id == media_id)).fetchone()
+        return MediaRow(*result) if result else None
+    finally:
+        session.close()
+
+def get_latest_media_for_user_context(user_id, context_type):
+    """
+    Return the most recently uploaded media for the given user and context type.
+    """
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            select(media)
+            .where(
+                and_(
+                    media.c.context_id == user_id,
+                    media.c.context_type == context_type,
+                )
+            )
+            .order_by(desc(media.c.uploaded_at))
+            .limit(1)
+        ).fetchone()
         return MediaRow(*result) if result else None
     finally:
         session.close()

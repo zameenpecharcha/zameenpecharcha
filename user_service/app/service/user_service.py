@@ -6,9 +6,15 @@ from app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
     create_rating, get_ratings,
     create_follower, get_followers, get_following,
-    check_following_status, create_media, get_media_by_id, update_user_photo
+    check_following_status, create_media, get_media_by_id, update_user_photo,
+    get_latest_media_for_user_context,
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
+from app.utils.s3_utils import (
+    upload_base64_to_s3,
+    build_user_profile_key,
+    build_user_cover_key,
+)
 
 
 class UserService(user_pb2_grpc.UserServiceServicer):
@@ -383,18 +389,32 @@ class UserService(user_pb2_grpc.UserServiceServicer):
 
     def UpdateProfilePhoto(self, request, context):
         try:
-            # First upload the media
             media_request = request.media
-            media_request.context_type = 'user_profile'  # Force context type for profile photo
-            
-            # Create media record
+            if not media_request.base64_data:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("base64_data is required for profile photo upload")
+                return user_pb2.UserResponse()
+
+            # Build S3 key and upload
+            key = build_user_profile_key(
+                request.user_id,
+                getattr(media_request, "file_name", None),
+                getattr(media_request, "content_type", None),
+            )
+            public_url, size_bytes = upload_base64_to_s3(
+                base64_string=media_request.base64_data,
+                key=key,
+                content_type=getattr(media_request, "content_type", None),
+            )
+
+            # Create media record with S3 URL
             media_id = create_media(
-                context_id=request.user_id,  # Use user_id as context_id
-                context_type='user_profile',
-                media_type=media_request.media_type,
-                media_url=media_request.media_url,
-                media_order=media_request.media_order,
-                media_size=media_request.media_size,
+                context_id=request.user_id,
+                context_type='profile photo',  # per schema
+                media_type='image',
+                media_url=public_url,
+                media_order=(media_request.media_order or 1),
+                media_size=size_bytes,
                 caption=media_request.caption
             )
 
@@ -403,8 +423,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("Failed to create media record")
                 return user_pb2.UserResponse()
 
-            # Update user's profile photo ID
-            success = update_user_photo(request.user_id, media_id, is_profile_photo=True)
+            # Update user's profile photo ID to the latest uploaded media for this context
+            latest_media = get_latest_media_for_user_context(request.user_id, 'profile photo')
+            effective_media_id = latest_media.id if latest_media else media_id
+            success = update_user_photo(request.user_id, effective_media_id, is_profile_photo=True)
             if not success:
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details("Failed to update user's profile photo")
@@ -419,18 +441,32 @@ class UserService(user_pb2_grpc.UserServiceServicer):
 
     def UpdateCoverPhoto(self, request, context):
         try:
-            # First upload the media
             media_request = request.media
-            media_request.context_type = 'user_cover'  # Force context type for cover photo
-            
-            # Create media record
+            if not media_request.base64_data:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("base64_data is required for cover photo upload")
+                return user_pb2.UserResponse()
+
+            # Build S3 key and upload
+            key = build_user_cover_key(
+                request.user_id,
+                getattr(media_request, "file_name", None),
+                getattr(media_request, "content_type", None),
+            )
+            public_url, size_bytes = upload_base64_to_s3(
+                base64_string=media_request.base64_data,
+                key=key,
+                content_type=getattr(media_request, "content_type", None),
+            )
+
+            # Create media record with S3 URL
             media_id = create_media(
-                context_id=request.user_id,  # Use user_id as context_id
-                context_type='user_cover',
-                media_type=media_request.media_type,
-                media_url=media_request.media_url,
-                media_order=media_request.media_order,
-                media_size=media_request.media_size,
+                context_id=request.user_id,
+                context_type='cover_photo',  # per schema
+                media_type='image',
+                media_url=public_url,
+                media_order=(media_request.media_order or 1),
+                media_size=size_bytes,
                 caption=media_request.caption
             )
 
@@ -439,8 +475,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("Failed to create media record")
                 return user_pb2.UserResponse()
 
-            # Update user's cover photo ID
-            success = update_user_photo(request.user_id, media_id, is_profile_photo=False)
+            # Update user's cover photo ID to the latest uploaded media for this context
+            latest_media = get_latest_media_for_user_context(request.user_id, 'cover_photo')
+            effective_media_id = latest_media.id if latest_media else media_id
+            success = update_user_photo(request.user_id, effective_media_id, is_profile_photo=False)
             if not success:
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details("Failed to update user's cover photo")
