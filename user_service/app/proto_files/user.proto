@@ -18,7 +18,6 @@ service UserService {
   rpc CheckFollowingStatus (FollowUserRequest) returns (FollowUserResponse);
   
   // Media management
-  rpc UploadMedia (MediaRequest) returns (MediaResponse);
   rpc GetMedia (UserRequest) returns (MediaResponse);
   rpc UpdateProfilePhoto (UpdateUserPhotoRequest) returns (UserResponse);
   rpc UpdateCoverPhoto (UpdateUserPhotoRequest) returns (UserResponse);

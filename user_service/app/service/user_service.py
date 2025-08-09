@@ -316,52 +316,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_details(f"Error checking following status: {str(e)}")
             return user_pb2.FollowUserResponse()
 
-    def UploadMedia(self, request, context):
-        try:
-            # Validate required fields
-            if not request.media_type or not request.media_url:
-                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("Media type and URL are required")
-                return user_pb2.MediaResponse()
-
-            # Validate media type
-            valid_media_types = ['image', 'video']
-            if request.media_type not in valid_media_types:
-                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details(f"Media type must be one of: {', '.join(valid_media_types)}")
-                return user_pb2.MediaResponse()
-
-            # Create media record
-            media_id = create_media(
-                context_id=request.context_id,
-                context_type=request.context_type,
-                media_type=request.media_type,
-                media_url=request.media_url,
-                media_order=request.media_order,
-                media_size=request.media_size,
-                caption=request.caption
-            )
-
-            # Get and return the created media
-            media = get_media_by_id(media_id)
-            if media:
-                return user_pb2.MediaResponse(
-                    id=media.id,
-                    context_id=media.context_id,
-                    context_type=media.context_type,
-                    media_type=media.media_type,
-                    media_url=media.media_url,
-                    media_order=media.media_order,
-                    media_size=media.media_size,
-                    caption=media.caption if media.caption else "",
-                    uploaded_at=str(media.uploaded_at)
-                )
-
-            return user_pb2.MediaResponse()
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Error uploading media: {str(e)}")
-            return user_pb2.MediaResponse()
+    
 
     def GetMedia(self, request, context):
         try:

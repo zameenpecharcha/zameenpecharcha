@@ -74,11 +74,6 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.FollowUserRequest.SerializeToString,
                 response_deserializer=user__pb2.FollowUserResponse.FromString,
                 _registered_method=True)
-        self.UploadMedia = channel.unary_unary(
-                '/user.UserService/UploadMedia',
-                request_serializer=user__pb2.MediaRequest.SerializeToString,
-                response_deserializer=user__pb2.MediaResponse.FromString,
-                _registered_method=True)
         self.GetMedia = channel.unary_unary(
                 '/user.UserService/GetMedia',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
@@ -150,15 +145,9 @@ class UserServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def UploadMedia(self, request, context):
+    def GetMedia(self, request, context):
         """Media management
         """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def GetMedia(self, request, context):
-        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -217,11 +206,6 @@ def add_UserServiceServicer_to_server(servicer, server):
                     servicer.CheckFollowingStatus,
                     request_deserializer=user__pb2.FollowUserRequest.FromString,
                     response_serializer=user__pb2.FollowUserResponse.SerializeToString,
-            ),
-            'UploadMedia': grpc.unary_unary_rpc_method_handler(
-                    servicer.UploadMedia,
-                    request_deserializer=user__pb2.MediaRequest.FromString,
-                    response_serializer=user__pb2.MediaResponse.SerializeToString,
             ),
             'GetMedia': grpc.unary_unary_rpc_method_handler(
                     servicer.GetMedia,
@@ -455,33 +439,6 @@ class UserService(object):
             '/user.UserService/CheckFollowingStatus',
             user__pb2.FollowUserRequest.SerializeToString,
             user__pb2.FollowUserResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def UploadMedia(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/user.UserService/UploadMedia',
-            user__pb2.MediaRequest.SerializeToString,
-            user__pb2.MediaResponse.FromString,
             options,
             channel_credentials,
             insecure,
