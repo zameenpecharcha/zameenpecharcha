@@ -1,4 +1,5 @@
 from ..entity.property_entity import properties
+from ..entity.media_entity import media as media_table
 from ..entity.social_entity import ratings as ratings_table, followers as followers_table
 from sqlalchemy.orm import sessionmaker
 from ..utils.db_connection import get_db_engine
@@ -302,3 +303,64 @@ def increment_view_count(property_id):
         raise e
     finally:
         session.close() 
+
+def create_property_media(property_id: int, media_type: str, media_url: str,
+                          media_order: int = 1, media_size: int = 0, caption: str | None = None) -> int:
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            media_table.insert().returning(media_table.c.id).values(
+                context_id=property_id,
+                context_type='property',
+                media_type=media_type,
+                media_url=media_url,
+                media_order=media_order,
+                media_size=media_size,
+                caption=caption,
+            )
+        )
+        session.commit()
+        return result.scalar()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+def add_property_media(property_id: int, media_type: str, media_order: int = 1, caption: str | None = None) -> int:
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            media_table.insert().returning(media_table.c.id).values(
+                context_id=property_id,
+                context_type='property',
+                media_type=media_type,
+                media_url='',
+                media_order=media_order,
+                media_size=0,
+                caption=caption,
+            )
+        )
+        session.commit()
+        return result.scalar()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+def update_property_media_url_size(media_id: int, media_url: str, media_size: int) -> bool:
+    session = SessionLocal()
+    try:
+        session.execute(
+            media_table.update()
+            .where(media_table.c.id == media_id)
+            .values(media_url=media_url, media_size=media_size)
+        )
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+    finally:
+        session.close()

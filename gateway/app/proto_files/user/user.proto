@@ -116,7 +116,7 @@ message MediaRequest {
   int32 media_order = 5;
   int64 media_size = 6;
   string caption = 7;
-  string base64_data = 8;
+  string file_path = 8;
   string file_name = 9;
   string content_type = 10;
 }

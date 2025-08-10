@@ -504,6 +504,62 @@ class Mutation:
                 str(e)
             ).to_graphql_error()
 
+    @strawberry.input
+    class PropertyMediaInput:
+        filePath: str
+        mediaType: typing.Optional[str] = "image"
+        mediaOrder: typing.Optional[int] = 1
+        caption: typing.Optional[str] = ""
+        contentType: typing.Optional[str] = None
+
+    @strawberry.type
+    class PropertyMedia:
+        id: int
+        propertyId: int
+        mediaType: str
+        mediaUrl: str
+        mediaOrder: int
+        mediaSize: int
+        caption: str
+        uploadedAt: int
+
+    @strawberry.type
+    class PropertyMediaResponse:
+        success: bool
+        message: str
+        media: typing.List[PropertyMedia]
+
+    @strawberry.mutation
+    async def addPropertyMedia(self, propertyId: int, media: typing.List[PropertyMediaInput]) -> PropertyMediaResponse:
+        try:
+            resp = property_service_client.add_property_media(
+                property_id=propertyId,
+                media=[m.__dict__ for m in media],
+            )
+            return PropertyMediaResponse(
+                success=resp.success,
+                message=resp.message,
+                media=[
+                    PropertyMedia(
+                        id=item.id,
+                        propertyId=item.property_id,
+                        mediaType=item.media_type,
+                        mediaUrl=item.media_url,
+                        mediaOrder=item.media_order,
+                        mediaSize=item.media_size,
+                        caption=item.caption,
+                        uploadedAt=item.uploaded_at,
+                    ) for item in resp.media
+                ],
+            )
+        except Exception as e:
+            log_msg("error", f"Error adding property media: {str(e)}")
+            raise REException(
+                "ADD_PROPERTY_MEDIA_FAILED",
+                "Failed to add property media",
+                str(e)
+            ).to_graphql_error()
+
 @strawberry.type
 class PropertyRating:
     id: int

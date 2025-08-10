@@ -2,6 +2,7 @@ import base64
 import os
 import re
 from typing import Optional, Tuple
+import mimetypes
 from uuid import uuid4
 
 import boto3
@@ -91,4 +92,43 @@ def build_post_key(post_id: int, media_id: int, file_name: Optional[str], conten
     safe_name = _choose_file_name(file_name, content_type, fallback_prefix="image")
     return f"post/{post_id}/{media_id}/{safe_name}"
 
+
+def upload_file_to_s3(*, file_path: str, key: str, content_type: Optional[str] = None) -> Tuple[str, int]:
+    bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET") or "zpc-app"
+    region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
+
+    # Infer content type if not provided
+    if not content_type:
+        guessed, _ = mimetypes.guess_type(file_path)
+        content_type = guessed or "application/octet-stream"
+
+    client_kwargs = {"region_name": region}
+    aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+    aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+    aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+    if aws_access_key_id and aws_secret_access_key:
+        client_kwargs.update({
+            "aws_access_key_id": aws_access_key_id,
+            "aws_secret_access_key": aws_secret_access_key,
+        })
+        if aws_session_token:
+            client_kwargs["aws_session_token"] = aws_session_token
+
+    s3 = boto3.client("s3", **client_kwargs)
+
+    extra_args = {"ContentType": content_type}
+    size_bytes = os.path.getsize(file_path)
+
+    try:
+        s3.upload_file(Filename=file_path, Bucket=bucket, Key=key, ExtraArgs=extra_args)
+    except ClientError as e:
+        error_code = getattr(e, "response", {}).get("Error", {}).get("Code")
+        if error_code == "AccessControlListNotSupported":
+            # Retry without ACL handling (upload_file doesn't take ACL directly unless in ExtraArgs)
+            s3.upload_file(Filename=file_path, Bucket=bucket, Key=key)
+        else:
+            raise
+
+    public_url = f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+    return public_url, size_bytes
 

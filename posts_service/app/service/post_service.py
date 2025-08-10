@@ -7,7 +7,7 @@ from ..utils.db_connection import get_db_engine
 from sqlalchemy.orm import sessionmaker
 from ..entity.user_entity import User
 from ..interceptors.auth_interceptor import AuthServerInterceptor
-from ..utils.s3_utils import upload_base64_to_s3, build_post_key
+from ..utils.s3_utils import upload_base64_to_s3, upload_file_to_s3, build_post_key
 
 from uuid import uuid4
 # Load environment variables
@@ -131,10 +131,14 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 # Handle media uploads if any
                 for media in request.media:
                     try:
-                        # Determine source: base64_data preferred; fallback to bytes media_data
-                        base64_data = getattr(media, 'base64_data', None)
+                        # Require file_path for uploads (no base64 handling here)
+                        file_path = getattr(media, 'file_path', None)
                         content_type = getattr(media, 'content_type', None)
                         file_name = getattr(media, 'file_name', None)
+                        if not file_path:
+                            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                            context.set_details("file_path is required for media upload")
+                            return post_pb2.PostResponse(success=False, message="file_path is required for media upload")
 
                         # 1) Create media row first to obtain media_id
                         temp_url = ""
@@ -148,23 +152,13 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                         )
 
                         # 2) Build S3 key using media_id
-                        fn = file_name or 'image'
-                        if base64_data:
-                            key = build_post_key(post.id, media_id, fn, content_type)
-                            public_url, size_bytes = upload_base64_to_s3(
-                                base64_string=base64_data,
-                                key=key,
-                                content_type=content_type,
-                            )
-                        else:
-                            import base64 as _b64
-                            b64 = _b64.b64encode(media.media_data).decode('utf-8') if media.media_data else ''
-                            key = build_post_key(post.id, media_id, fn, content_type)
-                            public_url, size_bytes = upload_base64_to_s3(
-                                base64_string=b64,
-                                key=key,
-                                content_type=content_type or 'application/octet-stream',
-                            )
+                        fn = file_name or (file_path.split('/')[-1] if file_path else 'image')
+                        key = build_post_key(post.id, media_id, fn, content_type)
+                        public_url, size_bytes = upload_file_to_s3(
+                            file_path=file_path,
+                            key=key,
+                            content_type=content_type,
+                        )
 
                         # 3) Update media row with final URL and size
                         self.repository.update_media_url_size(media_id, public_url, size_bytes)
@@ -363,26 +357,20 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     )
 
                     # 2) Build S3 key using media_id and upload
-                    base64_data = getattr(media, 'base64_data', None)
+                    file_path = getattr(media, 'file_path', None)
                     content_type = getattr(media, 'content_type', None)
-                    file_name = getattr(media, 'file_name', None) or 'image'
+                    if not file_path:
+                        context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                        context.set_details("file_path is required for media upload")
+                        return post_pb2.PostResponse(success=False, message="file_path is required for media upload")
 
-                    if base64_data:
-                        key = build_post_key(post.id, media_id, file_name, content_type)
-                        public_url, size_bytes = upload_base64_to_s3(
-                            base64_string=base64_data,
-                            key=key,
-                            content_type=content_type,
-                        )
-                    else:
-                        import base64 as _b64
-                        b64 = _b64.b64encode(media.media_data).decode('utf-8') if media.media_data else ''
-                        key = build_post_key(post.id, media_id, file_name, content_type)
-                        public_url, size_bytes = upload_base64_to_s3(
-                            base64_string=b64,
-                            key=key,
-                            content_type=content_type or 'application/octet-stream',
-                        )
+                    file_name = getattr(media, 'file_name', None) or (file_path.split('/')[-1] if file_path else 'image')
+                    key = build_post_key(post.id, media_id, file_name, content_type)
+                    public_url, size_bytes = upload_file_to_s3(
+                        file_path=file_path,
+                        key=key,
+                        content_type=content_type,
+                    )
 
                     # 3) Update media row
                     self.repository.update_media_url_size(media_id, public_url, size_bytes)

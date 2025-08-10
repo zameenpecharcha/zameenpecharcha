@@ -73,12 +73,12 @@ class PostMedia:
 @strawberry.input
 class PostMediaInput:
     mediaType: str
-    mediaData: str
     mediaOrder: int
     caption: Optional[str] = None
     base64Data: Optional[str] = None
     fileName: Optional[str] = None
     contentType: Optional[str] = None
+    filePath: Optional[str] = None
 
 @strawberry.type
 class Post:

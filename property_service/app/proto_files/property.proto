@@ -101,6 +101,9 @@ service PropertyService {
     // Followers (polymorphic table - followee_type='property')
     rpc FollowProperty(PropertyFollowRequest) returns (PropertyFollowResponse) {}
     rpc GetPropertyFollowers(PropertyRequest) returns (PropertyFollowersResponse) {}
+
+    // Media (file path uploads)
+    rpc AddPropertyMedia(PropertyMediaRequest) returns (PropertyMediaResponse) {}
 } 
 
 message PropertyRatingCreateRequest {
@@ -146,4 +149,34 @@ message PropertyFollowResponse {
 
 message PropertyFollowersResponse {
     repeated PropertyFollowResponse followers = 1;
+}
+
+message PropertyMediaUpload {
+    string file_path = 1;     // local path on server accessible filesystem
+    string media_type = 2;    // e.g., 'image'
+    int32 media_order = 3;
+    string caption = 4;
+    string content_type = 5;  // optional override
+}
+
+message PropertyMediaRequest {
+    int64 property_id = 1;
+    repeated PropertyMediaUpload media = 2;
+}
+
+message PropertyMediaItem {
+    int64 id = 1;
+    int64 property_id = 2;
+    string media_type = 3;
+    string media_url = 4;
+    int32 media_order = 5;
+    int64 media_size = 6;
+    string caption = 7;
+    int64 uploaded_at = 8;
+}
+
+message PropertyMediaResponse {
+    bool success = 1;
+    string message = 2;
+    repeated PropertyMediaItem media = 3;
 }

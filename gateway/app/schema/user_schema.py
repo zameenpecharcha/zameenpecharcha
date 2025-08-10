@@ -374,7 +374,7 @@ class Mutation:
         self,
         info: Info,
         userId: int,
-        base64Data: str,
+        filePath: str,
         fileName: typing.Optional[str] = None,
         contentType: typing.Optional[str] = None,
         caption: typing.Optional[str] = None,
@@ -383,7 +383,7 @@ class Mutation:
         token = get_token(info)
         response = user_service_client.update_profile_photo(
             user_id=userId,
-            base64_data=base64Data,
+            file_path=filePath,
             file_name=fileName,
             content_type=contentType,
             caption=caption,
@@ -415,7 +415,7 @@ class Mutation:
         self,
         info: Info,
         userId: int,
-        base64Data: str,
+        filePath: str,
         fileName: typing.Optional[str] = None,
         contentType: typing.Optional[str] = None,
         caption: typing.Optional[str] = None,
@@ -424,7 +424,7 @@ class Mutation:
         token = get_token(info)
         response = user_service_client.update_cover_photo(
             user_id=userId,
-            base64_data=base64Data,
+            file_path=filePath,
             file_name=fileName,
             content_type=contentType,
             caption=caption,

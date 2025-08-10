@@ -123,5 +123,18 @@ class PropertyServiceClient(GRPCBaseClient):
         request = property_pb2.PropertyRequest(property_id=str(property_id))
         return self._call(self.stub.GetPropertyFollowers, request)
 
+    def add_property_media(self, property_id: int, media: list):
+        uploads = []
+        for m in media:
+            uploads.append(property_pb2.PropertyMediaUpload(
+                file_path=m.get('filePath') or m.get('file_path'),
+                media_type=m.get('mediaType') or m.get('media_type') or 'image',
+                media_order=m.get('mediaOrder') or m.get('media_order') or 1,
+                caption=m.get('caption') or '',
+                content_type=m.get('contentType') or m.get('content_type') or '',
+            ))
+        request = property_pb2.PropertyMediaRequest(property_id=property_id, media=uploads)
+        return self._call(self.stub.AddPropertyMedia, request)
+
 
 property_service_client = PropertyServiceClient()

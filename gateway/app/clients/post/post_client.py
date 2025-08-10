@@ -49,22 +49,13 @@ class PostsServiceClient(GRPCBaseClient):
             media_list = []
             if media:
                 for m in media:
-                    try:
-                        media_data = base64.b64decode(m.mediaData)
-                    except Exception as e:
-                        return {
-                            'success': False,
-                            'message': f'Invalid media data format: {str(e)}'
-                        }
-
                     media_upload = post_pb2.PostMediaUpload(
-                        media_type=m.mediaType,
-                        media_data=media_data,
-                        media_order=m.mediaOrder,
-                        caption=m.caption,
-                        base64_data=getattr(m, 'base64Data', None) or '',
+                        media_type=getattr(m, 'mediaType', None) or 'image',
+                        media_order=getattr(m, 'mediaOrder', None) or 1,
+                        caption=getattr(m, 'caption', None) or '',
                         file_name=getattr(m, 'fileName', None) or '',
-                        content_type=getattr(m, 'contentType', None) or ''
+                        content_type=getattr(m, 'contentType', None) or '',
+                        file_path=getattr(m, 'filePath', None) or ''
                     )
                     media_list.append(media_upload)
 
@@ -358,22 +349,13 @@ class PostsServiceClient(GRPCBaseClient):
         try:
             media_list = []
             for m in media:
-                try:
-                    media_data = base64.b64decode(m.mediaData)
-                except Exception as e:
-                    return {
-                        'success': False,
-                        'message': f'Invalid media data format: {str(e)}'
-                    }
-
                 media_upload = post_pb2.PostMediaUpload(
-                    media_type=m.mediaType,
-                    media_data=media_data,
-                    media_order=m.mediaOrder,
-                    caption=m.caption,
-                    base64_data=getattr(m, 'base64Data', None) or '',
+                    media_type=getattr(m, 'mediaType', None) or 'image',
+                    media_order=getattr(m, 'mediaOrder', None) or 1,
+                    caption=getattr(m, 'caption', None) or '',
                     file_name=getattr(m, 'fileName', None) or '',
-                    content_type=getattr(m, 'contentType', None) or ''
+                    content_type=getattr(m, 'contentType', None) or '',
+                    file_path=getattr(m, 'filePath', None) or ''
                 )
                 media_list.append(media_upload)
 

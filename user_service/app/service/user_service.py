@@ -11,7 +11,7 @@ from app.repository.user_repository import (
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
 from app.utils.s3_utils import (
-    upload_base64_to_s3,
+    upload_file_to_s3,
     build_user_profile_key,
     build_user_cover_key,
 )
@@ -345,9 +345,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
     def UpdateProfilePhoto(self, request, context):
         try:
             media_request = request.media
-            if not media_request.base64_data:
+            if not getattr(media_request, 'file_path', None):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("base64_data is required for profile photo upload")
+                context.set_details("file_path is required for profile photo upload")
                 return user_pb2.UserResponse()
 
             # Build S3 key and upload
@@ -356,8 +356,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 getattr(media_request, "file_name", None),
                 getattr(media_request, "content_type", None),
             )
-            public_url, size_bytes = upload_base64_to_s3(
-                base64_string=media_request.base64_data,
+            public_url, size_bytes = upload_file_to_s3(
+                file_path=media_request.file_path,
                 key=key,
                 content_type=getattr(media_request, "content_type", None),
             )
@@ -397,9 +397,9 @@ class UserService(user_pb2_grpc.UserServiceServicer):
     def UpdateCoverPhoto(self, request, context):
         try:
             media_request = request.media
-            if not media_request.base64_data:
+            if not getattr(media_request, 'file_path', None):
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("base64_data is required for cover photo upload")
+                context.set_details("file_path is required for cover photo upload")
                 return user_pb2.UserResponse()
 
             # Build S3 key and upload
@@ -408,8 +408,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 getattr(media_request, "file_name", None),
                 getattr(media_request, "content_type", None),
             )
-            public_url, size_bytes = upload_base64_to_s3(
-                base64_string=media_request.base64_data,
+            public_url, size_bytes = upload_file_to_s3(
+                file_path=media_request.file_path,
                 key=key,
                 content_type=getattr(media_request, "content_type", None),
             )

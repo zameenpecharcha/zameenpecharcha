@@ -9,6 +9,7 @@ from ..repository.property_repository import (
     increment_view_count,
     create_property_rating, get_property_ratings,
     follow_property, get_property_followers,
+    add_property_media, update_property_media_url_size,
 )
 import uuid
 
@@ -393,6 +394,44 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return property_pb2.PropertyFollowersResponse()
+
+    def AddPropertyMedia(self, request, context):
+        try:
+            from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
+            uploaded_items = []
+            for m in request.media:
+                file_name = m.file_path.split('/')[-1]
+                # Pre-insert to get media_id
+                media_id = add_property_media(
+                    property_id=int(request.property_id),
+                    media_type=(m.media_type or 'image'),
+                    media_order=(m.media_order or 1),
+                    caption=(m.caption or None),
+                )
+                key = build_property_media_key(request.property_id, media_id, file_name)
+                public_url, size_bytes = upload_file_to_s3(
+                    file_path=m.file_path,
+                    key=key,
+                    content_type=(m.content_type or None),
+                )
+                update_property_media_url_size(media_id, public_url, size_bytes)
+
+                uploaded_items.append(property_pb2.PropertyMediaItem(
+                    id=media_id,
+                    property_id=request.property_id,
+                    media_type=(m.media_type or 'image'),
+                    media_url=public_url,
+                    media_order=(m.media_order or 1),
+                    media_size=size_bytes,
+                    caption=m.caption or "",
+                    uploaded_at=0,
+                ))
+
+            return property_pb2.PropertyMediaResponse(success=True, message="Media uploaded", media=uploaded_items)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyMediaResponse(success=False, message=str(e))
 
 from ..interceptors.auth_interceptor import AuthServerInterceptor
 
