@@ -49,16 +49,19 @@ class UserRating:
     rated_user_id: int
     rated_by_user_id: int
     rating_value: int
+    title: typing.Optional[str] = None
     review: typing.Optional[str] = None
     rating_type: typing.Optional[str] = None
+    is_anonymous: typing.Optional[bool] = False
     created_at: str
     updated_at: str
 
 @strawberry.type
 class UserFollower:
     id: int
-    user_id: int
+    follower_id: int
     following_id: int
+    followee_type: typing.Optional[str] = None
     status: str
     followed_at: str
 
@@ -82,8 +85,10 @@ class Query:
                     rated_user_id=rating.rated_user_id,
                     rated_by_user_id=rating.rated_by_user_id,
                     rating_value=rating.rating_value,
+                    title=getattr(rating, 'title', None),
                     review=rating.review,
                     rating_type=rating.rating_type,
+                    is_anonymous=getattr(rating, 'is_anonymous', False),
                     created_at=rating.created_at,
                     updated_at=rating.updated_at
                 ) for rating in ratings_response.ratings
@@ -159,8 +164,9 @@ class Query:
             return [
                 UserFollower(
                     id=follower.id,
-                    user_id=follower.user_id,
+                    follower_id=follower.follower_id,
                     following_id=follower.following_id,
+                    followee_type=getattr(follower, 'followee_type', None),
                     status=follower.status,
                     followed_at=follower.followed_at
                 ) for follower in response.followers
@@ -182,8 +188,9 @@ class Query:
             return [
                 UserFollower(
                     id=follow.id,
-                    user_id=follow.user_id,
+                    follower_id=follow.follower_id,
                     following_id=follow.following_id,
+                    followee_type=getattr(follow, 'followee_type', None),
                     status=follow.status,
                     followed_at=follow.followed_at
                 ) for follow in response.followers
@@ -206,8 +213,9 @@ class Query:
                 return None
             return UserFollower(
                 id=response.id,
-                user_id=response.user_id,
+                follower_id=response.follower_id,
                 following_id=response.following_id,
+                followee_type=getattr(response, 'followee_type', None),
                 status=response.status,
                 followed_at=response.followed_at
             )
@@ -456,8 +464,9 @@ class Mutation:
             response = user_service_client.follow_user(user_id, following_id,token=token)
             return UserFollower(
                 id=response.id,
-                user_id=response.user_id,
+                follower_id=response.follower_id,
                 following_id=response.following_id,
+                followee_type=getattr(response, 'followee_type', None),
                 status=response.status,
                 followed_at=response.followed_at
             )

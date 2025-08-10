@@ -370,7 +370,10 @@ class PostsServiceClient(GRPCBaseClient):
                     media_type=m.mediaType,
                     media_data=media_data,
                     media_order=m.mediaOrder,
-                    caption=m.caption
+                    caption=m.caption,
+                    base64_data=getattr(m, 'base64Data', None) or '',
+                    file_name=getattr(m, 'fileName', None) or '',
+                    content_type=getattr(m, 'contentType', None) or ''
                 )
                 media_list.append(media_upload)
 

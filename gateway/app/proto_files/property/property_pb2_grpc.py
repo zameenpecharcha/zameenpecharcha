@@ -70,6 +70,26 @@ class PropertyServiceStub(object):
                 request_serializer=property__pb2.PropertyRequest.SerializeToString,
                 response_deserializer=property__pb2.PropertyResponse.FromString,
                 _registered_method=True)
+        self.CreatePropertyRating = channel.unary_unary(
+                '/property.PropertyService/CreatePropertyRating',
+                request_serializer=property__pb2.PropertyRatingCreateRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyRatingResponse.FromString,
+                _registered_method=True)
+        self.GetPropertyRatings = channel.unary_unary(
+                '/property.PropertyService/GetPropertyRatings',
+                request_serializer=property__pb2.PropertyRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyRatingsResponse.FromString,
+                _registered_method=True)
+        self.FollowProperty = channel.unary_unary(
+                '/property.PropertyService/FollowProperty',
+                request_serializer=property__pb2.PropertyFollowRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyFollowResponse.FromString,
+                _registered_method=True)
+        self.GetPropertyFollowers = channel.unary_unary(
+                '/property.PropertyService/GetPropertyFollowers',
+                request_serializer=property__pb2.PropertyRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyFollowersResponse.FromString,
+                _registered_method=True)
 
 
 class PropertyServiceServicer(object):
@@ -118,6 +138,32 @@ class PropertyServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CreatePropertyRating(self, request, context):
+        """Ratings (polymorphic table - here we use rated_type='property')
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPropertyRatings(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FollowProperty(self, request, context):
+        """Followers (polymorphic table - followee_type='property')
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetPropertyFollowers(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PropertyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -155,6 +201,26 @@ def add_PropertyServiceServicer_to_server(servicer, server):
                     servicer.IncrementViewCount,
                     request_deserializer=property__pb2.PropertyRequest.FromString,
                     response_serializer=property__pb2.PropertyResponse.SerializeToString,
+            ),
+            'CreatePropertyRating': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreatePropertyRating,
+                    request_deserializer=property__pb2.PropertyRatingCreateRequest.FromString,
+                    response_serializer=property__pb2.PropertyRatingResponse.SerializeToString,
+            ),
+            'GetPropertyRatings': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPropertyRatings,
+                    request_deserializer=property__pb2.PropertyRequest.FromString,
+                    response_serializer=property__pb2.PropertyRatingsResponse.SerializeToString,
+            ),
+            'FollowProperty': grpc.unary_unary_rpc_method_handler(
+                    servicer.FollowProperty,
+                    request_deserializer=property__pb2.PropertyFollowRequest.FromString,
+                    response_serializer=property__pb2.PropertyFollowResponse.SerializeToString,
+            ),
+            'GetPropertyFollowers': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPropertyFollowers,
+                    request_deserializer=property__pb2.PropertyRequest.FromString,
+                    response_serializer=property__pb2.PropertyFollowersResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -347,6 +413,114 @@ class PropertyService(object):
             '/property.PropertyService/IncrementViewCount',
             property__pb2.PropertyRequest.SerializeToString,
             property__pb2.PropertyResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreatePropertyRating(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/CreatePropertyRating',
+            property__pb2.PropertyRatingCreateRequest.SerializeToString,
+            property__pb2.PropertyRatingResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPropertyRatings(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/GetPropertyRatings',
+            property__pb2.PropertyRequest.SerializeToString,
+            property__pb2.PropertyRatingsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FollowProperty(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/FollowProperty',
+            property__pb2.PropertyFollowRequest.SerializeToString,
+            property__pb2.PropertyFollowResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetPropertyFollowers(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/GetPropertyFollowers',
+            property__pb2.PropertyRequest.SerializeToString,
+            property__pb2.PropertyFollowersResponse.FromString,
             options,
             channel_credentials,
             insecure,

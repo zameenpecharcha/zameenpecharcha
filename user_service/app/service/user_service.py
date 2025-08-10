@@ -137,8 +137,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 if rating.id == rating_id:
                     return user_pb2.RatingResponse(
                         id=rating.id,
-                        rated_user_id=rating.rated_user_id,
-                        rated_by_user_id=rating.rated_by_user_id,
+                        rated_user_id=rating.rated_id,
+                        rated_by_user_id=rating.rated_by,
                         rating_value=rating.rating_value,
                         title=rating.title if rating.title else "",
                         review=rating.review if rating.review else "",
@@ -167,8 +167,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             for rating in ratings:
                 rating_responses.append(user_pb2.RatingResponse(
                     id=rating.id,
-                    rated_user_id=rating.rated_user_id,
-                    rated_by_user_id=rating.rated_by_user_id,
+                    rated_user_id=rating.rated_id,
+                    rated_by_user_id=rating.rated_by,
                     rating_value=rating.rating_value,
                     title=rating.title if rating.title else "",
                     review=rating.review if rating.review else "",
@@ -202,7 +202,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     id=existing.id,
                     follower_id=existing.follower_id,
                     following_id=existing.following_id,
-                    followee_type=existing.followee_type if existing.followee_type else "",
+                    followee_type=existing.followee_type if existing.followee_type else "user",
                     status=existing.status if existing.status else "",
                     followed_at=str(existing.followed_at)
                 )
@@ -210,7 +210,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             follower_row_id = create_follower(
                 follower_id=request.follower_id,
                 following_id=request.following_id,
-                followee_type=request.followee_type if request.followee_type else None,
+                followee_type=request.followee_type if request.followee_type else 'user',
                 status=request.status if request.status else 'active'
             )
 
@@ -221,7 +221,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     id=follower.id,
                     follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    followee_type=follower.followee_type if follower.followee_type else "",
+                    followee_type=follower.followee_type if follower.followee_type else "user",
                     status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 )
@@ -247,7 +247,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     id=follower.id,
                     follower_id=follower.follower_id,
                     following_id=follower.following_id,
-                    followee_type=follower.followee_type if follower.followee_type else "",
+                    followee_type=follower.followee_type if follower.followee_type else "user",
                     status=follower.status if follower.status else "",
                     followed_at=str(follower.followed_at)
                 ))
@@ -273,7 +273,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     id=follow.id,
                     follower_id=follow.follower_id,
                     following_id=follow.following_id,
-                    followee_type=follow.followee_type if follow.followee_type else "",
+                    followee_type=follow.followee_type if follow.followee_type else "user",
                     status=follow.status if follow.status else "",
                     followed_at=str(follow.followed_at)
                 ))

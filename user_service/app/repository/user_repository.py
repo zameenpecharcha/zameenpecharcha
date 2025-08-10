@@ -32,11 +32,12 @@ class UserRow:
 
 
 class RatingRow:
-    def __init__(self, id, rated_user_id, rated_by_user_id, rating_value, title,
+    def __init__(self, id, rated_id, rated_type, rated_by, rating_value, title,
                  review, rating_type, is_anonymous, created_at, updated_at):
         self.id = id
-        self.rated_user_id = rated_user_id
-        self.rated_by_user_id = rated_by_user_id
+        self.rated_id = rated_id
+        self.rated_type = rated_type
+        self.rated_by = rated_by
         self.rating_value = rating_value
         self.title = title
         self.review = review
@@ -139,8 +140,9 @@ def create_rating(rated_user_id, rated_by_user_id, rating_value, title=None,
             
         result = session.execute(
             ratings.insert().returning(ratings.c.id).values(
-                rated_user_id=rated_user_id,
-                rated_by_user_id=rated_by_user_id,
+                rated_id=rated_user_id,
+                rated_type='user',
+                rated_by=rated_by_user_id,
                 rating_value=rating_value,
                 title=title,
                 review=review,
@@ -157,7 +159,9 @@ def get_ratings(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(ratings).where(ratings.c.rated_user_id == user_id)
+            select(ratings).where(
+                (ratings.c.rated_type == 'user') & (ratings.c.rated_id == user_id)
+            )
         ).fetchall()
         return [RatingRow(*row) for row in result]
     finally:
@@ -170,7 +174,7 @@ def create_follower(follower_id, following_id, followee_type=None, status='activ
             followers.insert().returning(followers.c.id).values(
                 follower_id=follower_id,
                 following_id=following_id,
-                followee_type=followee_type,
+                followee_type=followee_type or 'user',
                 status=status
             )
         )
@@ -183,7 +187,9 @@ def get_followers(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(followers).where(followers.c.following_id == user_id)
+            select(followers).where(
+                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id)
+            )
         ).fetchall()
         return [FollowerRow(*row) for row in result]
     finally:
@@ -193,7 +199,9 @@ def get_following(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(followers).where(followers.c.follower_id == user_id)
+            select(followers).where(
+                (followers.c.followee_type == 'user') & (followers.c.follower_id == user_id)
+            )
         ).fetchall()
         return [FollowerRow(*row) for row in result]
     finally:
@@ -222,7 +230,8 @@ def check_following_status(user_id, following_id):
             select(followers).where(
                 and_(
                     followers.c.follower_id == user_id,
-                    followers.c.following_id == following_id
+                    followers.c.following_id == following_id,
+                    followers.c.followee_type == 'user'
                 )
             )
         ).fetchone()

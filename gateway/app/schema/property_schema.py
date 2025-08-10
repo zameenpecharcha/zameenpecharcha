@@ -4,6 +4,7 @@ from enum import Enum
 from app.exception.UserException import REException
 from app.utils.log_utils import log_msg
 from app.clients.property.property_client import property_service_client
+from app.utils.auth import require_auth
 
 @strawberry.enum
 class PropertyType(Enum):
@@ -155,6 +156,53 @@ class Query:
             raise REException(
                 "PROPERTY_SEARCH_FAILED",
                 "Failed to search properties",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.field
+    def propertyRatings(self, propertyId: int) -> typing.List['PropertyRating']:
+        try:
+            response = property_service_client.get_property_ratings(propertyId)
+            return [
+                PropertyRating(
+                    id=r.id,
+                    propertyId=r.property_id,
+                    ratedByUserId=r.rated_by_user_id,
+                    ratingValue=r.rating_value,
+                    title=r.title,
+                    review=r.review,
+                    ratingType=r.rating_type,
+                    isAnonymous=r.is_anonymous,
+                    createdAt=r.created_at,
+                    updatedAt=r.updated_at,
+                ) for r in response.ratings
+            ]
+        except Exception as e:
+            log_msg("error", f"Error fetching property ratings: {str(e)}")
+            raise REException(
+                "PROPERTY_RATINGS_FAILED",
+                "Failed to fetch ratings",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.field
+    def propertyFollowers(self, propertyId: int) -> typing.List['PropertyFollow']:
+        try:
+            response = property_service_client.get_property_followers(propertyId)
+            return [
+                PropertyFollow(
+                    id=f.id,
+                    userId=f.user_id,
+                    propertyId=f.property_id,
+                    status=f.status,
+                    followedAt=f.followed_at,
+                ) for f in response.followers
+            ]
+        except Exception as e:
+            log_msg("error", f"Error fetching property followers: {str(e)}")
+            raise REException(
+                "PROPERTY_FOLLOWERS_FAILED",
+                "Failed to fetch followers",
                 str(e)
             ).to_graphql_error()
 
@@ -398,3 +446,81 @@ class Mutation:
                 "Failed to increment view count",
                 str(e)
             ).to_graphql_error() 
+
+    @strawberry.mutation
+    async def createPropertyRating(self, propertyId: int, ratedByUserId: int, ratingValue: int,
+                                   title: typing.Optional[str] = "", review: typing.Optional[str] = "",
+                                   ratingType: typing.Optional[str] = "", isAnonymous: typing.Optional[bool] = False) -> 'PropertyRating':
+        try:
+            response = property_service_client.create_property_rating(
+                property_id=propertyId,
+                rated_by_user_id=ratedByUserId,
+                rating_value=ratingValue,
+                title=title or "",
+                review=review or "",
+                rating_type=ratingType or "",
+                is_anonymous=isAnonymous or False,
+            )
+            return PropertyRating(
+                id=response.id,
+                propertyId=response.property_id,
+                ratedByUserId=response.rated_by_user_id,
+                ratingValue=response.rating_value,
+                title=response.title,
+                review=response.review,
+                ratingType=response.rating_type,
+                isAnonymous=response.is_anonymous,
+                createdAt=response.created_at,
+                updatedAt=response.updated_at,
+            )
+        except Exception as e:
+            log_msg("error", f"Error creating property rating: {str(e)}")
+            raise REException(
+                "CREATE_PROPERTY_RATING_FAILED",
+                "Failed to create property rating",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.mutation
+    async def followProperty(self, userId: int, propertyId: int, status: typing.Optional[str] = 'active') -> 'PropertyFollow':
+        try:
+            response = property_service_client.follow_property(
+                user_id=userId,
+                property_id=propertyId,
+                status=status or 'active',
+            )
+            return PropertyFollow(
+                id=response.id,
+                userId=response.user_id,
+                propertyId=response.property_id,
+                status=response.status,
+                followedAt=response.followed_at,
+            )
+        except Exception as e:
+            log_msg("error", f"Error following property: {str(e)}")
+            raise REException(
+                "FOLLOW_PROPERTY_FAILED",
+                "Failed to follow property",
+                str(e)
+            ).to_graphql_error()
+
+@strawberry.type
+class PropertyRating:
+    id: int
+    propertyId: int
+    ratedByUserId: int
+    ratingValue: int
+    title: str
+    review: str
+    ratingType: str
+    isAnonymous: bool
+    createdAt: int
+    updatedAt: int
+
+@strawberry.type
+class PropertyFollow:
+    id: int
+    userId: int
+    propertyId: int
+    status: str
+    followedAt: int

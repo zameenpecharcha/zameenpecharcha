@@ -5,8 +5,8 @@ package user;
 service UserService {
   rpc GetUser (UserRequest) returns (UserResponse);
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
-  rpc CreateRating (CreateRatingRequest) returns (UserRatingResponse);
-  rpc GetUserRatings (UserRequest) returns (UserRatingsResponse);
+  rpc CreateRating (CreateRatingRequest) returns (RatingResponse);
+  rpc GetUserRatings (UserRequest) returns (RatingsResponse);
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
   rpc GetUserFollowers (UserRequest) returns (UserFollowersResponse);
   rpc GetUserFollowing (UserRequest) returns (UserFollowersResponse);
@@ -65,19 +65,21 @@ message CreateRatingRequest {
   bool is_anonymous = 7;
 }
 
-message UserRatingResponse {
+message RatingResponse {
   int64 id = 1;
   int64 rated_user_id = 2;
   int64 rated_by_user_id = 3;
   int32 rating_value = 4;
-  string review = 5;
-  string rating_type = 6;
-  string created_at = 7;
-  string updated_at = 8;
+  string title = 5;
+  string review = 6;
+  string rating_type = 7;
+  bool is_anonymous = 8;
+  string created_at = 9;
+  string updated_at = 10;
 }
 
-message UserRatingsResponse {
-  repeated UserRatingResponse ratings = 1;
+message RatingsResponse {
+  repeated RatingResponse ratings = 1;
 }
 
 message FollowUserRequest {
@@ -89,10 +91,11 @@ message FollowUserRequest {
 
 message FollowUserResponse {
   int64 id = 1;
-  int64 user_id = 2;
+  int64 follower_id = 2;
   int64 following_id = 3;
-  string status = 4;
-  string followed_at = 5;
+  string followee_type = 4;
+  string status = 5;
+  string followed_at = 6;
 }
 
 message UserFollowersResponse {

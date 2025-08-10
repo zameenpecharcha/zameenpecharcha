@@ -38,11 +38,12 @@ media = Table('media', meta,
     Column('uploaded_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 )
 
-# Ratings table
+// Ratings table - polymorphic
 ratings = Table('ratings', meta,
     Column('id', BigInteger, primary_key=True, nullable=False),
-    Column('rated_user_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('rated_by_user_id', BigInteger, ForeignKey('users.id'), nullable=False),
+    Column('rated_id', BigInteger, nullable=False),
+    Column('rated_type', String(20), nullable=False),  # 'user' or 'property'
+    Column('rated_by', BigInteger, nullable=False),    # user id who rated
     Column('rating_value', Integer, nullable=False),
     Column('title', String(255)),
     Column('review', Text),
@@ -52,12 +53,12 @@ ratings = Table('ratings', meta,
     Column('updated_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'), onupdate=text('CURRENT_TIMESTAMP'))
 )
 
-# Followers table
+# Followers table - polymorphic followee
 followers = Table('followers', meta,
     Column('id', BigInteger, primary_key=True, nullable=False),
-    Column('follower_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('following_id', BigInteger, ForeignKey('users.id'), nullable=False),
-    Column('followee_type', String(255)),
+    Column('follower_id', BigInteger, nullable=False),   # user who follows
+    Column('following_id', BigInteger, nullable=False),  # id of user/property
+    Column('followee_type', String(20)),                 # 'user' or 'property'
     Column('status', String(255)),
     Column('followed_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 )

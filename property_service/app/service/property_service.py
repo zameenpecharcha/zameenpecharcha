@@ -6,7 +6,9 @@ from ..repository.property_repository import (
     get_property_by_id, create_property, update_property,
     delete_property, get_user_properties, search_properties,
     get_properties, proto_to_db_property_type, proto_to_db_property_status,
-    increment_view_count
+    increment_view_count,
+    create_property_rating, get_property_ratings,
+    follow_property, get_property_followers,
 )
 import uuid
 
@@ -287,11 +289,122 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             context.set_details(f"Exception calling application: {str(e)}")
             return property_pb2.PropertyResponse(success=False, message=str(e))
 
+    # --- Ratings ---
+    def CreatePropertyRating(self, request, context):
+        try:
+            if not 1 <= request.rating_value <= 5:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("Rating value must be between 1 and 5")
+                return property_pb2.PropertyRatingResponse()
+
+            rating_id = create_property_rating(
+                property_id=int(request.property_id),
+                rated_by_user_id=int(request.rated_by_user_id),
+                rating_value=request.rating_value,
+                title=request.title,
+                review=request.review,
+                rating_type=request.rating_type,
+                is_anonymous=request.is_anonymous,
+            )
+            # Fetch the created row
+            rows = get_property_ratings(int(request.property_id))
+            for r in rows:
+                if r.id == rating_id:
+                    return property_pb2.PropertyRatingResponse(
+                        id=r.id,
+                        property_id=r.rated_id,
+                        rated_by_user_id=r.rated_by,
+                        rating_value=r.rating_value,
+                        title=r.title or "",
+                        review=r.review or "",
+                        rating_type=r.rating_type or "",
+                        is_anonymous=bool(r.is_anonymous),
+                        created_at=0,
+                        updated_at=0,
+                    )
+            return property_pb2.PropertyRatingResponse()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyRatingResponse()
+
+    def GetPropertyRatings(self, request, context):
+        try:
+            rows = get_property_ratings(int(request.property_id))
+            ratings = []
+            for r in rows:
+                ratings.append(property_pb2.PropertyRatingResponse(
+                    id=r.id,
+                    property_id=r.rated_id,
+                    rated_by_user_id=r.rated_by,
+                    rating_value=r.rating_value,
+                    title=r.title or "",
+                    review=r.review or "",
+                    rating_type=r.rating_type or "",
+                    is_anonymous=bool(r.is_anonymous),
+                    created_at=0,
+                    updated_at=0,
+                ))
+            return property_pb2.PropertyRatingsResponse(ratings=ratings)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyRatingsResponse()
+
+    # --- Followers ---
+    def FollowProperty(self, request, context):
+        try:
+            follow_id = follow_property(
+                user_id=int(request.user_id),
+                property_id=int(request.property_id),
+                status=request.status or 'active',
+            )
+            # Return the created relation
+            rows = get_property_followers(int(request.property_id))
+            for f in rows:
+                if f.id == follow_id:
+                    return property_pb2.PropertyFollowResponse(
+                        id=f.id,
+                        user_id=f.follower_id,
+                        property_id=f.following_id,
+                        status=f.status or "",
+                        followed_at=0,
+                    )
+            return property_pb2.PropertyFollowResponse()
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyFollowResponse()
+
+    def GetPropertyFollowers(self, request, context):
+        try:
+            rows = get_property_followers(int(request.property_id))
+            followers = []
+            for f in rows:
+                followers.append(property_pb2.PropertyFollowResponse(
+                    id=f.id,
+                    user_id=f.follower_id,
+                    property_id=f.following_id,
+                    status=f.status or "",
+                    followed_at=0,
+                ))
+            return property_pb2.PropertyFollowersResponse(followers=followers)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyFollowersResponse()
+
+from ..interceptors.auth_interceptor import AuthServerInterceptor
+
+
 def serve():
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=10),
+        interceptors=[AuthServerInterceptor()],
+    )
     property_pb2_grpc.add_PropertyServiceServicer_to_server(PropertyService(), server)
-    server.add_insecure_port('localhost:50053')
-    print("Starting property service on port 50053...")
+    server.add_insecure_port('localhost:50054')
+    print("Starting property service on port 50054...")
     server.start()
     server.wait_for_termination()
 

@@ -47,12 +47,12 @@ class UserServiceStub(object):
         self.CreateRating = channel.unary_unary(
                 '/user.UserService/CreateRating',
                 request_serializer=user__pb2.CreateRatingRequest.SerializeToString,
-                response_deserializer=user__pb2.UserRatingResponse.FromString,
+                response_deserializer=user__pb2.RatingResponse.FromString,
                 _registered_method=True)
         self.GetUserRatings = channel.unary_unary(
                 '/user.UserService/GetUserRatings',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
-                response_deserializer=user__pb2.UserRatingsResponse.FromString,
+                response_deserializer=user__pb2.RatingsResponse.FromString,
                 _registered_method=True)
         self.FollowUser = channel.unary_unary(
                 '/user.UserService/FollowUser',
@@ -177,12 +177,12 @@ def add_UserServiceServicer_to_server(servicer, server):
             'CreateRating': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateRating,
                     request_deserializer=user__pb2.CreateRatingRequest.FromString,
-                    response_serializer=user__pb2.UserRatingResponse.SerializeToString,
+                    response_serializer=user__pb2.RatingResponse.SerializeToString,
             ),
             'GetUserRatings': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUserRatings,
                     request_deserializer=user__pb2.UserRequest.FromString,
-                    response_serializer=user__pb2.UserRatingsResponse.SerializeToString,
+                    response_serializer=user__pb2.RatingsResponse.SerializeToString,
             ),
             'FollowUser': grpc.unary_unary_rpc_method_handler(
                     servicer.FollowUser,
@@ -300,7 +300,7 @@ class UserService(object):
             target,
             '/user.UserService/CreateRating',
             user__pb2.CreateRatingRequest.SerializeToString,
-            user__pb2.UserRatingResponse.FromString,
+            user__pb2.RatingResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -327,7 +327,7 @@ class UserService(object):
             target,
             '/user.UserService/GetUserRatings',
             user__pb2.UserRequest.SerializeToString,
-            user__pb2.UserRatingsResponse.FromString,
+            user__pb2.RatingsResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -37,8 +37,8 @@ class UserServiceClient(GRPCBaseClient):
             rated_by_user_id=rated_by_user_id,
             rating_value=rating_value,
             title=title or "",
-            review=review,
-            rating_type=rating_type,
+            review=review or "",
+            rating_type=rating_type or "",
             is_anonymous=is_anonymous
         )
         return self._call(self.stub.CreateRating, request,token=token)
@@ -47,7 +47,7 @@ class UserServiceClient(GRPCBaseClient):
         request = user_pb2.UserRequest(id=user_id)
         return self._call(self.stub.GetUserRatings, request,token=token)
 
-    def follow_user(self, user_id, following_id, followee_type: str = "", status: str = "active", token=None):
+    def follow_user(self, user_id, following_id, followee_type: str = "user", status: str = "active", token=None):
         request = user_pb2.FollowUserRequest(
             follower_id=user_id,
             following_id=following_id,

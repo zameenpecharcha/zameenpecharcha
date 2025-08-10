@@ -1,4 +1,5 @@
 from ..entity.property_entity import properties
+from ..entity.social_entity import ratings as ratings_table, followers as followers_table
 from sqlalchemy.orm import sessionmaker
 from ..utils.db_connection import get_db_engine
 import json
@@ -121,6 +122,72 @@ def get_user_properties(user_id):
     user_properties = session.execute(query).fetchall()
     session.close()
     return user_properties
+
+def create_property_rating(property_id: int, rated_by_user_id: int, rating_value: int, title: str = None, review: str = None, rating_type: str = None, is_anonymous: bool = False):
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            ratings_table.insert().returning(ratings_table.c.id).values(
+                rated_id=property_id,
+                rated_type='property',
+                rated_by=rated_by_user_id,
+                rating_value=rating_value,
+                title=title,
+                review=review,
+                rating_type=rating_type,
+                is_anonymous=is_anonymous,
+            )
+        )
+        session.commit()
+        return result.scalar()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+def get_property_ratings(property_id: int):
+    session = SessionLocal()
+    try:
+        rows = session.execute(
+            ratings_table.select().where(
+                (ratings_table.c.rated_type == 'property') & (ratings_table.c.rated_id == property_id)
+            )
+        ).fetchall()
+        return rows
+    finally:
+        session.close()
+
+def follow_property(user_id: int, property_id: int, status: str = 'active'):
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            followers_table.insert().returning(followers_table.c.id).values(
+                follower_id=user_id,
+                following_id=property_id,
+                followee_type='property',
+                status=status,
+            )
+        )
+        session.commit()
+        return result.scalar()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+def get_property_followers(property_id: int):
+    session = SessionLocal()
+    try:
+        rows = session.execute(
+            followers_table.select().where(
+                (followers_table.c.followee_type == 'property') & (followers_table.c.following_id == property_id)
+            )
+        ).fetchall()
+        return rows
+    finally:
+        session.close()
 
 def search_properties(query=None, property_type=None, min_price=None, max_price=None, 
                   location=None, min_bedrooms=None, min_bathrooms=None, 

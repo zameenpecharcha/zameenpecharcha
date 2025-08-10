@@ -76,6 +76,9 @@ class PostMediaInput:
     mediaData: str
     mediaOrder: int
     caption: Optional[str] = None
+    base64Data: Optional[str] = None
+    fileName: Optional[str] = None
+    contentType: Optional[str] = None
 
 @strawberry.type
 class Post:
@@ -165,7 +168,7 @@ class Query:
                 'title': result.post.title,
                 'content': result.post.content,
                 'visibility': result.post.visibility,
-                'propertyType': result.post.property_type,
+                'propertyType': result.post.type,
                 'location': result.post.location,
                 'mapLocation': result.post.map_location,
                 'price': result.post.price,
