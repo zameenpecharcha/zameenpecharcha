@@ -38,7 +38,7 @@ media = Table('media', meta,
     Column('uploaded_at', TIMESTAMP, server_default=text('CURRENT_TIMESTAMP'))
 )
 
-// Ratings table - polymorphic
+# Ratings table - polymorphic
 ratings = Table('ratings', meta,
     Column('id', BigInteger, primary_key=True, nullable=False),
     Column('rated_id', BigInteger, nullable=False),
