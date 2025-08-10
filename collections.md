@@ -135,6 +135,26 @@ mutation Follow($userId: Int!, $followingId: Int!) {
 }
 ```
 
+- Query: user_followers / user_following
+```graphql
+query Followers($userId: Int!) {
+  user_followers(user_id: $userId) { id follower_id following_id status followed_at }
+}
+
+query Following($userId: Int!) {
+  user_following(user_id: $userId) { id follower_id following_id status followed_at }
+}
+```
+
+- Query: check_following_status
+```graphql
+query CheckFollow($userId: Int!, $followingId: Int!) {
+  check_following_status(user_id: $userId, following_id: $followingId) {
+    id follower_id following_id status followed_at
+  }
+}
+```
+
 ---
 
 ### Gateway GraphQL - Posts
@@ -205,6 +225,15 @@ query PostsByUser($uid: Int!) { postsByUser(userId: $uid, page: 1, limit: 10) { 
 query SearchPosts { searchPosts(propertyType: "RESIDENTIAL", location: "Noida", page: 1, limit: 10) { id title } }
 ```
 
+- Query: postComments
+```graphql
+query PostComments($postId: Int!) {
+  postComments(postId: $postId, page: 1, limit: 10) {
+    id postId userId userFirstName userLastName comment addedAt
+  }
+}
+```
+
 - Comments & Likes (examples)
 ```graphql
 mutation { createComment(postId: 10, userId: 1, comment: "Nice!") { success message comment { id comment } } }
@@ -212,6 +241,13 @@ mutation { updateComment(commentId: 5, comment: "Edited") { success message comm
 mutation { deleteComment(commentId: 5) { success message } }
 mutation { likePost(postId: 10, userId: 1) { success message post { id likeCount } } }
 mutation { unlikePost(postId: 10, userId: 1) { success message post { id likeCount } } }
+```
+
+- Mutations: updatePost / deletePost / deletePostMedia
+```graphql
+mutation { updatePost(postId: 10, title: "Updated Title", status: "active") { success message post { id title status } } }
+mutation { deletePost(postId: 10) { success message post { id } } }
+mutation { deletePostMedia(mediaId: 25) { success message } }
 ```
 
 ---
@@ -246,6 +282,26 @@ mutation CreateProperty($p: CreatePropertyInput!) {
     city: $p.city, state: $p.state, country: $p.country, zipCode: $p.zipCode,
     isActive: true
   ) { propertyId title price city state country }
+}
+```
+
+- Mutations: update_property / delete_property / increment_view_count
+```graphql
+mutation UpdateProp($id: String!) {
+  update_property(
+    propertyId: $id,
+    title: "New Title",
+    price: 9999999
+  ) { propertyId title price }
+}
+
+mutation DeleteProp($id: String!) { delete_property(propertyId: $id) }
+
+mutation IncViews($id: String!) {
+  increment_view_count(propertyId: $id) {
+    success message
+    property { propertyId viewCount }
+  }
 }
 ```
 
