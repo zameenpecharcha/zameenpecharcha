@@ -34,8 +34,8 @@ message Property {
     int32 year_built = 12;
     repeated string images = 13;
     repeated string amenities = 14;
-    int64 created_at = 15;
-    int64 updated_at = 16;
+    string created_at = 15; // formatted timestamp
+    string updated_at = 16; // formatted timestamp
     int32 view_count = 17;
     double latitude = 18;
     double longitude = 19;
@@ -123,8 +123,8 @@ message PropertyRatingResponse {
     string review = 6;
     string rating_type = 7;
     bool is_anonymous = 8;
-    int64 created_at = 9;
-    int64 updated_at = 10;
+    string created_at = 9;   // formatted timestamp e.g., "2025-08-10 16:06:08.345872"
+    string updated_at = 10;  // formatted timestamp
 }
 
 message PropertyRatingsResponse {
@@ -142,7 +142,7 @@ message PropertyFollowResponse {
     int64 user_id = 2;
     int64 property_id = 3;
     string status = 4;
-    int64 followed_at = 5;
+    string followed_at = 5; // formatted timestamp e.g., "2025-08-10 16:06:08.345872"
 }
 
 message PropertyFollowersResponse {
@@ -170,7 +170,7 @@ message PropertyMediaItem {
     int32 media_order = 5;
     int64 media_size = 6;
     string caption = 7;
-    int64 uploaded_at = 8;
+    string uploaded_at = 8; // formatted timestamp
 }
 
 message PropertyMediaResponse {

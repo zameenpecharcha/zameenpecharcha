@@ -2,10 +2,10 @@ from ..entity.property_entity import properties
 from ..entity.media_entity import media as media_table
 from ..entity.social_entity import ratings as ratings_table, followers as followers_table
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select
 from ..utils.db_connection import get_db_engine
 import json
 from ..models.property import PropertyType, PropertyStatus
-import uuid
 
 SessionLocal = sessionmaker(bind=get_db_engine())
 
@@ -28,9 +28,7 @@ proto_to_db_property_status = {
 def get_property_by_id(property_id):
     session = SessionLocal()
     try:
-        # Convert string to UUID
-        property_uuid = uuid.UUID(property_id)
-        query = properties.select().where(properties.c.property_id == property_uuid)
+        query = properties.select().where(properties.c.id == int(property_id))
         property = session.execute(query).fetchone()
         return property
     except ValueError:
@@ -41,24 +39,24 @@ def get_property_by_id(property_id):
 def create_property(property_data):
     session = SessionLocal()
     try:
-        # Convert RepeatedScalarContainer to list before JSON serialization
-        property_data['images'] = json.dumps(list(property_data.get('images', [])))
-        property_data['amenities'] = json.dumps(list(property_data.get('amenities', [])))
-        
-        # Map proto enum int to database enum string
-        property_data['property_type'] = proto_to_db_property_type.get(property_data['property_type'], 'APARTMENT')
-        property_data['status'] = proto_to_db_property_status.get(property_data['status'], 'ACTIVE')
-        
-        # Convert string UUIDs to UUID objects
-        property_data['property_id'] = uuid.UUID(property_data['property_id'])
-        property_data['user_id'] = uuid.UUID(property_data['user_id'])
+        # Map incoming keys to DB columns and cast types (per create_tables.sql schema)
+        # property_type, status, listing_type etc. are VARCHAR in DDL; pass through as provided
+        if 'area' in property_data:
+            property_data['area_size'] = property_data.pop('area')
+        if 'zip_code' in property_data:
+            property_data['pin_code'] = property_data.pop('zip_code')
+        if 'year_built' in property_data:
+            property_data['year_build'] = property_data.pop('year_built')
+        # Drop fields not present in DDL
+        property_data.pop('user_id', None)
+        property_data.pop('is_active', None)
         
         result = session.execute(
-            properties.insert().returning(properties.c.property_id).values(**property_data)
+            properties.insert().returning(properties.c.id).values(**property_data)
         )
         property_id = result.fetchone()[0]
         session.commit()
-        return str(property_id)  # Convert UUID back to string
+        return str(property_id)
     except Exception as e:
         session.rollback()
         raise e
@@ -80,16 +78,20 @@ def update_property(property_id, property_data):
         if 'status' in property_data:
             property_data['status'] = proto_to_db_property_status.get(property_data['status'], 'ACTIVE')
         
-        # Convert string UUIDs to UUID objects
-        if 'user_id' in property_data:
-            property_data['user_id'] = uuid.UUID(property_data['user_id'])
-        
-        # Convert property_id to UUID
-        property_uuid = uuid.UUID(property_id)
+        # Map key changes and cast
+        if 'area' in property_data:
+            property_data['area_size'] = property_data.pop('area')
+        if 'zip_code' in property_data:
+            property_data['pin_code'] = property_data.pop('zip_code')
+        if 'year_built' in property_data:
+            property_data['year_build'] = property_data.pop('year_built')
+        # Drop fields not present in DDL
+        property_data.pop('user_id', None)
+        property_data.pop('is_active', None)
         
         result = session.execute(
             properties.update()
-            .where(properties.c.property_id == property_uuid)
+            .where(properties.c.id == int(property_id))
             .values(**property_data)
         )
         session.commit()
@@ -103,11 +105,8 @@ def update_property(property_id, property_data):
 def delete_property(property_id):
     session = SessionLocal()
     try:
-        # Convert string to UUID
-        property_uuid = uuid.UUID(property_id)
-        
         result = session.execute(
-            properties.delete().where(properties.c.property_id == property_uuid)
+            properties.delete().where(properties.c.id == int(property_id))
         )
         session.commit()
         return result.rowcount > 0
@@ -119,7 +118,7 @@ def delete_property(property_id):
 
 def get_user_properties(user_id):
     session = SessionLocal()
-    query = properties.select().where(properties.c.user_id == user_id)
+    query = properties.select().where(properties.c.user_id == int(user_id))
     user_properties = session.execute(query).fetchall()
     session.close()
     return user_properties
@@ -277,11 +276,8 @@ def get_properties(skip=0, limit=10, property_type=None, status=None,
 def increment_view_count(property_id):
     session = SessionLocal()
     try:
-        # Convert string to UUID
-        property_uuid = uuid.UUID(property_id)
-        
         # Get current views and increment
-        query = properties.select().where(properties.c.property_id == property_uuid)
+        query = properties.select().where(properties.c.id == int(property_id))
         property = session.execute(query).fetchone()
         
         if not property:
@@ -293,7 +289,7 @@ def increment_view_count(property_id):
         # Update views
         result = session.execute(
             properties.update()
-            .where(properties.c.property_id == property_uuid)
+            .where(properties.c.id == int(property_id))
             .values(views=new_views)
         )
         session.commit()
@@ -362,5 +358,20 @@ def update_property_media_url_size(media_id: int, media_url: str, media_size: in
     except Exception:
         session.rollback()
         return False
+    finally:
+        session.close()
+
+def get_property_media_urls(property_id: int):
+    session = SessionLocal()
+    try:
+        rows = session.execute(
+            select(media_table.c.media_url)
+            .where(
+                (media_table.c.context_id == int(property_id)) &
+                (media_table.c.context_type == 'property')
+            )
+            .order_by(media_table.c.media_order)
+        ).fetchall()
+        return [r.media_url for r in rows if r.media_url]
     finally:
         session.close()

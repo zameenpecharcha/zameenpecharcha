@@ -1,4 +1,4 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String, Float, TIMESTAMP, Boolean, Enum as SQLEnum, UUID
+from sqlalchemy import MetaData, Table, Column, Integer, String, Float, TIMESTAMP, Boolean, Enum as SQLEnum, BigInteger
 from sqlalchemy.sql import func
 from ..models.property import PropertyType, PropertyStatus
 
@@ -9,30 +9,37 @@ PROPERTY_TYPES = ['APARTMENT', 'VILLA', 'HOUSE', 'LAND']
 PROPERTY_STATUSES = ['ACTIVE', 'INACTIVE', 'SOLD', 'RENTED']
 
 properties = Table('properties', meta,
-    Column('property_id', UUID, primary_key=True),
-    Column('user_id', UUID, nullable=False),
-    Column('title', String(100), nullable=False),
-    Column('description', String(1000), nullable=False),
-    Column('price', Float, nullable=False),
-    Column('location', String(255), nullable=False),
-    Column('property_type', SQLEnum(*PROPERTY_TYPES, name='propertytype', create_constraint=True), nullable=False),
-    Column('status', SQLEnum(*PROPERTY_STATUSES, name='propertystatus', create_constraint=True), default='ACTIVE'),
-    Column('images', String, nullable=True),  # JSON string of base64 images
-    Column('bedrooms', Integer, nullable=True),
-    Column('bathrooms', Integer, nullable=True),
-    Column('area', Float, nullable=True),
-    Column('year_built', Integer, nullable=True),
-    Column('amenities', String, nullable=True),  # JSON string of amenities
-    Column('created_at', TIMESTAMP(timezone=True), server_default=func.now()),
-    Column('updated_at', TIMESTAMP(timezone=True), onupdate=func.now()),
-    Column('is_featured', Boolean, default=False),
-    Column('views', Integer, default=0),
+    Column('id', BigInteger, primary_key=True),
+    Column('title', String, nullable=True),
+    Column('builder_name', String, nullable=True),
+    Column('project_name', String, nullable=True),
+    Column('rera_id', String, nullable=True),
+    Column('year_build', Integer, nullable=True),
+    Column('no_of_floors', Integer, nullable=True),
+    Column('no_of_units', Integer, nullable=True),
+    Column('buildings_amenities', String, nullable=True),
+    Column('verification_status', String, nullable=True),
+    Column('verified_by', BigInteger, nullable=True),
+    Column('flag_count', Integer, nullable=True),
+    Column('is_flagged', Boolean, nullable=True),
+    Column('average_rating', Float, nullable=True),
+    Column('review_count', Integer, nullable=True),
+    Column('description', String, nullable=True),
+    Column('property_type', String, nullable=True),
+    Column('listing_type', String, nullable=True),
+    Column('price', Float, nullable=True),
+    Column('area_size', Float, nullable=True),
+    Column('bedrooms', String, nullable=True),
+    Column('construction_status', String, nullable=True),
+    Column('availability_date', TIMESTAMP, nullable=True),
+    Column('location', String, nullable=True),
+    Column('city', String, nullable=True),
+    Column('state', String, nullable=True),
+    Column('country', String, nullable=True),
+    Column('pin_code', String, nullable=True),
     Column('latitude', Float, nullable=True),
     Column('longitude', Float, nullable=True),
-    Column('address', String(255), nullable=True),
-    Column('city', String(100), nullable=False),
-    Column('state', String(100), nullable=False),
-    Column('country', String(100), nullable=False),
-    Column('zip_code', String(20), nullable=True),
-    Column('is_active', Boolean, default=True)
-) 
+    Column('status', String, nullable=True),
+    Column('created_at', TIMESTAMP, server_default=func.now()),
+    Column('updated_at', TIMESTAMP, nullable=True)
+)

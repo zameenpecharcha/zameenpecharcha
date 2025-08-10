@@ -36,8 +36,8 @@ class Property:
     yearBuilt: int = strawberry.field(name="yearBuilt")
     images: typing.List[str]
     amenities: typing.List[str]
-    createdAt: int = strawberry.field(name="createdAt")
-    updatedAt: int = strawberry.field(name="updatedAt")
+    createdAt: str = strawberry.field(name="createdAt")
+    updatedAt: str = strawberry.field(name="updatedAt")
     viewCount: int = strawberry.field(name="viewCount")
     latitude: float
     longitude: float
@@ -521,7 +521,7 @@ class Mutation:
         mediaOrder: int
         mediaSize: int
         caption: str
-        uploadedAt: int
+        uploadedAt: str
 
     @strawberry.type
     class PropertyMediaResponse:
@@ -570,8 +570,8 @@ class PropertyRating:
     review: str
     ratingType: str
     isAnonymous: bool
-    createdAt: int
-    updatedAt: int
+    createdAt: str
+    updatedAt: str
 
 @strawberry.type
 class PropertyFollow:
@@ -579,4 +579,4 @@ class PropertyFollow:
     userId: int
     propertyId: int
     status: str
-    followedAt: int
+    followedAt: str

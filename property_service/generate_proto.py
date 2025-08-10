@@ -20,7 +20,18 @@ def generate_proto_files():
         f'--grpc_python_out={proto_dir}',
         'property.proto'
     ], check=True)
-    
+    # Ensure relative import in generated gRPC stub for package usage
+    grpc_file = os.path.join(proto_dir, 'property_pb2_grpc.py')
+    try:
+        with open(grpc_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        fixed = content.replace('import property_pb2 as property__pb2', 'from . import property_pb2 as property__pb2')
+        if fixed != content:
+            with open(grpc_file, 'w', encoding='utf-8') as f:
+                f.write(fixed)
+    except Exception:
+        pass
+
     print("Proto files generated successfully!")
 
 if __name__ == "__main__":

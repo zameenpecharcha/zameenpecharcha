@@ -521,20 +521,18 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             if not user:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"User with id {request.user_id} not found")
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(success=False, message=f"User with id {request.user_id} not found")
 
             # Check if post exists
             post = self.repository.get_post(request.post_id)
             if not post:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details(f"Post with id {request.post_id} not found")
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(success=False, message=f"Post with id {request.post_id} not found")
 
             try:
-                # If parent_comment_id is 0, it's a new comment
-                # If it's > 0, it's a reply
-                # This ensures we don't convert 0 to None
-                parent_comment_id = request.parent_comment_id if request.parent_comment_id > 0 else 0
+                # If parent_comment_id is 0, treat as None for top-level comment
+                parent_comment_id = request.parent_comment_id if request.parent_comment_id > 0 else None
 
                 comment = self.repository.create_comment(
                     post_id=request.post_id,
@@ -542,15 +540,19 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     comment_text=request.comment,
                     parent_comment_id=parent_comment_id
                 )
-                return self._convert_to_proto_comment(comment)
+                return post_pb2.CommentResponse(
+                    success=True,
+                    message="Comment created successfully",
+                    comment=self._convert_to_proto_comment(comment),
+                )
             except Exception as e:
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details(str(e))
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(success=False, message=str(e))
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
-            return post_pb2.Comment()
+            return post_pb2.CommentResponse(success=False, message=str(e))
 
     def UpdateComment(self, request, context):
         try:
@@ -562,13 +564,17 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             if not comment:
                 context.set_code(grpc.StatusCode.NOT_FOUND)
                 context.set_details("Comment not found")
-                return post_pb2.Comment()
+                return post_pb2.CommentResponse(success=False, message="Comment not found")
 
-            return self._convert_to_proto_comment(comment)
+            return post_pb2.CommentResponse(
+                success=True,
+                message="Comment updated successfully",
+                comment=self._convert_to_proto_comment(comment),
+            )
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
-            return post_pb2.Comment()
+            return post_pb2.CommentResponse(success=False, message=str(e))
 
     def DeleteComment(self, request, context):
         try:

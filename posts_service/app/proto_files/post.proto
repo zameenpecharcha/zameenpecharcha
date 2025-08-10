@@ -93,6 +93,8 @@ message PostMediaUpload {
     string base64_data = 5;
     string file_name = 6;
     string content_type = 7;
+    // File-path based upload (server-accessible path)
+    string file_path = 8;
 }
 
 // Post Update Request Message
