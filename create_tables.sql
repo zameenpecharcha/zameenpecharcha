@@ -5,6 +5,11 @@ DROP TABLE IF EXISTS post_likes CASCADE;
 DROP TABLE IF EXISTS Posts CASCADE;
 DROP TABLE IF EXISTS ratings CASCADE;
 DROP TABLE IF EXISTS followers CASCADE;
+-- Drop property-related tables to avoid relation already exists errors
+DROP TABLE IF EXISTS property_documents CASCADE;
+DROP TABLE IF EXISTS property_features CASCADE;
+DROP TABLE IF EXISTS user_property CASCADE;
+DROP TABLE IF EXISTS properties CASCADE;
 DROP TABLE IF EXISTS media CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
