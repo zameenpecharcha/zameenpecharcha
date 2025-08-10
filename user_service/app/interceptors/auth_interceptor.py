@@ -5,7 +5,7 @@ from app.utils.jwt_utils import verify_jwt_token
 class AuthServerInterceptor(grpc.ServerInterceptor):
     # List of methods that don't require authentication
     PUBLIC_METHODS = [
-        '/user.UserService/CreateUser',  # User registration endpoint
+        '/user.UserService/CreateUser',      # User registration only
     ]
 
     def intercept_service(self, continuation, handler_call_details):

@@ -50,6 +50,9 @@ message UserResponse {
   bool email_verified = 13;
   bool phone_verified = 14;
   string created_at = 15;
+  // align with user_service field numbers to receive these values
+  int64 cover_photo_id = 17;
+  int64 profile_photo_id = 18;
 }
 
 message CreateRatingRequest {

@@ -350,16 +350,45 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 )
 
             for media in request.media:
-                # Here you would implement media file handling
-                # For now, we'll assume media_url is provided
-                self.repository.add_post_media(
-                    post_id=post.id,
-                    media_type=media.media_type,
-                    media_url="placeholder_url",  # This would be replaced with actual upload logic
-                    media_order=media.media_order,
-                    media_size=0,  # This would be actual file size
-                    caption=media.caption
-                )
+                try:
+                    # 1) Create media row first to obtain media_id
+                    temp_url = ""
+                    media_id = self.repository.add_post_media(
+                        post_id=post.id,
+                        media_type=media.media_type or 'image',
+                        media_url=temp_url,
+                        media_order=media.media_order,
+                        media_size=0,
+                        caption=media.caption,
+                    )
+
+                    # 2) Build S3 key using media_id and upload
+                    base64_data = getattr(media, 'base64_data', None)
+                    content_type = getattr(media, 'content_type', None)
+                    file_name = getattr(media, 'file_name', None) or 'image'
+
+                    if base64_data:
+                        key = build_post_key(post.id, media_id, file_name, content_type)
+                        public_url, size_bytes = upload_base64_to_s3(
+                            base64_string=base64_data,
+                            key=key,
+                            content_type=content_type,
+                        )
+                    else:
+                        import base64 as _b64
+                        b64 = _b64.b64encode(media.media_data).decode('utf-8') if media.media_data else ''
+                        key = build_post_key(post.id, media_id, file_name, content_type)
+                        public_url, size_bytes = upload_base64_to_s3(
+                            base64_string=b64,
+                            key=key,
+                            content_type=content_type or 'application/octet-stream',
+                        )
+
+                    # 3) Update media row
+                    self.repository.update_media_url_size(media_id, public_url, size_bytes)
+                except Exception as media_error:
+                    print(f"Error adding media: {str(media_error)}")
+                    continue
 
             # Refresh post to get updated media
             post = self.repository.get_post(request.post_id)

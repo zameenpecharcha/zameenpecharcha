@@ -139,7 +139,7 @@ class PostsServiceClient(GRPCBaseClient):
             # Filter out None values
             update_data = {k: v for k, v in kwargs.items() if v is not None}
 
-            # Convert camelCase to snake_case for property_type and map_location
+            # Convert camelCase to snake_case for map_location and map GraphQL propertyType to gRPC 'type'
             if 'propertyType' in update_data:
                 update_data['type'] = update_data.pop('propertyType')
             if 'mapLocation' in update_data:
@@ -314,7 +314,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.property_type,
+                    'propertyType': response.post.type,
                     'location': response.post.location,
                     'mapLocation': response.post.map_location,
                     'price': response.post.price,
@@ -400,7 +400,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.property_type,
+                    'propertyType': response.post.type,
                     'location': response.post.location,
                     'mapLocation': response.post.map_location,
                     'price': response.post.price,

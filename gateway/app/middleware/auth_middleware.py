@@ -8,7 +8,17 @@ from starlette.responses import JSONResponse
 from app.clients.auth.auth_client import auth_service_client
 from app.utils.log_utils import log_msg
 
-PUBLIC_GRAPHQL_OPS = {"login", "register", "sendotp", "verifyotp", "forgotpassword", "logout"}
+# Public GraphQL operation names (matched case-insensitively)
+# Add any operation here to bypass the auth middleware
+PUBLIC_GRAPHQL_OPS = {
+    "login",
+    "sendotp",
+    "verifyotp",
+    "forgotpassword",
+    "resetpassword",
+    "createuser",
+    "logout",
+}
 
 class AuthMiddleware:
     def __init__(self, app: ASGIApp):
@@ -87,10 +97,22 @@ class AuthMiddleware:
             try:
                 parsed = json.loads(body.decode("utf-8"))
                 query = parsed.get("query", "")
+                # 1) Operation name after 'mutation' or 'query'
                 match = re.search(r"(mutation|query)\s+(\w+)", query, re.IGNORECASE)
                 if match:
                     op_name = match.group(2).lower()
-                    return op_name in PUBLIC_GRAPHQL_OPS
+                    if op_name in PUBLIC_GRAPHQL_OPS:
+                        return True
+                # 2) First field name in the selection set
+                field_match = re.search(r"\{\s*(\w+)", query)
+                if field_match:
+                    field_name = field_match.group(1).lower()
+                    if field_name in PUBLIC_GRAPHQL_OPS:
+                        return True
+                # 3) Explicit operationName in request JSON
+                op_name_json = parsed.get("operationName")
+                if isinstance(op_name_json, str) and op_name_json.lower() in PUBLIC_GRAPHQL_OPS:
+                    return True
             except Exception as e:
                 log_msg("warn", f"Failed to parse GraphQL operation: {e}")
                 return False

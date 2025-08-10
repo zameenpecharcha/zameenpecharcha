@@ -10,6 +10,11 @@ class UserServiceClient(GRPCBaseClient):
         request = user_pb2.UserRequest(id=user_id)
         return self._call(self.stub.GetUser, request,token=token)
 
+    def get_media(self, media_id: int, token=None):
+        # Reuses UserRequest with id as media_id per service contract
+        request = user_pb2.UserRequest(id=media_id)
+        return self._call(self.stub.GetMedia, request, token=token)
+
     def create_user(self, first_name, last_name, email, phone, password, role=None,
                    address=None, latitude=None, longitude=None, bio=None,token=None):
         request = user_pb2.CreateUserRequest(

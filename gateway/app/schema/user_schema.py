@@ -25,9 +25,23 @@ class User:
     email_verified: bool
     phone_verified: bool
     created_at: str
+    cover_photo_id: typing.Optional[int] = 0
+    profile_photo_id: typing.Optional[int] = 0
     ratings: typing.List['UserRating'] = strawberry.field(default_factory=list)
     followers_count: int = 0
     following_count: int = 0
+
+@strawberry.type
+class Media:
+    id: int
+    context_id: int
+    context_type: str
+    media_type: str
+    media_url: str
+    media_order: int
+    media_size: typing.Optional[int]
+    caption: typing.Optional[str]
+    uploaded_at: str
 
 @strawberry.type
 class UserRating:
@@ -95,6 +109,8 @@ class Query:
                 email_verified=response.email_verified,
                 phone_verified=response.phone_verified,
                 created_at=response.created_at,
+                cover_photo_id=getattr(response, 'cover_photo_id', 0),
+                profile_photo_id=getattr(response, 'profile_photo_id', 0),
                 ratings=ratings,
                 followers_count=len(followers.followers),
                 following_count=len(following.followers)
@@ -202,6 +218,28 @@ class Query:
                 "Failed to check following status",
                 str(e)
             ).to_graphql_error()
+
+    @strawberry.field
+    def media(self, info: Info, mediaId: int) -> typing.Optional[Media]:
+        try:
+            token = get_token(info)
+            response = user_service_client.get_media(media_id=mediaId, token=token)
+            if not response or not response.id:
+                return None
+            return Media(
+                id=response.id,
+                context_id=response.context_id,
+                context_type=response.context_type,
+                media_type=response.media_type,
+                media_url=response.media_url,
+                media_order=response.media_order,
+                media_size=response.media_size,
+                caption=response.caption,
+                uploaded_at=response.uploaded_at,
+            )
+        except Exception as e:
+            log_msg("error", f"Error fetching media: {str(e)}")
+            return None
 
 @strawberry.type
 class Mutation:
@@ -356,10 +394,12 @@ class Mutation:
             latitude=response.latitude,
             longitude=response.longitude,
             bio=response.bio,
-            isactive=response.isactive,
+            isactive=response.isActive,
             email_verified=response.email_verified,
             phone_verified=response.phone_verified,
             created_at=response.created_at,
+            cover_photo_id=getattr(response, 'cover_photo_id', 0),
+            profile_photo_id=getattr(response, 'profile_photo_id', 0),
         )
 
     @strawberry.mutation
@@ -395,10 +435,12 @@ class Mutation:
             latitude=response.latitude,
             longitude=response.longitude,
             bio=response.bio,
-            isactive=response.isactive,
+            isactive=response.isActive,
             email_verified=response.email_verified,
             phone_verified=response.phone_verified,
             created_at=response.created_at,
+            cover_photo_id=getattr(response, 'cover_photo_id', 0),
+            profile_photo_id=getattr(response, 'profile_photo_id', 0),
         )
 
     @strawberry.mutation
