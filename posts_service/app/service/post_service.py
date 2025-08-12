@@ -225,15 +225,15 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def UpdatePost(self, request, context):
         try:
-                post = self.repository.update_post(
+            post = self.repository.update_post(
                 post_id=request.post_id,
                 title=request.title,
                 content=request.content,
                 visibility=request.visibility,
                 type=request.type,
-                    location=request.location,
-                    latitude=getattr(request, 'latitude', None),
-                    longitude=getattr(request, 'longitude', None),
+                location=request.location,
+                latitude=getattr(request, 'latitude', None),
+                longitude=getattr(request, 'longitude', None),
                 price=request.price,
                 status=request.status,
                 is_anonymous=getattr(request, 'is_anonymous', None)
