@@ -72,7 +72,7 @@ class PostMedia:
 
 @strawberry.input
 class PostMediaInput:
-    mediaType: str
+    mediaType: Optional[str] = None
     mediaOrder: int
     caption: Optional[str] = None
     base64Data: Optional[str] = None
@@ -95,6 +95,8 @@ class Post:
     propertyType: str
     location: str
     mapLocation: str
+    latitude: typing.Optional[float] = None
+    longitude: typing.Optional[float] = None
     price: float
     status: str
     createdAt: datetime
@@ -130,7 +132,9 @@ class Post:
             visibility=data['visibility'],
             propertyType=data['propertyType'],
             location=data['location'],
-            mapLocation=data['mapLocation'],
+            mapLocation=data.get('mapLocation', ''),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
             price=data['price'],
             status=data['status'],
             createdAt=data['createdAt'],
@@ -337,9 +341,10 @@ class Mutation:
         visibility: str,
         propertyType: str,
         location: str,
-        mapLocation: str,
         price: float,
         status: str,
+        latitude: typing.Optional[float] = None,
+        longitude: typing.Optional[float] = None,
         media: typing.Optional[typing.List[PostMediaInput]] = None
     ) -> PostResponse:
         logger.debug(f"Mutation.createPost called with userId: {userId}, title: {title}")
@@ -351,7 +356,8 @@ class Mutation:
             visibility=visibility,
             property_type=propertyType,
             location=location,
-            map_location=mapLocation,
+            latitude=latitude,
+            longitude=longitude,
             price=price,
             status=status,
             media=media or [],
@@ -382,7 +388,6 @@ class Mutation:
             visibility=visibility,
             property_type=propertyType,
             location=location,
-            map_location=mapLocation,
             price=price,
             status=status,
             token=token

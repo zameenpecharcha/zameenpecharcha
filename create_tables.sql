@@ -118,9 +118,19 @@ CREATE TABLE properties (
     latitude FLOAT,
     longitude FLOAT,
     status VARCHAR,
+    cover_photo_id BIGINT NULL,
+    profile_photo_id BIGINT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
-    CONSTRAINT fk_properties_verified_by FOREIGN KEY (verified_by) REFERENCES users(id)
+    CONSTRAINT fk_properties_verified_by FOREIGN KEY (verified_by) REFERENCES users(id),
+    CONSTRAINT fk_properties_cover_photo FOREIGN KEY (cover_photo_id)
+        REFERENCES media(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_properties_profile_photo FOREIGN KEY (profile_photo_id)
+        REFERENCES media(id)
+        ON DELETE SET NULL
+        ON UPDATE CASCADE
 );
 
 -- Create user_property mapping table
@@ -166,7 +176,8 @@ CREATE TABLE Posts (
     visibility VARCHAR(50),
     "type" VARCHAR(50),
     location TEXT,
-    map_location VARCHAR(100),
+    latitude FLOAT,
+    longitude FLOAT,
     price NUMERIC(15,2),
     status VARCHAR(50),
     is_anonymous BOOLEAN DEFAULT false,
@@ -208,8 +219,8 @@ CREATE TABLE post_likes (
     reaction_type VARCHAR(20),
     user_id BIGINT NOT NULL,
     liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES Posts(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (post_id) REFERENCES Posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Create Comments table (updated per new design)
@@ -237,8 +248,8 @@ CREATE TABLE post_comment_likes (
     reaction_type VARCHAR(20),
     user_id BIGINT NOT NULL,
     liked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (comment_id) REFERENCES Comments(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (comment_id) REFERENCES Comments(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- Add unique constraints
@@ -262,10 +273,16 @@ CREATE INDEX idx_comments_user_id ON Comments(user_id);
 CREATE INDEX idx_post_comment_likes_comment_id ON post_comment_likes(comment_id);
 CREATE INDEX idx_post_comment_likes_user_id ON post_comment_likes(user_id);
 
+-- Prevent duplicate likes (idempotent like operations)
+CREATE UNIQUE INDEX IF NOT EXISTS ux_post_likes_post_user ON post_likes(post_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS ux_post_comment_likes_comment_user ON post_comment_likes(comment_id, user_id);
+
 -- Property indexes
 CREATE INDEX idx_properties_type ON properties(property_type);
 CREATE INDEX idx_properties_city ON properties(city);
 CREATE INDEX idx_properties_status ON properties(status);
 CREATE INDEX idx_properties_verified_by ON properties(verified_by);
+CREATE INDEX idx_properties_profile_photo_id ON properties(profile_photo_id);
+CREATE INDEX idx_properties_cover_photo_id ON properties(cover_photo_id);
 CREATE INDEX idx_user_property_user ON user_property(user_id);
 CREATE INDEX idx_user_property_property ON user_property(property_id);

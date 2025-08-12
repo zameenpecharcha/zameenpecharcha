@@ -44,6 +44,11 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.CreateUserRequest.SerializeToString,
                 response_deserializer=user__pb2.UserResponse.FromString,
                 _registered_method=True)
+        self.UpdateUserLocation = channel.unary_unary(
+                '/user.UserService/UpdateUserLocation',
+                request_serializer=user__pb2.UpdateUserLocationRequest.SerializeToString,
+                response_deserializer=user__pb2.UserResponse.FromString,
+                _registered_method=True)
         self.CreateRating = channel.unary_unary(
                 '/user.UserService/CreateRating',
                 request_serializer=user__pb2.CreateRatingRequest.SerializeToString,
@@ -101,6 +106,12 @@ class UserServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def CreateUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateUserLocation(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -172,6 +183,11 @@ def add_UserServiceServicer_to_server(servicer, server):
             'CreateUser': grpc.unary_unary_rpc_method_handler(
                     servicer.CreateUser,
                     request_deserializer=user__pb2.CreateUserRequest.FromString,
+                    response_serializer=user__pb2.UserResponse.SerializeToString,
+            ),
+            'UpdateUserLocation': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateUserLocation,
+                    request_deserializer=user__pb2.UpdateUserLocationRequest.FromString,
                     response_serializer=user__pb2.UserResponse.SerializeToString,
             ),
             'CreateRating': grpc.unary_unary_rpc_method_handler(
@@ -273,6 +289,33 @@ class UserService(object):
             target,
             '/user.UserService/CreateUser',
             user__pb2.CreateUserRequest.SerializeToString,
+            user__pb2.UserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateUserLocation(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/UpdateUserLocation',
+            user__pb2.UpdateUserLocationRequest.SerializeToString,
             user__pb2.UserResponse.FromString,
             options,
             channel_credentials,

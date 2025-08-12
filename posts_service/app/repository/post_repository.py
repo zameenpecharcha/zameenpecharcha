@@ -2,7 +2,7 @@ from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func, select, and_, update
 from datetime import datetime
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from ..entity.post_entity import Post, PostLike, CommentLike
 from ..entity.media_entity import media as MediaTable
 from ..entity.comment_entity import Comment
@@ -16,7 +16,9 @@ class PostRepository:
     # Post Operations
     def create_post(self, user_id: int, title: str, content: str, visibility: str = None,
                    type: str = None, location: str = None, map_location: str = None,
-                   price: float = None, status: str = 'active', is_anonymous: bool = False) -> Post:
+                   price: float = None, status: str = 'active', is_anonymous: bool = False,
+                   latitude: float = None, longitude: float = None,
+                   commit: bool = True) -> Post:
         try:
             post = Post(
                 user_id=user_id,
@@ -25,15 +27,20 @@ class PostRepository:
                 visibility=visibility,
                 type=type,
                 location=location,
-                map_location=map_location,
+                latitude=latitude,
+                longitude=longitude,
                 price=price,
                 status=status,
                 is_anonymous=is_anonymous,
                 created_at=datetime.utcnow()
             )
             self.db.add(post)
-            self.db.commit()
-            self.db.refresh(post)
+            if commit:
+                self.db.commit()
+                self.db.refresh(post)
+            else:
+                # Ensure PK is generated without committing
+                self.db.flush()
             return post
         except SQLAlchemyError as e:
             self.db.rollback()
@@ -50,7 +57,8 @@ class PostRepository:
     def update_post(self, post_id: int, title: str = None, content: str = None,
                    visibility: str = None, type: str = None,
                    location: str = None, map_location: str = None,
-                   price: float = None, status: str = None, is_anonymous: bool = None) -> Optional[Post]:
+                   price: float = None, status: str = None, is_anonymous: bool = None,
+                   latitude: float = None, longitude: float = None) -> Optional[Post]:
         try:
             post = self.get_post(post_id)
             if post:
@@ -64,8 +72,11 @@ class PostRepository:
                     post.type = type
                 if location is not None:
                     post.location = location
-                if map_location is not None:
-                    post.map_location = map_location
+                # No map_location anymore
+                if latitude is not None:
+                    post.latitude = latitude
+                if longitude is not None:
+                    post.longitude = longitude
                 if price is not None:
                     post.price = price
                 if status is not None:
@@ -158,7 +169,8 @@ class PostRepository:
 
     # Media Operations
     def add_post_media(self, post_id: int, media_type: str, media_url: str,
-                      media_order: int, media_size: int = 0, caption: str = None) -> int:
+                      media_order: int, media_size: int = 0, caption: str = None,
+                      commit: bool = True) -> int:
         try:
             insert_stmt = MediaTable.insert().returning(MediaTable.c.id).values(
                 context_id=post_id,
@@ -171,7 +183,8 @@ class PostRepository:
                 uploaded_at=datetime.utcnow()
             )
             result = self.db.execute(insert_stmt)
-            self.db.commit()
+            if commit:
+                self.db.commit()
             return result.scalar()
         except SQLAlchemyError as e:
             self.db.rollback()
@@ -187,7 +200,7 @@ class PostRepository:
             self.db.rollback()
             return False
 
-    def update_media_url_size(self, media_id: int, media_url: str, media_size: int) -> bool:
+    def update_media_url_size(self, media_id: int, media_url: str, media_size: int, commit: bool = True) -> bool:
         try:
             upd = (
                 update(MediaTable)
@@ -195,7 +208,8 @@ class PostRepository:
                 .values(media_url=media_url, media_size=media_size)
             )
             result = self.db.execute(upd)
-            self.db.commit()
+            if commit:
+                self.db.commit()
             return result.rowcount > 0
         except SQLAlchemyError:
             self.db.rollback()
@@ -230,13 +244,16 @@ class PostRepository:
             if not existing_like:
                 try:
                     like = PostLike(
-                        post_id=post_id,  # Make sure we're using the correct post_id
+                        post_id=post_id,
                         user_id=user_id,
                         reaction_type=reaction_type,
                         liked_at=datetime.utcnow()
                     )
                     self.db.add(like)
                     self.db.commit()
+                except IntegrityError:
+                    # Unique index collision (duplicate like): treat as idempotent success
+                    self.db.rollback()
                 except SQLAlchemyError as e:
                     self.db.rollback()
                     raise Exception(f"Database error while adding like: {str(e)}")
@@ -432,6 +449,9 @@ class PostRepository:
                     )
                     self.db.add(like)
                     self.db.commit()
+                except IntegrityError:
+                    # Duplicate like: idempotent success
+                    self.db.rollback()
                 except SQLAlchemyError as e:
                     self.db.rollback()
                     raise Exception(f"Database error while adding like: {str(e)}")

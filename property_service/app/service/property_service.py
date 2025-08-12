@@ -127,6 +127,8 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 country=property.country or "",
                 zip_code=getattr(property, 'pin_code', "") or "",
                 is_active=True,
+                cover_photo_id=_to_int(getattr(property, 'cover_photo_id', None), 0),
+                profile_photo_id=_to_int(getattr(property, 'profile_photo_id', None), 0),
                 created_at=_format_ts(getattr(property, 'created_at', None)),
                 updated_at=_format_ts(getattr(property, 'updated_at', None)),
             )
@@ -160,7 +162,9 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 'state': request.state,
                 'country': request.country,
                 'zip_code': request.zip_code,
-                'is_active': request.is_active
+                'is_active': request.is_active,
+                'cover_photo_id': getattr(request, 'cover_photo_id', 0),
+                'profile_photo_id': getattr(request, 'profile_photo_id', 0),
             }
             
             # Create property in database
@@ -193,7 +197,9 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 'state': request.state,
                 'country': request.country,
                 'zip_code': request.zip_code,
-                'is_active': request.is_active
+                'is_active': request.is_active,
+                'cover_photo_id': getattr(request, 'cover_photo_id', 0),
+                'profile_photo_id': getattr(request, 'profile_photo_id', 0),
             }
             
             success = update_property(request.property_id, property_data)
@@ -503,6 +509,63 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
             return property_pb2.PropertyMediaResponse(success=False, message=str(e))
+
+    def UpdatePropertyProfilePhoto(self, request, context):
+        try:
+            from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
+            m = request.media
+            file_name = m.file_path.split('/')[-1]
+            # Pre-insert media for the property (context_type kept generic 'property')
+            media_id = add_property_media(
+                property_id=int(request.property_id),
+                media_type=(m.media_type or 'image'),
+                media_order=(m.media_order or 1),
+                caption=(m.caption or None),
+            )
+            key = build_property_media_key(request.property_id, media_id, file_name)
+            public_url, size_bytes = upload_file_to_s3(
+                file_path=m.file_path,
+                key=key,
+                content_type=(m.content_type or None),
+            )
+            update_property_media_url_size(media_id, public_url, size_bytes)
+
+            # Update properties.profile_photo_id = media_id
+            update_property(request.property_id, { 'profile_photo_id': media_id })
+
+            return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyResponse(success=False, message=str(e))
+
+    def UpdatePropertyCoverPhoto(self, request, context):
+        try:
+            from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
+            m = request.media
+            file_name = m.file_path.split('/')[-1]
+            media_id = add_property_media(
+                property_id=int(request.property_id),
+                media_type=(m.media_type or 'image'),
+                media_order=(m.media_order or 1),
+                caption=(m.caption or None),
+            )
+            key = build_property_media_key(request.property_id, media_id, file_name)
+            public_url, size_bytes = upload_file_to_s3(
+                file_path=m.file_path,
+                key=key,
+                content_type=(m.content_type or None),
+            )
+            update_property_media_url_size(media_id, public_url, size_bytes)
+
+            # Update properties.cover_photo_id = media_id
+            update_property(request.property_id, { 'cover_photo_id': media_id })
+
+            return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(str(e))
+            return property_pb2.PropertyResponse(success=False, message=str(e))
 
 from ..interceptors.auth_interceptor import AuthServerInterceptor
 

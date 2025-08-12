@@ -50,6 +50,7 @@ def create_property(property_data):
         # Drop fields not present in DDL
         property_data.pop('user_id', None)
         property_data.pop('is_active', None)
+        # Accept cover/profile ids if provided
         
         result = session.execute(
             properties.insert().returning(properties.c.id).values(**property_data)

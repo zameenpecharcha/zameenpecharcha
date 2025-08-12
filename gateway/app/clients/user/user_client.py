@@ -121,5 +121,13 @@ class UserServiceClient(GRPCBaseClient):
         )
         return self._call(self.stub.CheckFollowingStatus, request,token=token)
 
+    def update_user_location(self, user_id: int, latitude: float, longitude: float, token=None):
+        request = user_pb2.UpdateUserLocationRequest(
+            user_id=user_id,
+            latitude=latitude,
+            longitude=longitude,
+        )
+        return self._call(self.stub.UpdateUserLocation, request, token=token)
+
 
 user_service_client = UserServiceClient()

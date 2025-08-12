@@ -44,13 +44,14 @@ class PostsServiceClient(GRPCBaseClient):
     def create_post(self, user_id: int, title: str, content: str,
                     visibility: str, property_type: str, location: str,
                     map_location: str, price: float, status: str,
+                    latitude: float = None, longitude: float = None,
                     media: list = None,token=None) -> dict:
         try:
             media_list = []
             if media:
                 for m in media:
                     media_upload = post_pb2.PostMediaUpload(
-                        media_type=getattr(m, 'mediaType', None) or 'image',
+                        media_type=getattr(m, 'mediaType', None) or '',
                         media_order=getattr(m, 'mediaOrder', None) or 1,
                         caption=getattr(m, 'caption', None) or '',
                         file_name=getattr(m, 'fileName', None) or '',
@@ -66,6 +67,8 @@ class PostsServiceClient(GRPCBaseClient):
                 visibility=visibility,
                 type=property_type,
                 location=location,
+                latitude=latitude or 0.0,
+                longitude=longitude or 0.0,
                 map_location=map_location,
                 price=price,
                 status=status,
@@ -95,7 +98,10 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                    'mapLocation': response.post.map_location,
+                     # mapLocation deprecated; keep for backward mapping if present
+                     'mapLocation': getattr(response.post, 'map_location', ''),
+                    'latitude': getattr(response.post, 'latitude', 0.0),
+                    'longitude': getattr(response.post, 'longitude', 0.0),
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -133,8 +139,13 @@ class PostsServiceClient(GRPCBaseClient):
             # Convert camelCase to snake_case for map_location and map GraphQL propertyType to gRPC 'type'
             if 'propertyType' in update_data:
                 update_data['type'] = update_data.pop('propertyType')
+            # mapLocation removed; ignore if present
             if 'mapLocation' in update_data:
-                update_data['map_location'] = update_data.pop('mapLocation')
+                update_data.pop('mapLocation')
+            if 'latitude' in update_data:
+                update_data['latitude'] = update_data['latitude']
+            if 'longitude' in update_data:
+                update_data['longitude'] = update_data['longitude']
 
             request = post_pb2.PostUpdateRequest(
                 post_id=post_id,
@@ -164,7 +175,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                    'mapLocation': response.post.map_location,
+                     'mapLocation': getattr(response.post, 'map_location', ''),
+                    'latitude': getattr(response.post, 'latitude', 0.0),
+                    'longitude': getattr(response.post, 'longitude', 0.0),
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),

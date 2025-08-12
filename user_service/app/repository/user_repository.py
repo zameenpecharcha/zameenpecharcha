@@ -349,3 +349,35 @@ def update_user_photo(user_id, photo_id, is_profile_photo=True):
         return False
     finally:
         session.close()
+
+def update_user_location(user_id, latitude, longitude):
+    """
+    Update user's latitude and longitude.
+    """
+    if not isinstance(user_id, (int, str)):
+        return False
+    try:
+        user_id = int(user_id)
+    except (ValueError, TypeError):
+        return False
+
+    session = SessionLocal()
+    try:
+        # Verify user exists
+        user = session.execute(select(users).where(users.c.id == user_id)).fetchone()
+        if not user:
+            return False
+
+        session.execute(
+            users.update()
+            .where(users.c.id == user_id)
+            .values(latitude=latitude, longitude=longitude)
+        )
+        session.commit()
+        return True
+    except Exception as e:
+        print(f"Error updating user location: {str(e)}")
+        session.rollback()
+        return False
+    finally:
+        session.close()

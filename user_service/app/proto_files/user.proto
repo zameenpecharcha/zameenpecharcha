@@ -6,6 +6,7 @@ service UserService {
   // User management
   rpc GetUser (UserRequest) returns (UserResponse);
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc UpdateUserLocation (UpdateUserLocationRequest) returns (UserResponse);
   
   // Rating system
   rpc CreateRating (CreateRatingRequest) returns (RatingResponse);
@@ -145,4 +146,10 @@ message CheckFollowingRequest {
 message UpdateUserPhotoRequest {
   int64 user_id = 1;
   MediaRequest media = 2;
+}
+
+message UpdateUserLocationRequest {
+  int64 user_id = 1;
+  float latitude = 2;
+  float longitude = 3;
 }

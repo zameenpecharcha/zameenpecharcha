@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import property_pb2 as property__pb2
+from . import property_pb2 as property__pb2
 
 GRPC_GENERATED_VERSION = '1.73.1'
 GRPC_VERSION = grpc.__version__
@@ -95,6 +95,16 @@ class PropertyServiceStub(object):
                 request_serializer=property__pb2.PropertyMediaRequest.SerializeToString,
                 response_deserializer=property__pb2.PropertyMediaResponse.FromString,
                 _registered_method=True)
+        self.UpdatePropertyProfilePhoto = channel.unary_unary(
+                '/property.PropertyService/UpdatePropertyProfilePhoto',
+                request_serializer=property__pb2.UpdatePropertyPhotoRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyResponse.FromString,
+                _registered_method=True)
+        self.UpdatePropertyCoverPhoto = channel.unary_unary(
+                '/property.PropertyService/UpdatePropertyCoverPhoto',
+                request_serializer=property__pb2.UpdatePropertyPhotoRequest.SerializeToString,
+                response_deserializer=property__pb2.PropertyResponse.FromString,
+                _registered_method=True)
 
 
 class PropertyServiceServicer(object):
@@ -175,6 +185,18 @@ class PropertyServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UpdatePropertyProfilePhoto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdatePropertyCoverPhoto(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PropertyServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -237,6 +259,16 @@ def add_PropertyServiceServicer_to_server(servicer, server):
                     servicer.AddPropertyMedia,
                     request_deserializer=property__pb2.PropertyMediaRequest.FromString,
                     response_serializer=property__pb2.PropertyMediaResponse.SerializeToString,
+            ),
+            'UpdatePropertyProfilePhoto': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdatePropertyProfilePhoto,
+                    request_deserializer=property__pb2.UpdatePropertyPhotoRequest.FromString,
+                    response_serializer=property__pb2.PropertyResponse.SerializeToString,
+            ),
+            'UpdatePropertyCoverPhoto': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdatePropertyCoverPhoto,
+                    request_deserializer=property__pb2.UpdatePropertyPhotoRequest.FromString,
+                    response_serializer=property__pb2.PropertyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -564,6 +596,60 @@ class PropertyService(object):
             '/property.PropertyService/AddPropertyMedia',
             property__pb2.PropertyMediaRequest.SerializeToString,
             property__pb2.PropertyMediaResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdatePropertyProfilePhoto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/UpdatePropertyProfilePhoto',
+            property__pb2.UpdatePropertyPhotoRequest.SerializeToString,
+            property__pb2.PropertyResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdatePropertyCoverPhoto(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/property.PropertyService/UpdatePropertyCoverPhoto',
+            property__pb2.UpdatePropertyPhotoRequest.SerializeToString,
+            property__pb2.PropertyResponse.FromString,
             options,
             channel_credentials,
             insecure,

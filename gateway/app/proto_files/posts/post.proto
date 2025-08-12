@@ -16,7 +16,9 @@ message Post {
     string visibility = 10;
     string type = 11;
     string location = 12;
-    string map_location = 13;
+    double latitude = 22;
+    double longitude = 23;
+    // map_location removed
     double price = 14;
     string status = 15;
     int64 created_at = 16;
@@ -76,7 +78,9 @@ message PostCreateRequest {
     string visibility = 4;
     string type = 5;
     string location = 6;
-    string map_location = 7;
+    double latitude = 12;
+    double longitude = 13;
+    // map_location removed
     double price = 8;
     string status = 9;
     repeated PostMediaUpload media = 10;
@@ -102,7 +106,9 @@ message PostUpdateRequest {
     string visibility = 4;
     string type = 5;
     string location = 6;
-    string map_location = 7;
+    double latitude = 11;
+    double longitude = 12;
+    // map_location removed
     double price = 8;
     string status = 9;
 }

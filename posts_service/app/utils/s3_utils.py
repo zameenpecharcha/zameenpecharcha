@@ -21,6 +21,7 @@ def _split_data_url(base64_string: str) -> Tuple[Optional[str], str]:
 
 def _infer_extension_from_content_type(content_type: Optional[str]) -> str:
     mapping = {
+        # Images
         "image/jpeg": ".jpg",
         "image/jpg": ".jpg",
         "image/png": ".png",
@@ -28,19 +29,31 @@ def _infer_extension_from_content_type(content_type: Optional[str]) -> str:
         "image/gif": ".gif",
         "image/bmp": ".bmp",
         "image/tiff": ".tiff",
+        # Videos
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+        "video/x-msvideo": ".avi",
+        "video/x-matroska": ".mkv",
+        "video/mpeg": ".mpeg",
     }
-    return mapping.get((content_type or "").lower(), "")
+    ct = (content_type or "").lower()
+    if ct in mapping:
+        return mapping[ct]
+    # Fallback to mimetypes
+    ext = mimetypes.guess_extension(ct) if ct else None
+    return ext or ""
 
 
 def _choose_file_name(file_name: Optional[str], content_type: Optional[str], fallback_prefix: str) -> str:
     if file_name and "." in file_name:
         return file_name
     extension = _infer_extension_from_content_type(content_type)
-    if not extension and file_name:
-        extension = ".jpg"
     if not file_name:
         file_name = f"{fallback_prefix}_{uuid4().hex}"
-    return f"{file_name}{extension if not file_name.endswith(extension) else ''}"
+    if extension and not file_name.endswith(extension):
+        return f"{file_name}{extension}"
+    return file_name
 
 
 def upload_base64_to_s3(*, base64_string: str, key: str, content_type: Optional[str] = None, acl: str = "public-read") -> Tuple[str, int]:
@@ -89,7 +102,10 @@ def upload_base64_to_s3(*, base64_string: str, key: str, content_type: Optional[
 
 
 def build_post_key(post_id: int, media_id: int, file_name: Optional[str], content_type: Optional[str]) -> str:
-    safe_name = _choose_file_name(file_name, content_type, fallback_prefix="image")
+    # Choose a sensible fallback prefix based on media kind
+    kind = (content_type or "").split("/")[0].lower()
+    fallback = "video" if kind == "video" else ("image" if kind == "image" else "media")
+    safe_name = _choose_file_name(file_name, content_type, fallback_prefix=fallback)
     return f"post/{post_id}/{media_id}/{safe_name}"
 
 

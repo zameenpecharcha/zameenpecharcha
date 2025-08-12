@@ -54,7 +54,9 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
             visibility=post.visibility or "",
             type=post.type or "",
             location=post.location or "",
-            map_location=post.map_location or "",
+            # Include new lat/lng
+            latitude=float(post.latitude) if getattr(post, 'latitude', None) is not None else 0.0,
+            longitude=float(post.longitude) if getattr(post, 'longitude', None) is not None else 0.0,
             price=float(post.price) if post.price else 0.0,
             status=post.status or "",
             created_at=self._convert_timestamp(post.created_at),
@@ -115,6 +117,7 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                 )
 
             try:
+                # Begin explicit transaction
                 post = self.repository.create_post(
                     user_id=request.user_id,
                     title=request.title,
@@ -122,51 +125,57 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     visibility=request.visibility,
                     type=request.type,
                     location=request.location,
-                    map_location=request.map_location,
+                    latitude=getattr(request, 'latitude', None),
+                    longitude=getattr(request, 'longitude', None),
                     price=request.price,
                     status=request.status,
-                    is_anonymous=getattr(request, 'is_anonymous', False)
+                    is_anonymous=getattr(request, 'is_anonymous', False),
+                    commit=False,
                 )
 
+                created_media_ids = []
                 # Handle media uploads if any
                 for media in request.media:
-                    try:
-                        # Require file_path for uploads (no base64 handling here)
-                        file_path = getattr(media, 'file_path', None)
-                        content_type = getattr(media, 'content_type', None)
-                        file_name = getattr(media, 'file_name', None)
-                        if not file_path:
-                            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                            context.set_details("file_path is required for media upload")
-                            return post_pb2.PostResponse(success=False, message="file_path is required for media upload")
+                    # Require file_path for uploads (supports images and videos)
+                    file_path = getattr(media, 'file_path', None)
+                    content_type = getattr(media, 'content_type', None)
+                    file_name = getattr(media, 'file_name', None)
+                    if not file_path:
+                        context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                        context.set_details("file_path is required for media upload")
+                        self.db.rollback()
+                        return post_pb2.PostResponse(success=False, message="file_path is required for media upload")
 
-                        # 1) Create media row first to obtain media_id
-                        temp_url = ""
-                        media_id = self.repository.add_post_media(
-                            post_id=post.id,
-                            media_type=media.media_type or 'image',
-                            media_url=temp_url,
-                            media_order=media.media_order,
-                            media_size=0,
-                            caption=media.caption
-                        )
+                    # 1) Create media row first to obtain media_id (no commit yet)
+                    temp_url = ""
+                    inferred_type = media.media_type or (('video' if (content_type or '').startswith('video/') else 'image'))
+                    media_id = self.repository.add_post_media(
+                        post_id=post.id,
+                        media_type=inferred_type,
+                        media_url=temp_url,
+                        media_order=media.media_order,
+                        media_size=0,
+                        caption=media.caption,
+                        commit=False,
+                    )
+                    created_media_ids.append(media_id)
 
-                        # 2) Build S3 key using media_id
-                        fn = file_name or (file_path.split('/')[-1] if file_path else 'image')
-                        key = build_post_key(post.id, media_id, fn, content_type)
-                        public_url, size_bytes = upload_file_to_s3(
-                            file_path=file_path,
-                            key=key,
-                            content_type=content_type,
-                        )
+                    # 2) Build S3 key and upload
+                    fn = file_name or (file_path.split('/')[-1] if file_path else None)
+                    key = build_post_key(post.id, media_id, fn, content_type)
+                    public_url, size_bytes = upload_file_to_s3(
+                        file_path=file_path,
+                        key=key,
+                        content_type=content_type,
+                    )
 
-                        # 3) Update media row with final URL and size
-                        self.repository.update_media_url_size(media_id, public_url, size_bytes)
-                    except Exception as media_error:
-                        print(f"Error adding media: {str(media_error)}")
-                        continue
+                    # 3) Update media row (no commit yet)
+                    self.repository.update_media_url_size(media_id, public_url, size_bytes, commit=False)
 
-                # Refresh post to get the added media
+                # All operations succeeded; commit once
+                self.db.commit()
+
+                # Refresh post and return
                 post = self.repository.get_post(post.id)
                 return post_pb2.PostResponse(
                     success=True,
@@ -174,6 +183,8 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
                     post=self._convert_to_proto_post(post)
                 )
             except Exception as e:
+                # Rollback if any step failed
+                self.db.rollback()
                 context.set_code(grpc.StatusCode.INTERNAL)
                 context.set_details(str(e))
                 return post_pb2.PostResponse(
@@ -214,14 +225,15 @@ class PostsService(post_pb2_grpc.PostsServiceServicer):
 
     def UpdatePost(self, request, context):
         try:
-            post = self.repository.update_post(
+                post = self.repository.update_post(
                 post_id=request.post_id,
                 title=request.title,
                 content=request.content,
                 visibility=request.visibility,
                 type=request.type,
-                location=request.location,
-                map_location=request.map_location,
+                    location=request.location,
+                    latitude=getattr(request, 'latitude', None),
+                    longitude=getattr(request, 'longitude', None),
                 price=request.price,
                 status=request.status,
                 is_anonymous=getattr(request, 'is_anonymous', None)

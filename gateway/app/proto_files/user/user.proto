@@ -5,6 +5,7 @@ package user;
 service UserService {
   rpc GetUser (UserRequest) returns (UserResponse);
   rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc UpdateUserLocation (UpdateUserLocationRequest) returns (UserResponse);
   rpc CreateRating (CreateRatingRequest) returns (RatingResponse);
   rpc GetUserRatings (UserRequest) returns (RatingsResponse);
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
@@ -136,4 +137,10 @@ message MediaResponse {
 message UpdateUserPhotoRequest {
   int64 user_id = 1;
   MediaRequest media = 2;
+}
+
+message UpdateUserLocationRequest {
+  int64 user_id = 1;
+  float latitude = 2;
+  float longitude = 3;
 }

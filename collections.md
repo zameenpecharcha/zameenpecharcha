@@ -111,6 +111,29 @@ query Media($mediaId: Int!) {
 }
 ```
 
+- Mutation: update_user_location
+```graphql
+mutation UpdateUserLocation($userId: Int!, $lat: Float!, $lng: Float!) {
+  update_user_location(userId: $userId, latitude: $lat, longitude: $lng) {
+    id latitude longitude
+  }
+}
+```
+
+- Query: olaAutocomplete
+```graphql
+query Ola($input: String!) {
+  olaAutocomplete(input: $input) {
+    reference
+    placeId
+    description
+    lat
+    lng
+    types
+  }
+}
+```
+
 - Mutation: create_user_rating
 ```graphql
 mutation RateUser($input: RateUserInput!) {
@@ -169,13 +192,14 @@ mutation CreatePost($input: CreatePostInput!) {
     visibility: $input.visibility,
     propertyType: $input.type,
     location: $input.location,
-    mapLocation: $input.mapLocation,
+    latitude: $input.latitude,
+    longitude: $input.longitude,
     price: $input.price,
     status: $input.status,
     media: $input.media
   ) {
     success message
-    post { id title mapLocation createdAt media { id mediaUrl mediaType } }
+    post { id title createdAt location latitude longitude media { id mediaUrl mediaType } }
   }
 }
 ```
@@ -189,7 +213,8 @@ Variables:
     "visibility": "public",
     "type": "RESIDENTIAL",
     "location": "Noida",
-    "mapLocation": "28.614,77.362",
+    "latitude": 28.614,
+    "longitude": 77.362,
     "price": 7500000,
     "status": "active",
     "media": [
@@ -213,7 +238,8 @@ Variables:
 {
   "postId": 10,
   "media": [
-    { "mediaType": "image", "mediaOrder": 1, "caption": "Hall", "filePath": "C:/tmp/hall.jpg", "fileName": "hall.jpg", "contentType": "image/jpeg" }
+    { "mediaOrder": 1, "caption": "Hall", "filePath": "C:/tmp/hall.jpg", "fileName": "hall.jpg", "contentType": "image/jpeg" },
+    { "mediaOrder": 2, "caption": "Clip", "filePath": "C:/tmp/clip.mp4", "fileName": "clip.mp4", "contentType": "video/mp4" }
   ]
 }
 ```

@@ -1,4 +1,5 @@
 import strawberry
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.schema.auth_schema import Query as AuthQuery, Mutation as AuthMutation
@@ -21,6 +22,9 @@ class Query(AuthQuery, UserQuery, PostsQuery): pass
 class Mutation(AuthMutation, UserMutation, PostsMutation): pass
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
+
+# Load environment variables from .env (repo root or gateway dir)
+load_dotenv()
 
 # Initialize app
 app = FastAPI()

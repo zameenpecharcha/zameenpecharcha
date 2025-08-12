@@ -45,6 +45,8 @@ message Property {
     string country = 23;
     string zip_code = 24;
     bool is_active = 25;
+    int64 cover_photo_id = 26;
+    int64 profile_photo_id = 27;
 }
 
 // Property List Message
@@ -104,6 +106,8 @@ service PropertyService {
 
     // Media (file path uploads)
     rpc AddPropertyMedia(PropertyMediaRequest) returns (PropertyMediaResponse) {}
+    rpc UpdatePropertyProfilePhoto(UpdatePropertyPhotoRequest) returns (PropertyResponse) {}
+    rpc UpdatePropertyCoverPhoto(UpdatePropertyPhotoRequest) returns (PropertyResponse) {}
 } 
 
 message PropertyRatingCreateRequest {
@@ -179,4 +183,9 @@ message PropertyMediaResponse {
     bool success = 1;
     string message = 2;
     repeated PropertyMediaItem media = 3;
+}
+
+message UpdatePropertyPhotoRequest {
+  int64 property_id = 1;
+  PropertyMediaUpload media = 2;
 }

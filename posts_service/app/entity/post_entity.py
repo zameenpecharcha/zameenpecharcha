@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Text, Numeric, Integer, Boolean
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Text, Numeric, Integer, Boolean, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from ..utils.db_connection import Base
@@ -14,7 +14,9 @@ class Post(Base):
     visibility = Column(String(50))
     type = Column(String(50))
     location = Column(Text)
-    map_location = Column(String(100))
+    latitude = Column(Float)
+    longitude = Column(Float)
+    # map_location removed (latitude/longitude now used)
     price = Column(Numeric(15,2))
     status = Column(String(50))
     is_anonymous = Column(Boolean, default=False)

@@ -7,7 +7,7 @@ from app.repository.user_repository import (
     create_rating, get_ratings,
     create_follower, get_followers, get_following,
     check_following_status, create_media, get_media_by_id, update_user_photo,
-    get_latest_media_for_user_context,
+    get_latest_media_for_user_context, update_user_location,
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
 from app.utils.s3_utils import (
@@ -365,7 +365,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             # Create media record with S3 URL
             media_id = create_media(
                 context_id=request.user_id,
-                context_type='profile photo',  # per schema
+                context_type='user',
                 media_type='image',
                 media_url=public_url,
                 media_order=(media_request.media_order or 1),
@@ -378,8 +378,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("Failed to create media record")
                 return user_pb2.UserResponse()
 
-            # Update user's profile photo ID to the latest uploaded media for this context
-            latest_media = get_latest_media_for_user_context(request.user_id, 'profile photo')
+            # Update user's profile photo ID to the latest uploaded media for the user
+            latest_media = get_latest_media_for_user_context(request.user_id, 'user')
             effective_media_id = latest_media.id if latest_media else media_id
             success = update_user_photo(request.user_id, effective_media_id, is_profile_photo=True)
             if not success:
@@ -417,7 +417,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             # Create media record with S3 URL
             media_id = create_media(
                 context_id=request.user_id,
-                context_type='cover_photo',  # per schema
+                context_type='user',
                 media_type='image',
                 media_url=public_url,
                 media_order=(media_request.media_order or 1),
@@ -430,8 +430,8 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 context.set_details("Failed to create media record")
                 return user_pb2.UserResponse()
 
-            # Update user's cover photo ID to the latest uploaded media for this context
-            latest_media = get_latest_media_for_user_context(request.user_id, 'cover_photo')
+            # Update user's cover photo ID to the latest uploaded media for the user
+            latest_media = get_latest_media_for_user_context(request.user_id, 'user')
             effective_media_id = latest_media.id if latest_media else media_id
             success = update_user_photo(request.user_id, effective_media_id, is_profile_photo=False)
             if not success:
@@ -444,6 +444,35 @@ class UserService(user_pb2_grpc.UserServiceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error updating cover photo: {str(e)}")
+            return user_pb2.UserResponse()
+
+    def UpdateUserLocation(self, request, context):
+        try:
+            if not isinstance(request.user_id, int):
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("user_id must be an integer")
+                return user_pb2.UserResponse()
+            if request.latitude is None or request.longitude is None:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("latitude and longitude are required")
+                return user_pb2.UserResponse()
+
+            user = get_user_by_id(request.user_id)
+            if not user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.user_id} not found")
+                return user_pb2.UserResponse()
+
+            ok = update_user_location(request.user_id, request.latitude, request.longitude)
+            if not ok:
+                context.set_code(grpc.StatusCode.INTERNAL)
+                context.set_details("Failed to update user location")
+                return user_pb2.UserResponse()
+
+            return self.GetUser(user_pb2.UserRequest(id=request.user_id), context)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error updating user location: {str(e)}")
             return user_pb2.UserResponse()
 
 def serve():

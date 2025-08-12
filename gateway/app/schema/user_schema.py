@@ -6,6 +6,9 @@ from app.clients.user.user_client import user_service_client
 from strawberry.types import Info
 
 from app.utils.jwt_utils import get_token
+from app.clients.user.user_client import user_service_client
+import httpx
+import os
 
 
 @strawberry.type
@@ -66,7 +69,61 @@ class UserFollower:
     followed_at: str
 
 @strawberry.type
+class OlaSuggestion:
+    reference: typing.Optional[str]
+    place_id: typing.Optional[str]
+    description: typing.Optional[str]
+    lat: typing.Optional[float]
+    lng: typing.Optional[float]
+    types: typing.List[str]
+
+@strawberry.type
 class Query:
+    @strawberry.field
+    async def ola_autocomplete(
+        self,
+        info: Info,
+        input: str,
+        location: typing.Optional[str] = None,
+        radius: typing.Optional[int] = None,
+        strictbounds: typing.Optional[bool] = None,
+    ) -> typing.List[OlaSuggestion]:
+        try:
+            api_key = os.getenv("OLA_MAPS_API_KEY")
+            
+            if not api_key:
+                raise REException("CONFIG_ERROR", "OLA_MAPS_API_KEY not configured", "Set OLA_MAPS_API_KEY env var").to_graphql_error()
+            params = {"input": input, "api_key": api_key}
+            if location:
+                params["location"] = location
+            if radius is not None:
+                params["radius"] = radius
+            if strictbounds is not None:
+                params["strictbounds"] = str(strictbounds).lower()
+
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get("https://api.olamaps.io/places/v1/autocomplete", params=params)
+                resp.raise_for_status()
+                data = resp.json() or {}
+                predictions = data.get("predictions", [])
+                suggestions: typing.List[OlaSuggestion] = []
+                for p in predictions:
+                    loc = ((p or {}).get("geometry") or {}).get("location") or {}
+                    suggestions.append(
+                        OlaSuggestion(
+                            reference=p.get("reference"),
+                            place_id=p.get("place_id"),
+                            description=p.get("description"),
+                            lat=loc.get("lat"),
+                            lng=loc.get("lng"),
+                            types=p.get("types") or [],
+                        )
+                    )
+                return suggestions
+        except httpx.HTTPStatusError as e:
+            raise REException("OLA_API_ERROR", "Failed to fetch suggestions", e.response.text).to_graphql_error()
+        except Exception as e:
+            raise REException("AUTOCOMPLETE_FAILED", "Autocomplete failed", str(e)).to_graphql_error()
     @strawberry.field
     def user(self, info: Info, id: int) -> typing.Optional[User]:
         try:
@@ -477,5 +534,35 @@ class Mutation:
                 "Failed to follow user",
                 str(e)
             ).to_graphql_error()
+
+    @strawberry.mutation
+    async def update_user_location(
+        self,
+        info: Info,
+        user_id: int,
+        latitude: float,
+        longitude: float,
+    ) -> User:
+        token = get_token(info)
+        response = user_service_client.update_user_location(user_id=user_id, latitude=latitude, longitude=longitude, token=token)
+        return User(
+            id=response.id,
+            first_name=response.first_name,
+            last_name=response.last_name,
+            email=response.email,
+            phone=response.phone,
+            profile_photo=None,
+            role=response.role,
+            address=response.address,
+            latitude=response.latitude,
+            longitude=response.longitude,
+            bio=response.bio,
+            isactive=response.isActive,
+            email_verified=response.email_verified,
+            phone_verified=response.phone_verified,
+            created_at=response.created_at,
+            cover_photo_id=getattr(response, 'cover_photo_id', 0),
+            profile_photo_id=getattr(response, 'profile_photo_id', 0),
+        )
 
 
