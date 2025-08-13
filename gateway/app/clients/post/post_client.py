@@ -43,9 +43,9 @@ class PostsServiceClient(GRPCBaseClient):
 
     def create_post(self, user_id: int, title: str, content: str,
                     visibility: str, property_type: str, location: str,
-                    map_location: str, price: float, status: str,
+                    price: float, status: str,
                     latitude: float = None, longitude: float = None,
-                    media: list = None,token=None) -> dict:
+                    media: list = None, token=None) -> dict:
         try:
             media_list = []
             if media:
@@ -69,7 +69,6 @@ class PostsServiceClient(GRPCBaseClient):
                 location=location,
                 latitude=latitude or 0.0,
                 longitude=longitude or 0.0,
-                map_location=map_location,
                 price=price,
                 status=status,
                 media=media_list
@@ -99,7 +98,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'propertyType': response.post.type,
                     'location': response.post.location,
                      # mapLocation deprecated; keep for backward mapping if present
-                     'mapLocation': getattr(response.post, 'map_location', ''),
+                    # mapLocation removed
                     'latitude': getattr(response.post, 'latitude', 0.0),
                     'longitude': getattr(response.post, 'longitude', 0.0),
                     'price': response.post.price,
@@ -136,7 +135,7 @@ class PostsServiceClient(GRPCBaseClient):
             # Filter out None values
             update_data = {k: v for k, v in kwargs.items() if v is not None}
 
-            # Convert camelCase to snake_case for map_location and map GraphQL propertyType to gRPC 'type'
+            # Convert camelCase to snake_case for fields and map GraphQL propertyType to gRPC 'type'
             if 'propertyType' in update_data:
                 update_data['type'] = update_data.pop('propertyType')
             # mapLocation removed; ignore if present
@@ -175,7 +174,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                     'mapLocation': getattr(response.post, 'map_location', ''),
+                    # mapLocation removed
                     'latitude': getattr(response.post, 'latitude', 0.0),
                     'longitude': getattr(response.post, 'longitude', 0.0),
                     'price': response.post.price,
@@ -267,7 +266,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                    'mapLocation': response.post.map_location,
+                    # mapLocation removed
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -320,7 +319,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                    'mapLocation': response.post.map_location,
+                    # mapLocation removed
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -400,7 +399,7 @@ class PostsServiceClient(GRPCBaseClient):
                     'visibility': response.post.visibility,
                     'propertyType': response.post.type,
                     'location': response.post.location,
-                    'mapLocation': response.post.map_location,
+                    # mapLocation removed
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -478,25 +477,26 @@ class PostsServiceClient(GRPCBaseClient):
             response = self._call(self.stub.UpdateComment, request,token=token)
 
             # Convert the gRPC response to a dictionary
-            if response:
+            if response and response.comment:
+                c = response.comment
                 comment_dict = {
-                    'id': response.id,
-                    'postId': response.post_id,
-                    'userId': response.user_id,
-                    'comment': response.comment,
-                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
-                    'status': response.status,
-                    'addedAt': datetime.fromtimestamp(response.added_at),
-                    'commentedAt': datetime.fromtimestamp(response.commented_at),
-                    'replies': [],  # Replies will be fetched separately if needed
-                    'likeCount': response.like_count
+                    'id': c.id,
+                    'postId': c.post_id,
+                    'userId': c.user_id,
+                    'comment': c.comment,
+                    'parentCommentId': c.parent_comment_id if c.parent_comment_id != 0 else None,
+                    'status': c.status,
+                    'addedAt': datetime.fromtimestamp(c.added_at),
+                    'commentedAt': datetime.fromtimestamp(c.commented_at),
+                    'replies': [],
+                    'likeCount': c.like_count
                 }
             else:
                 comment_dict = None
 
             return {
-                'success': True,
-                'message': 'Comment updated successfully',
+                'success': response.success if response else False,
+                'message': response.message if response else 'Failed to update comment',
                 'comment': comment_dict
             }
         except grpc.RpcError as e:

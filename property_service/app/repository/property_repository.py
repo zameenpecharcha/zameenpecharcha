@@ -47,6 +47,18 @@ def create_property(property_data):
             property_data['pin_code'] = property_data.pop('zip_code')
         if 'year_built' in property_data:
             property_data['year_build'] = property_data.pop('year_built')
+
+        # Convert lists to JSON strings if provided
+        if 'images' in property_data and isinstance(property_data['images'], (list, tuple)):
+            property_data['images'] = json.dumps(list(property_data['images']))
+        if 'amenities' in property_data and isinstance(property_data['amenities'], (list, tuple)):
+            property_data['amenities'] = json.dumps(list(property_data['amenities']))
+
+        # Map proto enum ints to DB strings when provided
+        if 'property_type' in property_data:
+            property_data['property_type'] = proto_to_db_property_type.get(property_data['property_type'], 'APARTMENT')
+        if 'status' in property_data:
+            property_data['status'] = proto_to_db_property_status.get(property_data['status'], 'ACTIVE')
         # Drop fields not present in DDL
         property_data.pop('user_id', None)
         property_data.pop('is_active', None)
@@ -284,14 +296,14 @@ def increment_view_count(property_id):
         if not property:
             return False
             
-        current_views = property.views or 0
+        current_views = getattr(property, 'view_count', 0) or 0
         new_views = current_views + 1
         
         # Update views
         result = session.execute(
             properties.update()
             .where(properties.c.id == int(property_id))
-            .values(views=new_views)
+            .values(view_count=new_views)
         )
         session.commit()
         return True

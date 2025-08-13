@@ -117,6 +117,7 @@ CREATE TABLE properties (
     pin_code VARCHAR,
     latitude FLOAT,
     longitude FLOAT,
+    view_count INT DEFAULT 0,
     status VARCHAR,
     cover_photo_id BIGINT NULL,
     profile_photo_id BIGINT NULL,

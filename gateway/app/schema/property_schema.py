@@ -4,7 +4,8 @@ from enum import Enum
 from app.exception.UserException import REException
 from app.utils.log_utils import log_msg
 from app.clients.property.property_client import property_service_client
-from app.utils.auth import require_auth
+from app.utils.jwt_utils import get_token
+# Auth is enforced globally via middleware; no direct import required here
 
 @strawberry.enum
 class PropertyType(Enum):
@@ -47,13 +48,16 @@ class Property:
     country: str
     zipCode: str = strawberry.field(name="zipCode")
     isActive: bool = strawberry.field(name="isActive")
+    coverPhotoId: typing.Optional[int] = strawberry.field(name="coverPhotoId")
+    profilePhotoId: typing.Optional[int] = strawberry.field(name="profilePhotoId")
 
 @strawberry.type
 class Query:
     @strawberry.field
-    def property(self, propertyId: str) -> typing.Optional[Property]:
+    def property(self, info, propertyId: str) -> typing.Optional[Property]:
         try:
-            response = property_service_client.get_property(propertyId)
+            token = get_token(info)
+            response = property_service_client.get_property(propertyId, token=token)
             if not response.success:
                 raise REException("PROPERTY_NOT_FOUND", response.message, "Property not found")
             
@@ -82,7 +86,9 @@ class Query:
                 state=response.property.state,
                 country=response.property.country,
                 zipCode=response.property.zip_code,
-                isActive=response.property.is_active
+                isActive=response.property.is_active,
+                coverPhotoId=getattr(response.property, 'cover_photo_id', 0),
+                profilePhotoId=getattr(response.property, 'profile_photo_id', 0),
             )
         except Exception as e:
             log_msg("error", f"Error fetching property: {str(e)}")
@@ -94,7 +100,7 @@ class Query:
 
     @strawberry.field
     def search_properties(
-        self,
+        self, info,
         query: typing.Optional[str] = None,
         propertyType: typing.Optional[PropertyType] = None,
         minPrice: typing.Optional[float] = None,
@@ -106,16 +112,19 @@ class Query:
         maxArea: typing.Optional[float] = None
     ) -> typing.List[Property]:
         try:
+            token = get_token(info)
+            mapped_type = propertyType.value if propertyType is not None else 0
             response = property_service_client.search_properties(
                 query=query or "",
-                property_type=propertyType if propertyType is not None else 0,
+                property_type=mapped_type,
                 min_price=minPrice or 0,
                 max_price=maxPrice or 0,
                 location=location or "",
                 min_bedrooms=minBedrooms or 0,
                 min_bathrooms=minBathrooms or 0,
                 min_area=minArea or 0,
-                max_area=maxArea or 0
+                max_area=maxArea or 0,
+                token=token
             )
             
             if not response.success:
@@ -147,7 +156,9 @@ class Query:
                     state=prop.state,
                     country=prop.country,
                     zipCode=prop.zip_code,
-                    isActive=prop.is_active
+                isActive=prop.is_active,
+                coverPhotoId=getattr(prop, 'cover_photo_id', 0),
+                profilePhotoId=getattr(prop, 'profile_photo_id', 0),
                 )
                 for prop in response.properties.properties
             ]
@@ -160,9 +171,10 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def propertyRatings(self, propertyId: int) -> typing.List['PropertyRating']:
+    def propertyRatings(self, info, propertyId: int) -> typing.List['PropertyRating']:
         try:
-            response = property_service_client.get_property_ratings(propertyId)
+            token = get_token(info)
+            response = property_service_client.get_property_ratings(propertyId, token=token)
             return [
                 PropertyRating(
                     id=r.id,
@@ -186,9 +198,10 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
-    def propertyFollowers(self, propertyId: int) -> typing.List['PropertyFollow']:
+    def propertyFollowers(self, info, propertyId: int) -> typing.List['PropertyFollow']:
         try:
-            response = property_service_client.get_property_followers(propertyId)
+            token = get_token(info)
+            response = property_service_client.get_property_followers(propertyId, token=token)
             return [
                 PropertyFollow(
                     id=f.id,
@@ -206,11 +219,38 @@ class Query:
                 str(e)
             ).to_graphql_error()
 
+@strawberry.input
+class PropertyMediaInput:
+    filePath: str
+    mediaType: typing.Optional[str] = "image"
+    mediaOrder: typing.Optional[int] = 1
+    caption: typing.Optional[str] = ""
+    contentType: typing.Optional[str] = None
+
+@strawberry.type
+class PropertyMedia:
+    id: int
+    propertyId: int
+    mediaType: str
+    mediaUrl: str
+    mediaOrder: int
+    mediaSize: int
+    caption: str
+    uploadedAt: str
+
+@strawberry.type
+class PropertyMediaResponse:
+    success: bool
+    message: str
+    media: typing.List[PropertyMedia]
+
+ 
+
 @strawberry.type
 class Mutation:
     @strawberry.mutation
     async def create_property(
-        self,
+        self, info,
         userId: str,
         title: str,
         description: str,
@@ -234,6 +274,7 @@ class Mutation:
         isActive: bool = True
     ) -> Property:
         try:
+            token = get_token(info)
             response = property_service_client.create_property(
                 user_id=userId,
                 title=title,
@@ -255,7 +296,8 @@ class Mutation:
                 state=state,
                 country=country,
                 zip_code=zipCode,
-                is_active=isActive
+                is_active=isActive,
+                token=token
             )
             
             if not response.success:
@@ -286,7 +328,9 @@ class Mutation:
                 state=response.property.state,
                 country=response.property.country,
                 zipCode=response.property.zip_code,
-                isActive=response.property.is_active
+                isActive=response.property.is_active,
+                coverPhotoId=getattr(response.property, 'cover_photo_id', 0),
+                profilePhotoId=getattr(response.property, 'profile_photo_id', 0),
             )
         except Exception as e:
             log_msg("error", f"Error creating property: {str(e)}")
@@ -297,8 +341,41 @@ class Mutation:
             ).to_graphql_error()
 
     @strawberry.mutation
+    async def addPropertyMedia(self, info, propertyId: int, media: typing.List[PropertyMediaInput]) -> PropertyMediaResponse:
+        try:
+            token = get_token(info)
+            resp = property_service_client.add_property_media(
+                property_id=propertyId,
+                media=[m.__dict__ for m in media],
+                token=token
+            )
+            return PropertyMediaResponse(
+                success=resp.success,
+                message=resp.message,
+                media=[
+                    PropertyMedia(
+                        id=item.id,
+                        propertyId=item.property_id,
+                        mediaType=item.media_type,
+                        mediaUrl=item.media_url,
+                        mediaOrder=item.media_order,
+                        mediaSize=item.media_size,
+                        caption=item.caption,
+                        uploadedAt=item.uploaded_at,
+                    ) for item in resp.media
+                ],
+            )
+        except Exception as e:
+            log_msg("error", f"Error adding property media: {str(e)}")
+            raise REException(
+                "ADD_PROPERTY_MEDIA_FAILED",
+                "Failed to add property media",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.mutation
     async def update_property(
-        self,
+        self, info,
         propertyId: str,
         title: typing.Optional[str] = None,
         description: typing.Optional[str] = None,
@@ -323,19 +400,22 @@ class Mutation:
     ) -> Property:
         try:
             # Get current property first
-            current = property_service_client.get_property(propertyId)
+            token = get_token(info)
+            current = property_service_client.get_property(propertyId, token=token)
             if not current.success:
                 raise REException("PROPERTY_NOT_FOUND", current.message, "Property not found")
             
             # Update with new values or keep current ones
+            mapped_type = propertyType.value if propertyType is not None else current.property.property_type
+            mapped_status = status.value if status is not None else current.property.status
             response = property_service_client.update_property(
                 property_id=propertyId,
                 title=title or current.property.title,
                 description=description or current.property.description,
                 price=price or current.property.price,
                 location=location or current.property.location,
-                property_type=propertyType if propertyType is not None else current.property.property_type,
-                status=status if status is not None else current.property.status,
+                property_type=mapped_type,
+                status=mapped_status,
                 bedrooms=bedrooms or current.property.bedrooms,
                 bathrooms=bathrooms or current.property.bathrooms,
                 area=area or current.property.area,
@@ -349,7 +429,8 @@ class Mutation:
                 state=state or current.property.state,
                 country=country or current.property.country,
                 zip_code=zipCode or current.property.zip_code,
-                is_active=isActive if isActive is not None else current.property.is_active
+                is_active=isActive if isActive is not None else current.property.is_active,
+                token=token
             )
             
             if not response.success:
@@ -380,7 +461,9 @@ class Mutation:
                 state=response.property.state,
                 country=response.property.country,
                 zipCode=response.property.zip_code,
-                isActive=response.property.is_active
+                isActive=response.property.is_active,
+                coverPhotoId=getattr(response.property, 'cover_photo_id', 0),
+                profilePhotoId=getattr(response.property, 'profile_photo_id', 0),
             )
         except Exception as e:
             log_msg("error", f"Error updating property: {str(e)}")
@@ -391,9 +474,10 @@ class Mutation:
             ).to_graphql_error()
 
     @strawberry.mutation
-    async def delete_property(self, propertyId: str) -> bool:
+    async def delete_property(self, info, propertyId: str) -> bool:
         try:
-            response = property_service_client.delete_property(propertyId)
+            token = get_token(info)
+            response = property_service_client.delete_property(propertyId, token=token)
             if not response.success:
                 raise REException("PROPERTY_DELETION_FAILED", response.message, "Failed to delete property")
             return True
@@ -406,9 +490,10 @@ class Mutation:
             ).to_graphql_error()
 
     @strawberry.mutation
-    async def increment_view_count(self, propertyId: str) -> Property:
+    async def increment_view_count(self, info, propertyId: str) -> Property:
         try:
-            response = property_service_client.increment_view_count(propertyId)
+            token = get_token(info)
+            response = property_service_client.increment_view_count(propertyId, token=token)
             if not response.success:
                 raise REException("VIEW_COUNT_UPDATE_FAILED", response.message, "Failed to update view count")
             
@@ -448,10 +533,11 @@ class Mutation:
             ).to_graphql_error() 
 
     @strawberry.mutation
-    async def createPropertyRating(self, propertyId: int, ratedByUserId: int, ratingValue: int,
+    async def createPropertyRating(self, info, propertyId: int, ratedByUserId: int, ratingValue: int,
                                    title: typing.Optional[str] = "", review: typing.Optional[str] = "",
                                    ratingType: typing.Optional[str] = "", isAnonymous: typing.Optional[bool] = False) -> 'PropertyRating':
         try:
+            token = get_token(info)
             response = property_service_client.create_property_rating(
                 property_id=propertyId,
                 rated_by_user_id=ratedByUserId,
@@ -460,6 +546,7 @@ class Mutation:
                 review=review or "",
                 rating_type=ratingType or "",
                 is_anonymous=isAnonymous or False,
+                token=token
             )
             return PropertyRating(
                 id=response.id,
@@ -482,12 +569,14 @@ class Mutation:
             ).to_graphql_error()
 
     @strawberry.mutation
-    async def followProperty(self, userId: int, propertyId: int, status: typing.Optional[str] = 'active') -> 'PropertyFollow':
+    async def followProperty(self, info, userId: int, propertyId: int, status: typing.Optional[str] = 'active') -> 'PropertyFollow':
         try:
+            token = get_token(info)
             response = property_service_client.follow_property(
                 user_id=userId,
                 property_id=propertyId,
                 status=status or 'active',
+                token=token
             )
             return PropertyFollow(
                 id=response.id,
@@ -504,59 +593,101 @@ class Mutation:
                 str(e)
             ).to_graphql_error()
 
-    @strawberry.input
-    class PropertyMediaInput:
-        filePath: str
-        mediaType: typing.Optional[str] = "image"
-        mediaOrder: typing.Optional[int] = 1
-        caption: typing.Optional[str] = ""
-        contentType: typing.Optional[str] = None
-
-    @strawberry.type
-    class PropertyMedia:
-        id: int
-        propertyId: int
-        mediaType: str
-        mediaUrl: str
-        mediaOrder: int
-        mediaSize: int
-        caption: str
-        uploadedAt: str
-
-    @strawberry.type
-    class PropertyMediaResponse:
-        success: bool
-        message: str
-        media: typing.List[PropertyMedia]
-
     @strawberry.mutation
-    async def addPropertyMedia(self, propertyId: int, media: typing.List[PropertyMediaInput]) -> PropertyMediaResponse:
+    async def updatePropertyProfilePhoto(self, info, propertyId: int, media: PropertyMediaInput) -> Property:
         try:
-            resp = property_service_client.add_property_media(
+            token = get_token(info)
+            resp = property_service_client.update_property_profile_photo(
                 property_id=propertyId,
-                media=[m.__dict__ for m in media],
+                media=media.__dict__,
+                token=token,
             )
-            return PropertyMediaResponse(
-                success=resp.success,
-                message=resp.message,
-                media=[
-                    PropertyMedia(
-                        id=item.id,
-                        propertyId=item.property_id,
-                        mediaType=item.media_type,
-                        mediaUrl=item.media_url,
-                        mediaOrder=item.media_order,
-                        mediaSize=item.media_size,
-                        caption=item.caption,
-                        uploadedAt=item.uploaded_at,
-                    ) for item in resp.media
-                ],
+            if not resp.success:
+                raise REException("PROPERTY_UPDATE_PROFILE_PHOTO_FAILED", resp.message, "Failed to update profile photo")
+            p = resp.property
+            return Property(
+                propertyId=p.property_id,
+                userId=p.user_id,
+                title=p.title,
+                description=p.description,
+                price=p.price,
+                location=p.location,
+                propertyType=p.property_type,
+                status=p.status,
+                bedrooms=p.bedrooms,
+                bathrooms=p.bathrooms,
+                area=p.area,
+                yearBuilt=p.year_built,
+                images=list(p.images),
+                amenities=list(p.amenities),
+                createdAt=p.created_at,
+                updatedAt=p.updated_at,
+                viewCount=p.view_count,
+                latitude=p.latitude,
+                longitude=p.longitude,
+                address=p.address,
+                city=p.city,
+                state=p.state,
+                country=p.country,
+                zipCode=p.zip_code,
+                isActive=p.is_active,
+                coverPhotoId=getattr(p, 'cover_photo_id', 0),
+                profilePhotoId=getattr(p, 'profile_photo_id', 0),
             )
         except Exception as e:
-            log_msg("error", f"Error adding property media: {str(e)}")
+            log_msg("error", f"Error updating property profile photo: {str(e)}")
             raise REException(
-                "ADD_PROPERTY_MEDIA_FAILED",
-                "Failed to add property media",
+                "PROPERTY_UPDATE_PROFILE_PHOTO_FAILED",
+                "Failed to update property profile photo",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.mutation
+    async def updatePropertyCoverPhoto(self, info, propertyId: int, media: PropertyMediaInput) -> Property:
+        try:
+            token = get_token(info)
+            resp = property_service_client.update_property_cover_photo(
+                property_id=propertyId,
+                media=media.__dict__,
+                token=token,
+            )
+            if not resp.success:
+                raise REException("PROPERTY_UPDATE_COVER_PHOTO_FAILED", resp.message, "Failed to update cover photo")
+            p = resp.property
+            return Property(
+                propertyId=p.property_id,
+                userId=p.user_id,
+                title=p.title,
+                description=p.description,
+                price=p.price,
+                location=p.location,
+                propertyType=p.property_type,
+                status=p.status,
+                bedrooms=p.bedrooms,
+                bathrooms=p.bathrooms,
+                area=p.area,
+                yearBuilt=p.year_built,
+                images=list(p.images),
+                amenities=list(p.amenities),
+                createdAt=p.created_at,
+                updatedAt=p.updated_at,
+                viewCount=p.view_count,
+                latitude=p.latitude,
+                longitude=p.longitude,
+                address=p.address,
+                city=p.city,
+                state=p.state,
+                country=p.country,
+                zipCode=p.zip_code,
+                isActive=p.is_active,
+                coverPhotoId=getattr(p, 'cover_photo_id', 0),
+                profilePhotoId=getattr(p, 'profile_photo_id', 0),
+            )
+        except Exception as e:
+            log_msg("error", f"Error updating property cover photo: {str(e)}")
+            raise REException(
+                "PROPERTY_UPDATE_COVER_PHOTO_FAILED",
+                "Failed to update property cover photo",
                 str(e)
             ).to_graphql_error()
 

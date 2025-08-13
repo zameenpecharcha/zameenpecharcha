@@ -163,9 +163,18 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 'country': request.country,
                 'zip_code': request.zip_code,
                 'is_active': request.is_active,
-                'cover_photo_id': getattr(request, 'cover_photo_id', 0),
-                'profile_photo_id': getattr(request, 'profile_photo_id', 0),
             }
+            # Only set photo ids if provided with valid ids (>0)
+            try:
+                if getattr(request, 'cover_photo_id') and int(request.cover_photo_id) > 0:
+                    property_data['cover_photo_id'] = int(request.cover_photo_id)
+            except Exception:
+                pass
+            try:
+                if getattr(request, 'profile_photo_id') and int(request.profile_photo_id) > 0:
+                    property_data['profile_photo_id'] = int(request.profile_photo_id)
+            except Exception:
+                pass
             
             # Create property in database
             property_id = create_property(property_data)
@@ -198,9 +207,17 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
                 'country': request.country,
                 'zip_code': request.zip_code,
                 'is_active': request.is_active,
-                'cover_photo_id': getattr(request, 'cover_photo_id', 0),
-                'profile_photo_id': getattr(request, 'profile_photo_id', 0),
             }
+            try:
+                if getattr(request, 'cover_photo_id') and int(request.cover_photo_id) > 0:
+                    property_data['cover_photo_id'] = int(request.cover_photo_id)
+            except Exception:
+                pass
+            try:
+                if getattr(request, 'profile_photo_id') and int(request.profile_photo_id) > 0:
+                    property_data['profile_photo_id'] = int(request.profile_photo_id)
+            except Exception:
+                pass
             
             success = update_property(request.property_id, property_data)
             if not success:
@@ -512,28 +529,35 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
 
     def UpdatePropertyProfilePhoto(self, request, context):
         try:
+            import os
             from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
+            pid = int(request.property_id)
             m = request.media
-            file_name = m.file_path.split('/')[-1]
+            file_path = str(getattr(m, 'file_path', '') or '')
+            if not file_path:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("file_path is required")
+                return property_pb2.PropertyResponse(success=False, message="file_path is required")
+            file_name = os.path.basename(file_path)
             # Pre-insert media for the property (context_type kept generic 'property')
             media_id = add_property_media(
-                property_id=int(request.property_id),
+                property_id=pid,
                 media_type=(m.media_type or 'image'),
-                media_order=(m.media_order or 1),
+                media_order=int(m.media_order) if getattr(m, 'media_order', None) not in (None, 0) else 1,
                 caption=(m.caption or None),
             )
-            key = build_property_media_key(request.property_id, media_id, file_name)
+            key = build_property_media_key(pid, media_id, file_name)
             public_url, size_bytes = upload_file_to_s3(
-                file_path=m.file_path,
+                file_path=file_path,
                 key=key,
                 content_type=(m.content_type or None),
             )
             update_property_media_url_size(media_id, public_url, size_bytes)
 
             # Update properties.profile_photo_id = media_id
-            update_property(request.property_id, { 'profile_photo_id': media_id })
+            update_property(pid, { 'profile_photo_id': media_id })
 
-            return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
+            return self.GetProperty(property_pb2.PropertyRequest(property_id=str(pid)), context)
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
@@ -541,27 +565,34 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
 
     def UpdatePropertyCoverPhoto(self, request, context):
         try:
+            import os
             from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
+            pid = int(request.property_id)
             m = request.media
-            file_name = m.file_path.split('/')[-1]
+            file_path = str(getattr(m, 'file_path', '') or '')
+            if not file_path:
+                context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                context.set_details("file_path is required")
+                return property_pb2.PropertyResponse(success=False, message="file_path is required")
+            file_name = os.path.basename(file_path)
             media_id = add_property_media(
-                property_id=int(request.property_id),
+                property_id=pid,
                 media_type=(m.media_type or 'image'),
-                media_order=(m.media_order or 1),
+                media_order=int(m.media_order) if getattr(m, 'media_order', None) not in (None, 0) else 1,
                 caption=(m.caption or None),
             )
-            key = build_property_media_key(request.property_id, media_id, file_name)
+            key = build_property_media_key(pid, media_id, file_name)
             public_url, size_bytes = upload_file_to_s3(
-                file_path=m.file_path,
+                file_path=file_path,
                 key=key,
                 content_type=(m.content_type or None),
             )
             update_property_media_url_size(media_id, public_url, size_bytes)
 
             # Update properties.cover_photo_id = media_id
-            update_property(request.property_id, { 'cover_photo_id': media_id })
+            update_property(pid, { 'cover_photo_id': media_id })
 
-            return self.GetProperty(property_pb2.PropertyRequest(property_id=request.property_id), context)
+            return self.GetProperty(property_pb2.PropertyRequest(property_id=str(pid)), context)
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))

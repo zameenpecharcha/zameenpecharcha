@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.schema.auth_schema import Query as AuthQuery, Mutation as AuthMutation
 from app.schema.user_schema import Query as UserQuery, Mutation as UserMutation
 from app.schema.posts_schema import Query as PostsQuery, Mutation as PostsMutation
+from app.schema.property_schema import Query as PropertyQuery, Mutation as PropertyMutation
 from app.middleware.auth_middleware import AuthMiddleware
 from strawberry.fastapi import GraphQLRouter
 
@@ -16,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 # Define GraphQL schema
 @strawberry.type
-class Query(AuthQuery, UserQuery, PostsQuery): pass
+class Query(AuthQuery, UserQuery, PostsQuery, PropertyQuery): pass
 
 @strawberry.type
-class Mutation(AuthMutation, UserMutation, PostsMutation): pass
+class Mutation(AuthMutation, UserMutation, PostsMutation, PropertyMutation): pass
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 
