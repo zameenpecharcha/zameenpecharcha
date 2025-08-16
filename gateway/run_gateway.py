@@ -30,6 +30,30 @@ load_dotenv()
 # Initialize app
 app = FastAPI()
 
+# CORS setup - MUST be first middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # React dev server
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    expose_headers=["Content-Type", "Authorization"],
+    max_age=3600,  # Cache preflight requests for 1 hour
+)
+
 # Mount GraphQL route
 graphql_app = GraphQLRouter(
     schema=schema,
@@ -43,14 +67,7 @@ app.include_router(graphql_app, prefix="/api/v1")
 def health_check():
     return {"status": "healthy"}
 
-# CORS setup
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # adjust in production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Auth middleware - MUST be last
 app = AuthMiddleware(app)
 
 # Run app

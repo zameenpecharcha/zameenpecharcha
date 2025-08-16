@@ -43,6 +43,11 @@ class AuthMiddleware:
 
         request = Request(scope, receive=receive_with_body)
 
+        # Always allow OPTIONS requests for CORS
+        if request.method == "OPTIONS":
+            await self.app(scope, receive_with_body, send)
+            return
+
         if self._should_skip_auth(request, body):
             await self.app(scope, receive_with_body, send)
             return
@@ -72,19 +77,31 @@ class AuthMiddleware:
 
         except ValueError as e:
             log_msg("warn", f"Authentication failed: {str(e)}")
-            res = JSONResponse(status_code=401, content={"detail": str(e)})
+            res = JSONResponse(
+                status_code=401,
+                content={"detail": str(e)},
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
             await res(scope, receive_with_body, send)
 
         except grpc.RpcError as e:
             log_msg("error", f"gRPC error: {str(e)}")
             status = 401 if e.code() == grpc.StatusCode.UNAUTHENTICATED else 403
             detail = e.details() or "Authorization failed"
-            res = JSONResponse(status_code=status, content={"detail": detail})
+            res = JSONResponse(
+                status_code=status,
+                content={"detail": detail},
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
             await res(scope, receive_with_body, send)
 
         except Exception as e:
             log_msg("error", f"AuthMiddleware error: {str(e)}")
-            res = JSONResponse(status_code=500, content={"detail": str(e)})
+            res = JSONResponse(
+                status_code=500,
+                content={"detail": str(e)},
+                headers={"Access-Control-Allow-Origin": "*"}
+            )
             await res(scope, receive_with_body, send)
 
     def _should_skip_auth(self, request: Request, body: bytes) -> bool:
