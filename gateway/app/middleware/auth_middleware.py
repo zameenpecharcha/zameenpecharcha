@@ -18,6 +18,7 @@ PUBLIC_GRAPHQL_OPS = {
     "resetpassword",
     "createuser",
     "logout",
+    "olaautocomplete",  # Added for location search
 }
 
 class AuthMiddleware:

@@ -8,6 +8,7 @@ from app.schema.posts_schema import Query as PostsQuery, Mutation as PostsMutati
 from app.schema.property_schema import Query as PropertyQuery, Mutation as PropertyMutation
 from app.middleware.auth_middleware import AuthMiddleware
 from strawberry.fastapi import GraphQLRouter
+from app.api.uploads_api import router as uploads_router
 
 import logging
 
@@ -61,6 +62,7 @@ graphql_app = GraphQLRouter(
     path="/graphql"
 )
 app.include_router(graphql_app, prefix="/api/v1")
+app.include_router(uploads_router, prefix="/api/v1")
 
 # Health check
 @app.get("/health")

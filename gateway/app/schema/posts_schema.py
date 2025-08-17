@@ -75,10 +75,9 @@ class PostMediaInput:
     mediaType: Optional[str] = None
     mediaOrder: int
     caption: Optional[str] = None
-    base64Data: Optional[str] = None
+    filePath: Optional[str] = None
     fileName: Optional[str] = None
     contentType: Optional[str] = None
-    filePath: Optional[str] = None
 
 @strawberry.type
 class Post:
@@ -94,7 +93,6 @@ class Post:
     visibility: str
     propertyType: str
     location: str
-    mapLocation: str
     latitude: typing.Optional[float] = None
     longitude: typing.Optional[float] = None
     price: float
@@ -132,7 +130,6 @@ class Post:
             visibility=data['visibility'],
             propertyType=data['propertyType'],
             location=data['location'],
-            mapLocation=data.get('mapLocation', ''),
             latitude=data.get('latitude'),
             longitude=data.get('longitude'),
             price=data['price'],
@@ -169,12 +166,18 @@ class Query:
             post_data = {
                 'id': result.post.id,
                 'userId': result.post.user_id,
+                'userFirstName': result.post.user_first_name,
+                'userLastName': result.post.user_last_name,
+                'userEmail': result.post.user_email,
+                'userPhone': result.post.user_phone,
+                'userRole': result.post.user_role,
                 'title': result.post.title,
                 'content': result.post.content,
                 'visibility': result.post.visibility,
                 'propertyType': result.post.type,
                 'location': result.post.location,
-                'mapLocation': result.post.map_location,
+                'latitude': result.post.latitude,
+                'longitude': result.post.longitude,
                 'price': result.post.price,
                 'status': result.post.status,
                 'createdAt': datetime.fromtimestamp(result.post.created_at),
@@ -194,7 +197,7 @@ class Query:
         return None
 
     @strawberry.field
-    def postsByUser(self,info: Info,  userId: int, page: int = 1, limit: int = 10) -> List[Post]:
+    def postsByUser(self, info: Info, userId: int, page: int = 1, limit: int = 10) -> List[Post]:
         logger.debug(f"Query.postsByUser called with userId: {userId}, page: {page}, limit: {limit}")
         token = get_token(info)
         result = post_service_client.get_posts_by_user(user_id=userId, page=page, limit=limit, token=token)
@@ -221,7 +224,7 @@ class Query:
             status=status,
             page=page,
             limit=limit,
-            token = token
+            token=token
         )
         
         if not result or not result.success:
@@ -244,7 +247,8 @@ class Query:
                 'visibility': post.visibility,
                 'propertyType': getattr(post, 'type', ''),
                 'location': post.location,
-                'mapLocation': post.map_location,
+                'latitude': getattr(post, 'latitude', None),
+                'longitude': getattr(post, 'longitude', None),
                 'price': post.price,
                 'status': post.status,
                 'createdAt': datetime.fromtimestamp(post.created_at),
@@ -269,7 +273,7 @@ class Query:
 
     @strawberry.field
     def postComments(
-        self,info: Info,
+        self, info: Info,
         postId: int,
         page: int = 1,
         limit: int = 10
@@ -334,7 +338,7 @@ class MediaResponse:
 class Mutation:
     @strawberry.mutation
     def createPost(
-        self,info: Info,
+        self, info: Info,
         userId: int,
         title: str,
         content: str,
@@ -361,21 +365,22 @@ class Mutation:
             price=price,
             status=status,
             media=media or [],
-            token = token
+            token=token
         )
         logger.debug(f"CreatePost result: {result}")
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
     def updatePost(
-        self,info: Info,
+        self, info: Info,
         postId: int,
         title: Optional[str] = None,
         content: Optional[str] = None,
         visibility: Optional[str] = None,
         propertyType: Optional[str] = None,
         location: Optional[str] = None,
-        mapLocation: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
         price: Optional[float] = None,
         status: Optional[str] = None
     ) -> PostResponse:
@@ -388,6 +393,8 @@ class Mutation:
             visibility=visibility,
             property_type=propertyType,
             location=location,
+            latitude=latitude,
+            longitude=longitude,
             price=price,
             status=status,
             token=token
@@ -417,7 +424,7 @@ class Mutation:
 
     @strawberry.mutation
     def createComment(
-        self,info: Info,
+        self, info: Info,
         postId: int,
         userId: int,
         comment: str,
@@ -430,14 +437,14 @@ class Mutation:
             user_id=userId,
             comment=comment,
             parent_comment_id=parentCommentId,
-            token = token
+            token=token
         )
         logger.debug(f"CreateComment result: {result}")
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def updateComment(
-        self,info: Info,
+        self, info: Info,
         commentId: int,
         comment: Optional[str] = None,
         status: Optional[str] = None
@@ -448,13 +455,13 @@ class Mutation:
             comment_id=commentId,
             comment=comment,
             status=status,
-            token = token
+            token=token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def deleteComment(
-        self,info: Info,
+        self, info: Info,
         commentId: int
     ) -> CommentResponse:
         logger.debug(f"Mutation.deleteComment called with commentId: {commentId}")
@@ -464,7 +471,7 @@ class Mutation:
 
     @strawberry.mutation
     def likeComment(
-        self,info: Info,
+        self, info: Info,
         commentId: int,
         userId: int
     ) -> CommentResponse:
@@ -473,13 +480,13 @@ class Mutation:
         result = post_service_client.like_comment(
             comment_id=commentId,
             user_id=userId,
-            token = token
+            token=token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def unlikeComment(
-        self,info: Info,
+        self, info: Info,
         commentId: int,
         userId: int
     ) -> CommentResponse:
@@ -488,13 +495,13 @@ class Mutation:
         result = post_service_client.unlike_comment(
             comment_id=commentId,
             user_id=userId,
-            token = token
+            token=token
         )
         return CommentResponse.from_dict(result)
 
     @strawberry.mutation
     def addPostMedia(
-        self,info: Info,
+        self, info: Info,
         postId: int,
         media: List[PostMediaInput]
     ) -> PostResponse:
@@ -503,16 +510,16 @@ class Mutation:
         result = post_service_client.add_post_media(
             post_id=postId,
             media=media,
-            token = token
+            token=token
         )
         return PostResponse.from_dict(result)
 
     @strawberry.mutation
     def deletePostMedia(
-        self,info: Info,
+        self, info: Info,
         mediaId: int
     ) -> MediaResponse:
         logger.debug(f"Mutation.deletePostMedia called with mediaId: {mediaId}")
         token = get_token(info)
         result = post_service_client.delete_post_media(media_id=mediaId, token=token)
-        return MediaResponse.from_dict(result) 
+        return MediaResponse.from_dict(result)

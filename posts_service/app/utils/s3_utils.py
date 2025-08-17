@@ -148,3 +148,72 @@ def upload_file_to_s3(*, file_path: str, key: str, content_type: Optional[str] =
     public_url = f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
     return public_url, size_bytes
 
+
+# --- Helpers to generate pre-signed GET URLs for private objects ---
+
+def _parse_s3_url(url: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """
+    Parse common S3 URL formats and return (bucket, region, key).
+    Supports:
+      - https://{bucket}.s3.{region}.amazonaws.com/{key}
+      - https://s3.{region}.amazonaws.com/{bucket}/{key}
+      - https://{bucket}.s3.amazonaws.com/{key}
+    Returns (None, None, None) if parsing fails.
+    """
+    try:
+        if not url:
+            return None, None, None
+        # Normalize
+        url = url.strip()
+        # Virtual-hosted–style: {bucket}.s3.{region}.amazonaws.com/{key}
+        # or legacy without region: {bucket}.s3.amazonaws.com/{key}
+        import re
+        m = re.match(r"^https?://([^.]+)\.s3(?:\.([^.]+))?\.amazonaws\.com/(.+)$", url)
+        if m:
+            bucket = m.group(1)
+            region = m.group(2) or (os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1")
+            key = m.group(3)
+            return bucket, region, key
+        # Path-style: s3.{region}.amazonaws.com/{bucket}/{key}
+        m2 = re.match(r"^https?://s3\.([^.]+)\.amazonaws\.com/([^/]+)/(.+)$", url)
+        if m2:
+            region = m2.group(1)
+            bucket = m2.group(2)
+            key = m2.group(3)
+            return bucket, region, key
+    except Exception:
+        pass
+    return None, None, None
+
+
+def generate_presigned_get_url_from_url(public_url: str, expires_in: int = 3600) -> Optional[str]:
+    """
+    Given a (non-public) S3 object URL, generate a pre-signed GET URL.
+    Returns None if generation fails.
+    """
+    try:
+        bucket, region, key = _parse_s3_url(public_url)
+        if not bucket or not key:
+            return None
+
+        client_kwargs = {"region_name": region or (os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1")}
+        aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
+        aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
+        aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+        if aws_access_key_id and aws_secret_access_key:
+            client_kwargs.update({
+                "aws_access_key_id": aws_access_key_id,
+                "aws_secret_access_key": aws_secret_access_key,
+            })
+            if aws_session_token:
+                client_kwargs["aws_session_token"] = aws_session_token
+
+        s3 = boto3.client("s3", **client_kwargs)
+        url = s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=expires_in
+        )
+        return url
+    except Exception:
+        return None
