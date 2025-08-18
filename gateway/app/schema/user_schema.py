@@ -518,7 +518,8 @@ class Mutation:
         try:
             log_msg("info", f"User {user_id} following user {following_id}")
             token = get_token(info)
-            response = user_service_client.follow_user(user_id, following_id,token=token)
+            # Default new follow as pending
+            response = user_service_client.follow_user(user_id, following_id, token=token)
             return UserFollower(
                 id=response.id,
                 follower_id=response.follower_id,
@@ -533,6 +534,44 @@ class Mutation:
                 "FOLLOW_FAILED",
                 "Failed to follow user",
                 str(e)
+            ).to_graphql_error()
+
+    @strawberry.mutation
+    async def update_follow_status(
+        self,
+        info: Info,
+        follower_id: int,
+        following_id: int,
+        status: str,  # 'active' to accept, 'rejected' to decline
+    ) -> UserFollower:
+        try:
+            # Authorization: only the target user (following_id) can change status
+            request = info.context["request"]
+            actor = getattr(request.state, "user", None)
+            if not actor or int(actor.get("id")) != int(following_id):
+                raise REException("FORBIDDEN", "Only the target user can update follow status", "Not allowed").to_graphql_error()
+
+            token = get_token(info)
+            resp = user_service_client.update_follow_status(
+                follower_id=follower_id,
+                following_id=following_id,
+                status=status,
+                token=token,
+            )
+            return UserFollower(
+                id=resp.id,
+                follower_id=resp.follower_id,
+                following_id=resp.following_id,
+                followee_type=getattr(resp, 'followee_type', None),
+                status=resp.status,
+                followed_at=resp.followed_at,
+            )
+        except Exception as e:
+            log_msg("error", f"Error updating follow status: {str(e)}")
+            raise REException(
+                "UPDATE_FOLLOW_STATUS_FAILED",
+                "Failed to update follow status",
+                str(e),
             ).to_graphql_error()
 
     @strawberry.mutation

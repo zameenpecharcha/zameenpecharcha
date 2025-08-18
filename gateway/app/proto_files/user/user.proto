@@ -9,6 +9,7 @@ service UserService {
   rpc CreateRating (CreateRatingRequest) returns (RatingResponse);
   rpc GetUserRatings (UserRequest) returns (RatingsResponse);
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
+  rpc UpdateFollowStatus (FollowUserRequest) returns (FollowUserResponse);
   rpc GetUserFollowers (UserRequest) returns (UserFollowersResponse);
   rpc GetUserFollowing (UserRequest) returns (UserFollowersResponse);
   rpc CheckFollowingStatus (CheckFollowingRequest) returns (FollowUserResponse);

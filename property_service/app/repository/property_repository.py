@@ -179,7 +179,7 @@ def follow_property(user_id: int, property_id: int, status: str = 'active'):
                 follower_id=user_id,
                 following_id=property_id,
                 followee_type='property',
-                status=status,
+                status='active',
             )
         )
         session.commit()

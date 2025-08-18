@@ -64,6 +64,11 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.FollowUserRequest.SerializeToString,
                 response_deserializer=user__pb2.FollowUserResponse.FromString,
                 _registered_method=True)
+        self.UpdateFollowStatus = channel.unary_unary(
+                '/user.UserService/UpdateFollowStatus',
+                request_serializer=user__pb2.FollowUserRequest.SerializeToString,
+                response_deserializer=user__pb2.FollowUserResponse.FromString,
+                _registered_method=True)
         self.GetUserFollowers = channel.unary_unary(
                 '/user.UserService/GetUserFollowers',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
@@ -130,6 +135,12 @@ class UserServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def FollowUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateFollowStatus(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -202,6 +213,11 @@ def add_UserServiceServicer_to_server(servicer, server):
             ),
             'FollowUser': grpc.unary_unary_rpc_method_handler(
                     servicer.FollowUser,
+                    request_deserializer=user__pb2.FollowUserRequest.FromString,
+                    response_serializer=user__pb2.FollowUserResponse.SerializeToString,
+            ),
+            'UpdateFollowStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateFollowStatus,
                     request_deserializer=user__pb2.FollowUserRequest.FromString,
                     response_serializer=user__pb2.FollowUserResponse.SerializeToString,
             ),
@@ -396,6 +412,33 @@ class UserService(object):
             request,
             target,
             '/user.UserService/FollowUser',
+            user__pb2.FollowUserRequest.SerializeToString,
+            user__pb2.FollowUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UpdateFollowStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/UpdateFollowStatus',
             user__pb2.FollowUserRequest.SerializeToString,
             user__pb2.FollowUserResponse.FromString,
             options,

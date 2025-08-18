@@ -47,7 +47,7 @@ class UserServiceClient(GRPCBaseClient):
         request = user_pb2.UserRequest(id=user_id)
         return self._call(self.stub.GetUserRatings, request,token=token)
 
-    def follow_user(self, user_id, following_id, followee_type: str = "user", status: str = "active", token=None):
+    def follow_user(self, user_id, following_id, followee_type: str = "user", status: str = "pending", token=None):
         request = user_pb2.FollowUserRequest(
             follower_id=user_id,
             following_id=following_id,
@@ -55,6 +55,15 @@ class UserServiceClient(GRPCBaseClient):
             status=status
         )
         return self._call(self.stub.FollowUser, request,token=token)
+
+    def update_follow_status(self, follower_id: int, following_id: int, status: str, token=None):
+        request = user_pb2.FollowUserRequest(
+            follower_id=follower_id,
+            following_id=following_id,
+            followee_type="user",
+            status=status,
+        )
+        return self._call(self.stub.UpdateFollowStatus, request, token=token)
 
     def update_profile_photo(
         self,

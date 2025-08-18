@@ -17,7 +17,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiI3ZDcyY2JlYy1mZjBiLTRlMjUtODcwMC02YTkyMjRiYmMwMzkiLCJpYXQiOjE3NTUwOTg2MTksIm5iZiI6MTc1NTA5ODYxOSwiZXhwIjoxNzU1MTA5NDE5LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.X_NGzKDPIi6aSIjoG6oi371vsfMc86cX5NCblHC_w40JNBn4tQ7CSmOK0Ynn5ptzX5zhq4BOjYn1BHJrQpIb7fl4pX_zPTg8jT4ehG3lH2MYOtH_5WWQRay2c9kXJDGT_xbPmfw_hIVRZgXZKcNetRql--z2RjBQZCFOTzXvQ1m24zTpX2euGeiIcoDNTZhiToRfy5N93ibCRjOsTwbYJl4PyZI22PFJTwHasVdT7gLBXo3m7R_La1dj_iyN1RRoWBc4Ip9RB5o5PwdpxpNXiQjF7FkJQcKNDu4oRyJ9e9cppl01QnW0PEBYTZxRMhZJNWBTAbLEPLfsN6jrMEnFVg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIyNzExNmY3MC1hM2Q2LTQ5YTctYTFkMy03OTEyZmFiYWQ4NzkiLCJpYXQiOjE3NTUzMjg3OTIsIm5iZiI6MTc1NTMyODc5MiwiZXhwIjoxNzU1MzM5NTkyLCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.bCYgseQjMemLJIRkduAz6nNWHsqnk1RkAfrVIjaGecelfT98t6qb-wee4EVCFTWxzI7Yn_ULavsUXSSroQ5wPr2zFRtDQB2KROKW30jO37rtIQFxK0kkNQEhtowRleL5j1cQsNbtHHoDGATp1ORV7s9zBfrMnC6IXQAmxlaMXFwbeMSKTTOUmklQEcMzMTt_XX9gH7zdBQKwKw55mDcyMaRWn6rGgwxTRfj13CA1hb535lhibWzZLhp2ogXXC5DWzKgYuB8maphL25Izith73bv7wf0MfOAKdAQWpVcVFtTSog75B0zj-SDFXAghozQ02QlWqMMQRgRecsPSk-RtHA",
 								"type": "text"
 							}
 						],
@@ -77,20 +77,42 @@
 					"response": []
 				},
 				{
-					"name": "getuserfollowers",
+					"name": "getfollowers",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZW1haWwiOiJyYW05MTUxMUBnbWFpbC5jb20iLCJyb2xlIjoidXNlciIsInNlc3Npb25faWQiOiI0MjlmZDMxMy1lYTBmLTQzMTktYmVmOC0xZDE0YzBhYjI0OTYiLCJpYXQiOjE3NTQ4MDA5MjEsIm5iZiI6MTc1NDgwMDkyMSwiZXhwIjoxNzU0ODExNzIxLCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.OOvcAtQxcnEq4HfB09tG_cwtDowatH7NbNyVkGhNIJvNeyl6hDk90usVBXB4OIxvnH_X7OXtdKD_h6zqro2iE68R0oFaRpmM9glwqIrMorhJJLDW1kjI5qxJw_lEOjaQ4et-yaQcxsnfjwRuinTU2BpALZ2lbduwByd7H8D8f2IhjPM50VCmQgw4-L49ftzL_aii5qVvF0UmWHT9FUmLC5iEIf9UI_u1LAA6INZcG4DdPFtn6aqaaSGcXgXT2wBbu2AHFq9x9Nqy5jto53mH7444IltBa5ulizEbCChkLzM3LX3c-pYPpT4M_Ib5tp6tEDs_b7AEt9ooY_NXNhbcHg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "query GetUserFollowers {\r\n  userFollowers(userId: 4) {\r\n    id\r\n    userId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"query": "query GetFollowers {\r\n  userFollowers(userId: 2) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status      # only \"active\"\r\n    followedAt\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": "http://localhost:8000/api/v1/graphql"
+					},
+					"response": []
+				},
+				{
+					"name": "getfollowing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetFollowing {\r\n  userFollowing(userId: 1) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status      # only \"active\"\r\n    followedAt\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
@@ -121,7 +143,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0IiwiZW1haWwiOiJyYW05MTUxMUBnbWFpbC5jb20iLCJyb2xlIjoidXNlciIsInNlc3Npb25faWQiOiI0MjlmZDMxMy1lYTBmLTQzMTktYmVmOC0xZDE0YzBhYjI0OTYiLCJpYXQiOjE3NTQ4MDA5MjEsIm5iZiI6MTc1NDgwMDkyMSwiZXhwIjoxNzU0ODExNzIxLCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.OOvcAtQxcnEq4HfB09tG_cwtDowatH7NbNyVkGhNIJvNeyl6hDk90usVBXB4OIxvnH_X7OXtdKD_h6zqro2iE68R0oFaRpmM9glwqIrMorhJJLDW1kjI5qxJw_lEOjaQ4et-yaQcxsnfjwRuinTU2BpALZ2lbduwByd7H8D8f2IhjPM50VCmQgw4-L49ftzL_aii5qVvF0UmWHT9FUmLC5iEIf9UI_u1LAA6INZcG4DdPFtn6aqaaSGcXgXT2wBbu2AHFq9x9Nqy5jto53mH7444IltBa5ulizEbCChkLzM3LX3c-pYPpT4M_Ib5tp6tEDs_b7AEt9ooY_NXNhbcHg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
 								"type": "text"
 							}
 						],
@@ -143,14 +165,14 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiI3ZDcyY2JlYy1mZjBiLTRlMjUtODcwMC02YTkyMjRiYmMwMzkiLCJpYXQiOjE3NTUwOTg2MTksIm5iZiI6MTc1NTA5ODYxOSwiZXhwIjoxNzU1MTA5NDE5LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.X_NGzKDPIi6aSIjoG6oi371vsfMc86cX5NCblHC_w40JNBn4tQ7CSmOK0Ynn5ptzX5zhq4BOjYn1BHJrQpIb7fl4pX_zPTg8jT4ehG3lH2MYOtH_5WWQRay2c9kXJDGT_xbPmfw_hIVRZgXZKcNetRql--z2RjBQZCFOTzXvQ1m24zTpX2euGeiIcoDNTZhiToRfy5N93ibCRjOsTwbYJl4PyZI22PFJTwHasVdT7gLBXo3m7R_La1dj_iyN1RRoWBc4Ip9RB5o5PwdpxpNXiQjF7FkJQcKNDu4oRyJ9e9cppl01QnW0PEBYTZxRMhZJNWBTAbLEPLfsN6jrMEnFVg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJyYW04OTc4NzVAZ21haWwuY29tIiwicm9sZSI6ImFnZW50Iiwic2Vzc2lvbl9pZCI6IjhkNGFkMmQ2LWM4ZDUtNDY1MS04MjcxLTc4YTJhMzNmZWM3MiIsImlhdCI6MTc1NTUxOTE4NiwibmJmIjoxNzU1NTE5MTg2LCJleHAiOjE3NTU1Mjk5ODYsImlzcyI6IlpQQyIsImF1ZCI6ImdyYXBocWwtYXBpIn0.Ljqtim27XIElsIA_jpABiT1YYmK8nVdRbM1pPICfItyURB6ncmpoXielCle3a7QEqh9qE4VOuuQKK27K8_qUzOZqv8XLNKa29DaTvCKoP1PabdUSl8j68H4zgh39idX-OsRporHkZHdVi152uQCKHEAzvG1jozxyrPiaicOiNFSucF1L8_BmGrmv0IZu3MOvL18VmzbkMmEM7hFmtwIUUL2E-y83tCv2ctK9k21vs3jq8TibLKwuNkSb_Bd3EXPXs11Xe_0a8XAmUPvjEw_2NRML_7aBZCwkBnMAqOzzGE8vkKzs5cZ_8qsgE0UzrsbPclbCMUoSFJU1KoVrbKl6KQ",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "mutation FollowUser {\r\n  followUser(userId: 1, followingId: 4) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"query": "mutation FollowUser {\r\n  followUser(userId: 1, followingId: 2) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status      # \"pending\"\r\n    followedAt\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
@@ -165,14 +187,14 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiI3ZDcyY2JlYy1mZjBiLTRlMjUtODcwMC02YTkyMjRiYmMwMzkiLCJpYXQiOjE3NTUwOTg2MTksIm5iZiI6MTc1NTA5ODYxOSwiZXhwIjoxNzU1MTA5NDE5LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.X_NGzKDPIi6aSIjoG6oi371vsfMc86cX5NCblHC_w40JNBn4tQ7CSmOK0Ynn5ptzX5zhq4BOjYn1BHJrQpIb7fl4pX_zPTg8jT4ehG3lH2MYOtH_5WWQRay2c9kXJDGT_xbPmfw_hIVRZgXZKcNetRql--z2RjBQZCFOTzXvQ1m24zTpX2euGeiIcoDNTZhiToRfy5N93ibCRjOsTwbYJl4PyZI22PFJTwHasVdT7gLBXo3m7R_La1dj_iyN1RRoWBc4Ip9RB5o5PwdpxpNXiQjF7FkJQcKNDu4oRyJ9e9cppl01QnW0PEBYTZxRMhZJNWBTAbLEPLfsN6jrMEnFVg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
 								"type": "text"
 							}
 						],
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "query CheckFollowingStatus {\r\n  checkFollowingStatus(userId: 4, followingId: 1) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
+								"query": "query CheckFollowingStatus {\r\n  checkFollowingStatus(userId: 1, followingId: 2) {\r\n    id\r\n    followerId\r\n    followingId\r\n    status\r\n    followedAt\r\n  }\r\n}",
 								"variables": ""
 							}
 						},
@@ -289,6 +311,28 @@
 						"url": "http://localhost:8000/api/v1/graphql"
 					},
 					"response": []
+				},
+				{
+					"name": "getfollowerfolloweecount",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query GetUser {\r\n  user(id: 1) {\r\n    id\r\n    followersCount\r\n    followingCount\r\n  }\r\n}",
+								"variables": ""
+							}
+						},
+						"url": "http://localhost:8000/api/v1/graphql"
+					},
+					"response": []
 				}
 			]
 		},
@@ -299,13 +343,7 @@
 					"name": "login",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiI3ZDcyY2JlYy1mZjBiLTRlMjUtODcwMC02YTkyMjRiYmMwMzkiLCJpYXQiOjE3NTUwOTg2MTksIm5iZiI6MTc1NTA5ODYxOSwiZXhwIjoxNzU1MTA5NDE5LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.X_NGzKDPIi6aSIjoG6oi371vsfMc86cX5NCblHC_w40JNBn4tQ7CSmOK0Ynn5ptzX5zhq4BOjYn1BHJrQpIb7fl4pX_zPTg8jT4ehG3lH2MYOtH_5WWQRay2c9kXJDGT_xbPmfw_hIVRZgXZKcNetRql--z2RjBQZCFOTzXvQ1m24zTpX2euGeiIcoDNTZhiToRfy5N93ibCRjOsTwbYJl4PyZI22PFJTwHasVdT7gLBXo3m7R_La1dj_iyN1RRoWBc4Ip9RB5o5PwdpxpNXiQjF7FkJQcKNDu4oRyJ9e9cppl01QnW0PEBYTZxRMhZJNWBTAbLEPLfsN6jrMEnFVg",
-								"type": "text"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "graphql",
 							"graphql": {
@@ -758,7 +796,7 @@
 							},
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiI3ZDcyY2JlYy1mZjBiLTRlMjUtODcwMC02YTkyMjRiYmMwMzkiLCJpYXQiOjE3NTUwOTg2MTksIm5iZiI6MTc1NTA5ODYxOSwiZXhwIjoxNzU1MTA5NDE5LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.X_NGzKDPIi6aSIjoG6oi371vsfMc86cX5NCblHC_w40JNBn4tQ7CSmOK0Ynn5ptzX5zhq4BOjYn1BHJrQpIb7fl4pX_zPTg8jT4ehG3lH2MYOtH_5WWQRay2c9kXJDGT_xbPmfw_hIVRZgXZKcNetRql--z2RjBQZCFOTzXvQ1m24zTpX2euGeiIcoDNTZhiToRfy5N93ibCRjOsTwbYJl4PyZI22PFJTwHasVdT7gLBXo3m7R_La1dj_iyN1RRoWBc4Ip9RB5o5PwdpxpNXiQjF7FkJQcKNDu4oRyJ9e9cppl01QnW0PEBYTZxRMhZJNWBTAbLEPLfsN6jrMEnFVg",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiJhNzE5MjcxMi0xOGVmLTQyNzUtYWUxZS1hNmVjNDllMTYzYWIiLCJpYXQiOjE3NTU0MDEyNDAsIm5iZiI6MTc1NTQwMTI0MCwiZXhwIjoxNzU1NDEyMDQwLCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.LWLmW-MiU40MAk9pE7m1VguZjPkR1quVpSAEfuAGmkfb1HpJwvxywk5NnrLW2ZZYIpQvfwFYxh6cbjmrdNR1kyDu6zbTjbn9sXlG8k4KLdIU02CQz602M9V4cQTHJFZhkUYvpfpnc3sfmNza2LMuacWOGSd9Ae3_dSxeBYJfMfFgJLRnxj2_RQH3FL6XCvMz4KqRfpzL0XiRuhPm_SAxMswTRDSGDO7PJKRvULdeY4oCXgZL96Whpz7kZyCBeHq2S9YJ8FHFa_bMW4g6wDcwSTCYD9U_fhakK7-6jWwYeuxQpseW_F1GRBhlHhsOr-qqL4MYFRgVSnQfEiUaX8ASIA",
 								"type": "text"
 							}
 						],
@@ -873,7 +911,7 @@
 						"header": [
 							{
 								"key": "Authorization",
-								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiJkOTg1OTUwZS1kMmU2LTQ1NDYtOGU1MC1kZmI3MzczZDViNmQiLCJpYXQiOjE3NTUxMTEzMTcsIm5iZiI6MTc1NTExMTMxNywiZXhwIjoxNzU1MTIyMTE3LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.zSe_nROzYyeI2fMPVMUScyXfVkqeFbaTo-Bd05agtwmvVjlE9YvfnoLNv-JhQR_A3ZFnAybKmZSxJ6e0e07wx8kjIbGHXSaSHlyNDgDSKFBoj3VPiyINoEPR6Dq0BUle4sNi9epWBDymJwhan6h-N7V6PwOiPBa3Tff6flG6O4LP1vo-XpFjq5pg13ilVzeNqI7EHsBJVvxG9EekWNtkaYf5pp3L1B0MtAkKO-VOFlppy7O8Obd_c4OBYQcqB0KEcWfp3yUcJc43Hug-TK8neSlquXWeYVUup7BSnv_gX-Ezy5bf3t4Z15xc2w8C0gVMHTF7S72TwTjl1iAH7JahQw",
+								"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJyYW05MTUxQGdtYWlsLmNvbSIsInJvbGUiOiJhZ2VudCIsInNlc3Npb25faWQiOiIwNzdmNzE1Yi0xMTZlLTQ4NWYtOTgwMC05YzQxZTUzMzAwMWYiLCJpYXQiOjE3NTU1MTcxNDQsIm5iZiI6MTc1NTUxNzE0NCwiZXhwIjoxNzU1NTI3OTQ0LCJpc3MiOiJaUEMiLCJhdWQiOiJncmFwaHFsLWFwaSJ9.Jx2LRLRukHlrc-Olq2ALcfMGlt-GHWk8utP1Ov7ThtwB9ASBujdalDDKnkyosU1ZHWBGGXiZkM-RlrNycps79pDrDmDw6hfTZvUHIB2ZFLC_ETe_4bD6rY8qlDKn82L9QIb0_B_vqjWVxAJnYndK1rsdIoaEC5TZz7EiDwZkWEPwxSuPe2f5R3tvckMsndcW_kjYA7BGHjxU2dq-pVTJqVWn6_oxdlFtWoogQaBxg7PeZEaXEh3ObuYLGiBPxQaL2PzhE8Pr7J-4g7BlTiiFG07nJDduUZjailJeXy819j3qM8z2lzCRRDB6mGLev47GTU85evdVVxH3X-lp6T3PTw",
 								"type": "text"
 							}
 						],
@@ -1065,6 +1103,28 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "accept_reject_follower",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZW1haWwiOiJyYW04OTc4NzVAZ21haWwuY29tIiwicm9sZSI6ImFnZW50Iiwic2Vzc2lvbl9pZCI6IjhkNGFkMmQ2LWM4ZDUtNDY1MS04MjcxLTc4YTJhMzNmZWM3MiIsImlhdCI6MTc1NTUxOTE4NiwibmJmIjoxNzU1NTE5MTg2LCJleHAiOjE3NTU1Mjk5ODYsImlzcyI6IlpQQyIsImF1ZCI6ImdyYXBocWwtYXBpIn0.Ljqtim27XIElsIA_jpABiT1YYmK8nVdRbM1pPICfItyURB6ncmpoXielCle3a7QEqh9qE4VOuuQKK27K8_qUzOZqv8XLNKa29DaTvCKoP1PabdUSl8j68H4zgh39idX-OsRporHkZHdVi152uQCKHEAzvG1jozxyrPiaicOiNFSucF1L8_BmGrmv0IZu3MOvL18VmzbkMmEM7hFmtwIUUL2E-y83tCv2ctK9k21vs3jq8TibLKwuNkSb_Bd3EXPXs11Xe_0a8XAmUPvjEw_2NRML_7aBZCwkBnMAqOzzGE8vkKzs5cZ_8qsgE0UzrsbPclbCMUoSFJU1KoVrbKl6KQ",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "graphql",
+					"graphql": {
+						"query": "mutation AcceptFollow {\r\n  updateFollowStatus(followerId: 1, followingId: 2, status: \"active\") {\r\n    id\r\n    followerId\r\n    followingId\r\n    status      # \"active\"\r\n    followedAt\r\n  }\r\n}",
+						"variables": ""
+					}
+				},
+				"url": "http://localhost:8000/api/v1/graphql"
+			},
+			"response": []
 		}
 	]
 }

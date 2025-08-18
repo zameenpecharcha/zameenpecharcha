@@ -64,19 +64,24 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.FollowUserRequest.SerializeToString,
                 response_deserializer=user__pb2.FollowUserResponse.FromString,
                 _registered_method=True)
+        self.UpdateFollowStatus = channel.unary_unary(
+                '/user.UserService/UpdateFollowStatus',
+                request_serializer=user__pb2.FollowUserRequest.SerializeToString,
+                response_deserializer=user__pb2.FollowUserResponse.FromString,
+                _registered_method=True)
         self.GetUserFollowers = channel.unary_unary(
                 '/user.UserService/GetUserFollowers',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
-                response_deserializer=user__pb2.FollowUserResponse.FromString,
+                response_deserializer=user__pb2.UserFollowersResponse.FromString,
                 _registered_method=True)
         self.GetUserFollowing = channel.unary_unary(
                 '/user.UserService/GetUserFollowing',
                 request_serializer=user__pb2.UserRequest.SerializeToString,
-                response_deserializer=user__pb2.FollowUserResponse.FromString,
+                response_deserializer=user__pb2.UserFollowersResponse.FromString,
                 _registered_method=True)
         self.CheckFollowingStatus = channel.unary_unary(
                 '/user.UserService/CheckFollowingStatus',
-                request_serializer=user__pb2.FollowUserRequest.SerializeToString,
+                request_serializer=user__pb2.CheckFollowingRequest.SerializeToString,
                 response_deserializer=user__pb2.FollowUserResponse.FromString,
                 _registered_method=True)
         self.GetMedia = channel.unary_unary(
@@ -134,6 +139,12 @@ class UserServiceServicer(object):
     def FollowUser(self, request, context):
         """Following system
         """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateFollowStatus(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -208,19 +219,24 @@ def add_UserServiceServicer_to_server(servicer, server):
                     request_deserializer=user__pb2.FollowUserRequest.FromString,
                     response_serializer=user__pb2.FollowUserResponse.SerializeToString,
             ),
+            'UpdateFollowStatus': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateFollowStatus,
+                    request_deserializer=user__pb2.FollowUserRequest.FromString,
+                    response_serializer=user__pb2.FollowUserResponse.SerializeToString,
+            ),
             'GetUserFollowers': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUserFollowers,
                     request_deserializer=user__pb2.UserRequest.FromString,
-                    response_serializer=user__pb2.FollowUserResponse.SerializeToString,
+                    response_serializer=user__pb2.UserFollowersResponse.SerializeToString,
             ),
             'GetUserFollowing': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUserFollowing,
                     request_deserializer=user__pb2.UserRequest.FromString,
-                    response_serializer=user__pb2.FollowUserResponse.SerializeToString,
+                    response_serializer=user__pb2.UserFollowersResponse.SerializeToString,
             ),
             'CheckFollowingStatus': grpc.unary_unary_rpc_method_handler(
                     servicer.CheckFollowingStatus,
-                    request_deserializer=user__pb2.FollowUserRequest.FromString,
+                    request_deserializer=user__pb2.CheckFollowingRequest.FromString,
                     response_serializer=user__pb2.FollowUserResponse.SerializeToString,
             ),
             'GetMedia': grpc.unary_unary_rpc_method_handler(
@@ -412,6 +428,33 @@ class UserService(object):
             _registered_method=True)
 
     @staticmethod
+    def UpdateFollowStatus(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/user.UserService/UpdateFollowStatus',
+            user__pb2.FollowUserRequest.SerializeToString,
+            user__pb2.FollowUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def GetUserFollowers(request,
             target,
             options=(),
@@ -427,7 +470,7 @@ class UserService(object):
             target,
             '/user.UserService/GetUserFollowers',
             user__pb2.UserRequest.SerializeToString,
-            user__pb2.FollowUserResponse.FromString,
+            user__pb2.UserFollowersResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -454,7 +497,7 @@ class UserService(object):
             target,
             '/user.UserService/GetUserFollowing',
             user__pb2.UserRequest.SerializeToString,
-            user__pb2.FollowUserResponse.FromString,
+            user__pb2.UserFollowersResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -480,7 +523,7 @@ class UserService(object):
             request,
             target,
             '/user.UserService/CheckFollowingStatus',
-            user__pb2.FollowUserRequest.SerializeToString,
+            user__pb2.CheckFollowingRequest.SerializeToString,
             user__pb2.FollowUserResponse.FromString,
             options,
             channel_credentials,

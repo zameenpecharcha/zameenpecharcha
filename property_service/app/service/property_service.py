@@ -452,7 +452,8 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             follow_id = follow_property(
                 user_id=int(request.user_id),
                 property_id=int(request.property_id),
-                status=request.status or 'active',
+                # Always accept immediately for properties
+                status='active',
             )
             # Return the created relation
             rows = get_property_followers(int(request.property_id))
