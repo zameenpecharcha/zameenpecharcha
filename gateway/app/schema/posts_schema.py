@@ -70,6 +70,17 @@ class PostMedia:
     caption: Optional[str]
     uploadedAt: datetime
 
+    @strawberry.field
+    def signedUrl(self) -> Optional[str]:
+        try:
+            from app.utils.s3_utils import generate_presigned_get_url_from_url
+            if not self.mediaUrl:
+                return None
+            url = generate_presigned_get_url_from_url(self.mediaUrl)
+            return url or self.mediaUrl
+        except Exception:
+            return self.mediaUrl
+
 @strawberry.input
 class PostMediaInput:
     mediaType: Optional[str] = None

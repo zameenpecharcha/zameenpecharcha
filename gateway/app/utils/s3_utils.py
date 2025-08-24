@@ -1,6 +1,7 @@
 import os
 import boto3
 from typing import Optional, Tuple
+from urllib.parse import urlparse
 
 
 def _s3_client(region: Optional[str] = None):
@@ -9,6 +10,11 @@ def _s3_client(region: Optional[str] = None):
     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
     aws_session_token = os.getenv("AWS_SESSION_TOKEN")
+    
+    print(f"AWS Region: {region_name}")
+    print(f"Has AWS Key: {bool(aws_access_key_id)}")
+    print(f"Has AWS Secret: {bool(aws_secret_access_key)}")
+    
     if aws_access_key_id and aws_secret_access_key:
         client_kwargs.update({
             "aws_access_key_id": aws_access_key_id,
@@ -20,9 +26,6 @@ def _s3_client(region: Optional[str] = None):
 
 
 def build_post_object_key(file_name: str) -> str:
-    # Flat uploads path; posts service will move under post/{id}/{media_id}/ when uploaded again if needed
-    # Here we upload directly as final asset, so we keep uploads/post/<uuid or name>
-    # Keep simple: uploads/post/<file_name>
     return f"uploads/post/{file_name}"
 
 
@@ -30,7 +33,9 @@ def generate_presigned_put_url(file_name: str, content_type: Optional[str] = Non
     bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET") or "zpc-app"
     region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
     key = build_post_object_key(file_name)
+    print(f"key: {key}")
     s3 = _s3_client(region)
+    print(f"s3: {s3}")
     params = {"Bucket": bucket, "Key": key}
     if content_type:
         params["ContentType"] = content_type
@@ -40,6 +45,43 @@ def generate_presigned_put_url(file_name: str, content_type: Optional[str] = Non
         ExpiresIn=expires_in,
     )
     public_url = f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
+    print(f"public_url: {public_url}")
+    print(f"url: {url}")
     return url, key, public_url
 
 
+def generate_presigned_get_url_from_url(s3_url: str, expires_in: int = 3600) -> Optional[str]:
+    try:
+        print(f"\nGenerating presigned GET URL for: {s3_url}")
+        
+        # Parse S3 URL using urlparse
+        parsed = urlparse(s3_url)
+        if not parsed.netloc or not parsed.path:
+            print(f"Invalid S3 URL format: {s3_url}")
+            return None
+            
+        # Extract bucket from hostname (e.g., "zpc-app.s3.us-east-1.amazonaws.com")
+        hostname_parts = parsed.netloc.split('.')
+        bucket = hostname_parts[0]
+        region = hostname_parts[2]  # us-east-1
+        
+        # Remove leading slash from path to get key
+        key = parsed.path.lstrip('/')
+        
+        print(f"Parsed bucket: {bucket}")
+        print(f"Parsed region: {region}")
+        print(f"Parsed key: {key}")
+        
+        s3 = _s3_client(region)
+        url = s3.generate_presigned_url(
+            ClientMethod='get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=expires_in
+        )
+        print(f"Generated presigned URL: {url}")
+        return url
+    except Exception as e:
+        print(f"Error generating presigned GET URL: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        return None
