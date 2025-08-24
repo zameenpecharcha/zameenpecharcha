@@ -119,6 +119,11 @@ def upload_file_to_s3(*, file_path: str, key: str, content_type: Optional[str] =
     bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET") or "zpc-app"
     region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 
+    # If a remote URL is provided (already uploaded to S3 or elsewhere), skip re-upload
+    if file_path.startswith("http://") or file_path.startswith("https://"):
+        # Just return the given URL; size unknown
+        return file_path, 0
+
     if not content_type:
         guessed, _ = mimetypes.guess_type(file_path)
         content_type = guessed or "application/octet-stream"

@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import typing
 from app.clients.post.post_client import post_service_client
+from app.clients.user.user_client import user_service_client
 
 from app.utils.jwt_utils import get_token
 from strawberry.types import Info
@@ -112,6 +113,23 @@ class Post:
     media: List[PostMedia]
     likeCount: int
     commentCount: int
+
+    @strawberry.field
+    def userProfilePhotoSignedUrl(self, info: Info) -> Optional[str]:
+        try:
+            token = get_token(info)
+            user = user_service_client.get_user(self.userId, token=token)
+            candidate = getattr(user, 'profile_photo', None)
+            if (not candidate) and getattr(user, 'profile_photo_id', 0):
+                media = user_service_client.get_media(media_id=int(user.profile_photo_id), token=token)
+                candidate = getattr(media, 'media_url', None)
+            if not candidate:
+                return None
+            from app.utils.s3_utils import generate_presigned_get_url_from_url
+            url = generate_presigned_get_url_from_url(candidate)
+            return url or candidate
+        except Exception:
+            return None
 
     @classmethod
     def from_dict(cls, data: dict):

@@ -34,6 +34,69 @@ class User:
     followers_count: int = 0
     following_count: int = 0
 
+    @strawberry.field
+    def profilePhotoSignedUrl(self, info: Info) -> typing.Optional[str]:
+        try:
+            from app.utils.s3_utils import generate_presigned_get_url_from_url
+            token = get_token(info)
+
+            candidate: typing.Optional[str] = getattr(self, "profile_photo", None)
+            if (not candidate) and getattr(self, "profile_photo_id", 0):
+                media = user_service_client.get_media(media_id=int(self.profile_photo_id), token=token)
+                candidate = getattr(media, "media_url", None)
+
+            if not candidate:
+                return None
+
+            url = generate_presigned_get_url_from_url(candidate)
+            return url or candidate
+        except Exception:
+            # Fallback to whatever is already present
+            return getattr(self, "profile_photo", None)
+
+    @strawberry.field
+    def coverPhotoSignedUrl(self, info: Info) -> typing.Optional[str]:
+        try:
+            from app.utils.s3_utils import generate_presigned_get_url_from_url
+            token = get_token(info)
+
+            candidate: typing.Optional[str] = None
+            if getattr(self, "cover_photo_id", 0):
+                media = user_service_client.get_media(media_id=int(self.cover_photo_id), token=token)
+                candidate = getattr(media, "media_url", None)
+
+            if not candidate:
+                return None
+
+            url = generate_presigned_get_url_from_url(candidate)
+            return url or candidate
+        except Exception:
+            return None
+
+    @strawberry.field
+    def coverPhotoUrl(self, info: Info) -> typing.Optional[str]:
+        try:
+            token = get_token(info)
+            candidate: typing.Optional[str] = None
+            if getattr(self, "cover_photo_id", 0):
+                media = user_service_client.get_media(media_id=int(self.cover_photo_id), token=token)
+                candidate = getattr(media, "media_url", None)
+            return candidate
+        except Exception:
+            return None
+
+    @strawberry.field
+    def profilePhotoUrl(self, info: Info) -> typing.Optional[str]:
+        try:
+            token = get_token(info)
+            candidate: typing.Optional[str] = getattr(self, "profile_photo", None)
+            if (not candidate) and getattr(self, "profile_photo_id", 0):
+                media = user_service_client.get_media(media_id=int(self.profile_photo_id), token=token)
+                candidate = getattr(media, "media_url", None)
+            return candidate
+        except Exception:
+            return getattr(self, "profile_photo", None)
+
 @strawberry.type
 class Media:
     id: int
@@ -58,6 +121,12 @@ class UserRating:
     is_anonymous: typing.Optional[bool] = False
     created_at: str
     updated_at: str
+
+@strawberry.type
+class PresignUploadResponse:
+    uploadUrl: str
+    publicUrl: str
+    key: str
 
 @strawberry.type
 class UserFollower:
@@ -309,6 +378,26 @@ class Query:
 @strawberry.type
 class Mutation:
     @strawberry.mutation
+    async def presignUserPhotoUpload(
+        self,
+        info: Info,
+        fileName: str,
+        contentType: typing.Optional[str] = None,
+    ) -> PresignUploadResponse:
+        try:
+            # No auth requirement strictly needed for presign, but keep token access if required later
+            _ = get_token(info)
+            from app.utils.s3_utils import generate_presigned_put_url
+
+            url, key, public_url = generate_presigned_put_url(file_name=fileName, content_type=contentType)
+            return PresignUploadResponse(uploadUrl=url, publicUrl=public_url, key=key)
+        except Exception as e:
+            raise REException(
+                "PRESIGN_FAILED",
+                "Failed to generate presigned upload URL",
+                str(e),
+            ).to_graphql_error()
+    @strawberry.mutation
     async def create_user(
         self,
         info: Info,
@@ -488,7 +577,8 @@ class Mutation:
             media_order=mediaOrder or 1,
             token=token,
         )
-        return User(
+        # Build user payload with IDs. URL and signed URL can be queried immediately after.
+        user_payload = User(
             id=response.id,
             first_name=response.first_name,
             last_name=response.last_name,
@@ -507,6 +597,7 @@ class Mutation:
             cover_photo_id=getattr(response, 'cover_photo_id', 0),
             profile_photo_id=getattr(response, 'profile_photo_id', 0),
         )
+        return user_payload
 
     @strawberry.mutation
     async def follow_user(
