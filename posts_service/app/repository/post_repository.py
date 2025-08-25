@@ -104,7 +104,8 @@ class PostRepository:
 
     def get_posts_by_user(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
         try:
-            query = self.db.query(Post).filter(Post.user_id == user_id)
+            # Join with User table to get user information, similar to search_posts
+            query = self.db.query(Post).join(User, Post.user_id == User.id).filter(Post.user_id == user_id)
             total = query.count()
             posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
             return posts, total
