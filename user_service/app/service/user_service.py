@@ -5,7 +5,7 @@ from app.proto_files import user_pb2, user_pb2_grpc
 from app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
     create_rating, get_ratings,
-    create_follower, get_followers, get_following,
+    create_follower, get_followers, get_following, get_pending_follow_requests,
     check_following_status, create_media, get_media_by_id, update_user_photo,
     get_latest_media_for_user_context, update_user_location,
     update_follow_status,
@@ -311,6 +311,31 @@ class UserService(user_pb2_grpc.UserServiceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error getting following: {str(e)}")
+            return user_pb2.UserFollowersResponse()
+
+    def GetPendingFollowRequests(self, request, context):
+        try:
+            user = get_user_by_id(request.id)
+            if not user:
+                context.set_code(grpc.StatusCode.NOT_FOUND)
+                context.set_details(f"User with ID {request.id} not found")
+                return user_pb2.UserFollowersResponse()
+
+            pending = get_pending_follow_requests(request.id)
+            responses = []
+            for f in pending:
+                responses.append(user_pb2.FollowUserResponse(
+                    id=f.id,
+                    follower_id=f.follower_id,
+                    following_id=f.following_id,
+                    followee_type=f.followee_type if f.followee_type else "user",
+                    status=f.status if f.status else "",
+                    followed_at=str(f.followed_at)
+                ))
+            return user_pb2.UserFollowersResponse(followers=responses)
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Error getting pending follow requests: {str(e)}")
             return user_pb2.UserFollowersResponse()
 
     def CheckFollowingStatus(self, request, context):

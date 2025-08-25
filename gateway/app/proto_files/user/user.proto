@@ -10,6 +10,7 @@ service UserService {
   rpc GetUserRatings (UserRequest) returns (RatingsResponse);
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
   rpc UpdateFollowStatus (FollowUserRequest) returns (FollowUserResponse);
+  rpc GetPendingFollowRequests (UserRequest) returns (UserFollowersResponse);
   rpc GetUserFollowers (UserRequest) returns (UserFollowersResponse);
   rpc GetUserFollowing (UserRequest) returns (UserFollowersResponse);
   rpc CheckFollowingStatus (CheckFollowingRequest) returns (FollowUserResponse);

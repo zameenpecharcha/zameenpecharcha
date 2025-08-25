@@ -306,6 +306,28 @@ class Query:
             ).to_graphql_error()
 
     @strawberry.field
+    def pending_follow_requests(self, info: Info, user_id: int) -> typing.List[UserFollower]:
+        try:
+            token = get_token(info)
+            response = user_service_client.get_pending_follow_requests(user_id, token=token)
+            return [
+                UserFollower(
+                    id=f.id,
+                    follower_id=f.follower_id,
+                    following_id=f.following_id,
+                    followee_type=getattr(f, 'followee_type', None),
+                    status=f.status,
+                    followed_at=f.followed_at,
+                ) for f in response.followers
+            ]
+        except Exception as e:
+            raise REException(
+                "PENDING_REQUESTS_FAILED",
+                "Failed to fetch pending follow requests",
+                str(e),
+            ).to_graphql_error()
+
+    @strawberry.field
     def user_following(self,info: Info, user_id: int) -> typing.List[UserFollower]:
         try:
             log_msg("info", f"Fetching following for user {user_id}")

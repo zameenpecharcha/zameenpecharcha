@@ -130,6 +130,10 @@ class UserServiceClient(GRPCBaseClient):
         )
         return self._call(self.stub.CheckFollowingStatus, request,token=token)
 
+    def get_pending_follow_requests(self, user_id, token=None):
+        request = user_pb2.UserRequest(id=user_id)
+        return self._call(self.stub.GetPendingFollowRequests, request, token=token)
+
     def update_user_location(self, user_id: int, latitude: float, longitude: float, token=None):
         request = user_pb2.UpdateUserLocationRequest(
             user_id=user_id,

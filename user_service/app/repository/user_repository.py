@@ -207,6 +207,19 @@ def get_following(user_id):
     finally:
         session.close()
 
+def get_pending_follow_requests(user_id):
+    """Return followers with status 'pending' for a given user (incoming requests)."""
+    session = SessionLocal()
+    try:
+        result = session.execute(
+            select(followers).where(
+                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id) & (followers.c.status == 'pending')
+            )
+        ).fetchall()
+        return [FollowerRow(*row) for row in result]
+    finally:
+        session.close()
+
 def check_following_status(user_id, following_id):
     if not isinstance(user_id, (int, str)) or not isinstance(following_id, (int, str)):
         return None
