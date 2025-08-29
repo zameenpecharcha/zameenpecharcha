@@ -29,4 +29,14 @@ followers = Table(
     Column('followed_at', TIMESTAMP),
 )
 
+user_property = Table(
+    'user_property', meta,
+    Column('id', BigInteger, primary_key=True, nullable=False),
+    Column('user_id', BigInteger, nullable=False),
+    Column('property_id', BigInteger, nullable=False),
+    Column('role', String(255)),
+    Column('is_primary', Boolean),
+    Column('added_at', TIMESTAMP),
+)
+
 

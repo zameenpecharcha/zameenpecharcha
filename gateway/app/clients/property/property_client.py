@@ -88,6 +88,10 @@ class PropertyServiceClient(GRPCBaseClient):
         request = property_pb2.PropertyRequest(property_id=str(user_id))
         return self._call(self.stub.ListProperties, request, token=token)
 
+    def get_user_properties(self, user_id: str, token=None):
+        request = property_pb2.PropertyRequest(property_id=str(user_id))
+        return self._call(self.stub.GetUserProperties, request, token=token)
+
     def increment_view_count(self, property_id: str, token=None):
         request = property_pb2.PropertyRequest(property_id=str(property_id))
         return self._call(self.stub.IncrementViewCount, request, token=token)
@@ -122,6 +126,10 @@ class PropertyServiceClient(GRPCBaseClient):
     def get_property_followers(self, property_id: int, token=None):
         request = property_pb2.PropertyRequest(property_id=str(property_id))
         return self._call(self.stub.GetPropertyFollowers, request, token=token)
+
+    def get_user_followed_properties(self, user_id: str, token=None):
+        request = property_pb2.PropertyRequest(property_id=str(user_id))
+        return self._call(self.stub.GetUserFollowedProperties, request, token=token)
 
     def add_property_media(self, property_id: int, media: list, token=None):
         uploads = []

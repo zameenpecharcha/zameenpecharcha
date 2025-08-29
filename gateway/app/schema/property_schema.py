@@ -219,6 +219,104 @@ class Query:
                 str(e)
             ).to_graphql_error()
 
+    @strawberry.field
+    def userFollowedProperties(self, info, userId: str) -> typing.List[Property]:
+        try:
+            token = get_token(info)
+            response = property_service_client.get_user_followed_properties(userId, token=token)
+            
+            if not response.success:
+                raise REException("USER_FOLLOWED_PROPERTIES_FAILED", response.message, "Failed to fetch user followed properties")
+            
+            return [
+                Property(
+                    propertyId=prop.property_id,
+                    userId=prop.user_id,
+                    title=prop.title,
+                    description=prop.description,
+                    price=prop.price,
+                    location=prop.location,
+                    propertyType=prop.property_type,
+                    status=prop.status,
+                    bedrooms=prop.bedrooms,
+                    bathrooms=prop.bathrooms,
+                    area=prop.area,
+                    yearBuilt=prop.year_built,
+                    images=list(prop.images),
+                    amenities=list(prop.amenities),
+                    createdAt=prop.created_at,
+                    updatedAt=prop.updated_at,
+                    viewCount=prop.view_count,
+                    latitude=prop.latitude,
+                    longitude=prop.longitude,
+                    address=prop.address,
+                    city=prop.city,
+                    state=prop.state,
+                    country=prop.country,
+                    zipCode=prop.zip_code,
+                    isActive=prop.is_active,
+                    coverPhotoId=getattr(prop, 'cover_photo_id', 0),
+                    profilePhotoId=getattr(prop, 'profile_photo_id', 0),
+                )
+                for prop in response.properties.properties
+            ]
+        except Exception as e:
+            log_msg("error", f"Error fetching user followed properties: {str(e)}")
+            raise REException(
+                "USER_FOLLOWED_PROPERTIES_FAILED",
+                "Failed to fetch user followed properties",
+                str(e)
+            ).to_graphql_error()
+
+    @strawberry.field
+    def userProperties(self, info, userId: str) -> typing.List[Property]:
+        try:
+            token = get_token(info)
+            response = property_service_client.get_user_properties(userId, token=token)
+            
+            if not response.success:
+                raise REException("USER_PROPERTIES_FAILED", response.message, "Failed to fetch user properties")
+            
+            return [
+                Property(
+                    propertyId=prop.property_id,
+                    userId=prop.user_id,
+                    title=prop.title,
+                    description=prop.description,
+                    price=prop.price,
+                    location=prop.location,
+                    propertyType=prop.property_type,
+                    status=prop.status,
+                    bedrooms=prop.bedrooms,
+                    bathrooms=prop.bathrooms,
+                    area=prop.area,
+                    yearBuilt=prop.year_built,
+                    images=list(prop.images),
+                    amenities=list(prop.amenities),
+                    createdAt=prop.created_at,
+                    updatedAt=prop.updated_at,
+                    viewCount=prop.view_count,
+                    latitude=prop.latitude,
+                    longitude=prop.longitude,
+                    address=prop.address,
+                    city=prop.city,
+                    state=prop.state,
+                    country=prop.country,
+                    zipCode=prop.zip_code,
+                    isActive=prop.is_active,
+                    coverPhotoId=getattr(prop, 'cover_photo_id', 0),
+                    profilePhotoId=getattr(prop, 'profile_photo_id', 0),
+                )
+                for prop in response.properties.properties
+            ]
+        except Exception as e:
+            log_msg("error", f"Error fetching user properties: {str(e)}")
+            raise REException(
+                "USER_PROPERTIES_FAILED",
+                "Failed to fetch user properties",
+                str(e)
+            ).to_graphql_error()
+
 @strawberry.input
 class PropertyMediaInput:
     filePath: str

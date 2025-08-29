@@ -94,6 +94,7 @@ service PropertyService {
     rpc DeleteProperty(PropertyRequest) returns (PropertyResponse) {}
     rpc SearchProperties(PropertySearchRequest) returns (PropertyListResponse) {}
     rpc ListProperties(PropertyRequest) returns (PropertyListResponse) {}
+    rpc GetUserProperties(PropertyRequest) returns (PropertyListResponse) {}
     rpc IncrementViewCount(PropertyRequest) returns (PropertyResponse) {}
 
     // Ratings (polymorphic table - here we use rated_type='property')
@@ -103,6 +104,7 @@ service PropertyService {
     // Followers (polymorphic table - followee_type='property')
     rpc FollowProperty(PropertyFollowRequest) returns (PropertyFollowResponse) {}
     rpc GetPropertyFollowers(PropertyRequest) returns (PropertyFollowersResponse) {}
+    rpc GetUserFollowedProperties(PropertyRequest) returns (PropertyListResponse) {}
 
     // Media (file path uploads)
     rpc AddPropertyMedia(PropertyMediaRequest) returns (PropertyMediaResponse) {}

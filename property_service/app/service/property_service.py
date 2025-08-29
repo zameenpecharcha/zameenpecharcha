@@ -9,9 +9,9 @@ from ..repository.property_repository import (
     get_properties, proto_to_db_property_type, proto_to_db_property_status,
     increment_view_count,
     create_property_rating, get_property_ratings,
-    follow_property, get_property_followers,
+    follow_property, get_property_followers, get_user_followed_properties,
     add_property_media, update_property_media_url_size,
-    get_property_media_urls,
+    get_property_media_urls, populate_user_property_for_existing_properties,
 )
 import uuid
 
@@ -249,10 +249,54 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             return property_pb2.PropertyResponse(success=False, message=str(e))
 
     def GetUserProperties(self, request, context):
-        properties = get_user_properties(request.user_id)
-        return property_pb2.PropertiesResponse(
-            properties=[self.GetProperty(property_pb2.PropertyRequest(property_id=p.property_id), context) for p in properties]
-        )
+        try:
+            properties = get_user_properties(request.property_id)  # property_id contains the user_id
+            
+            # Convert properties to response format
+            property_list = property_pb2.PropertyList()
+            for prop in properties:
+                # Parse JSON strings back to lists
+                images = []
+                amenities = []
+
+                property_message = property_pb2.Property(
+                    property_id=str(prop.id),
+                    user_id=str(request.property_id),  # Use the user_id from the request (property_id contains user_id)
+                    title=prop.title or "",
+                    description=prop.description or "",
+                    price=float(prop.price) if prop.price is not None else 0.0,
+                    location=prop.location or "",
+                    property_type=_map_property_type(prop.property_type),
+                    status=_map_property_status(prop.status),
+                    images=images,
+                    bedrooms=_to_int(getattr(prop, 'bedrooms', 0), 0),
+                    bathrooms=_to_int(getattr(prop, 'bathrooms', 0), 0),
+                    area=float(getattr(prop, 'area_size', 0.0) or 0.0),
+                    year_built=_to_int(getattr(prop, 'year_build', None), 0),
+                    amenities=amenities,
+                    latitude=float(prop.latitude) if prop.latitude is not None else 0.0,
+                    longitude=float(prop.longitude) if prop.longitude is not None else 0.0,
+                    address=getattr(prop, 'address', "") or "",
+                    city=prop.city or "",
+                    state=prop.state or "",
+                    country=prop.country or "",
+                    zip_code=getattr(prop, 'pin_code', "") or "",
+                    is_active=True,
+                    created_at=_format_ts(getattr(prop, 'created_at', None)),
+                    updated_at=_format_ts(getattr(prop, 'updated_at', None)),
+                    view_count=_to_int(getattr(prop, 'view_count', 0), 0),
+                )
+                property_list.properties.append(property_message)
+
+            return property_pb2.PropertyListResponse(
+                success=True,
+                message="User properties found successfully",
+                properties=property_list
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Exception calling application: {str(e)}")
+            return property_pb2.PropertyListResponse(success=False, message=str(e))
 
     def SearchProperties(self, request, context):
         try:
@@ -490,6 +534,56 @@ class PropertyService(property_pb2_grpc.PropertyServiceServicer):
             context.set_details(str(e))
             return property_pb2.PropertyFollowersResponse()
 
+    def GetUserFollowedProperties(self, request, context):
+        try:
+            properties = get_user_followed_properties(int(request.property_id))  # property_id contains user_id
+            
+            # Convert properties to response format
+            property_list = property_pb2.PropertyList()
+            for prop in properties:
+                # Parse JSON strings back to lists
+                images = []
+                amenities = []
+
+                property_message = property_pb2.Property(
+                    property_id=str(prop.id),
+                    user_id=str(request.property_id),  # Use the user_id from the request
+                    title=prop.title or "",
+                    description=prop.description or "",
+                    price=float(prop.price) if prop.price is not None else 0.0,
+                    location=prop.location or "",
+                    property_type=_map_property_type(prop.property_type),
+                    status=_map_property_status(prop.status),
+                    images=images,
+                    bedrooms=_to_int(getattr(prop, 'bedrooms', 0), 0),
+                    bathrooms=_to_int(getattr(prop, 'bathrooms', 0), 0),
+                    area=float(getattr(prop, 'area_size', 0.0) or 0.0),
+                    year_built=_to_int(getattr(prop, 'year_build', None), 0),
+                    amenities=amenities,
+                    latitude=float(prop.latitude) if prop.latitude is not None else 0.0,
+                    longitude=float(prop.longitude) if prop.longitude is not None else 0.0,
+                    address=getattr(prop, 'address', "") or "",
+                    city=prop.city or "",
+                    state=prop.state or "",
+                    country=prop.country or "",
+                    zip_code=getattr(prop, 'pin_code', "") or "",
+                    is_active=True,
+                    created_at=_format_ts(getattr(prop, 'created_at', None)),
+                    updated_at=_format_ts(getattr(prop, 'updated_at', None)),
+                    view_count=_to_int(getattr(prop, 'view_count', 0), 0),
+                )
+                property_list.properties.append(property_message)
+
+            return property_pb2.PropertyListResponse(
+                success=True,
+                message="User followed properties found successfully",
+                properties=property_list
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.INTERNAL)
+            context.set_details(f"Exception calling application: {str(e)}")
+            return property_pb2.PropertyListResponse(success=False, message=str(e))
+
     def AddPropertyMedia(self, request, context):
         try:
             from ..utils.s3_utils import upload_file_to_s3, build_property_media_key
@@ -603,6 +697,15 @@ from ..interceptors.auth_interceptor import AuthServerInterceptor
 
 
 def serve():
+    # Populate user_property table for existing properties
+    print("Attempting to populate user_property table for existing properties...")
+    try:
+        populate_user_property_for_existing_properties()
+        print("Successfully populated user_property table")
+    except Exception as e:
+        print(f"Warning: Could not populate user_property table: {str(e)}")
+        print("Service will start without populating user_property table")
+    
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         interceptors=[AuthServerInterceptor()],
