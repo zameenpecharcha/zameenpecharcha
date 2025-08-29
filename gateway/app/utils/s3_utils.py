@@ -33,20 +33,35 @@ def generate_presigned_put_url(file_name: str, content_type: Optional[str] = Non
     bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET") or "zpc-app"
     region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
     key = build_post_object_key(file_name)
-    print(f"key: {key}")
+    
+    print(f"=== Generating presigned PUT URL ===")
+    print(f"Bucket: {bucket}")
+    print(f"Region: {region}")
+    print(f"Key: {key}")
+    print(f"Content-Type: {content_type}")
+    print(f"Expires in: {expires_in} seconds")
+    
     s3 = _s3_client(region)
-    print(f"s3: {s3}")
+    
     params = {"Bucket": bucket, "Key": key}
     if content_type:
         params["ContentType"] = content_type
+    
+    print(f"S3 params: {params}")
+    
     url = s3.generate_presigned_url(
         ClientMethod="put_object",
         Params=params,
         ExpiresIn=expires_in,
     )
+    
+    # Use the correct S3 endpoint format
     public_url = f"https://{bucket}.s3.{region}.amazonaws.com/{key}"
-    print(f"public_url: {public_url}")
-    print(f"url: {url}")
+    
+    print(f"Generated presigned URL: {url}")
+    print(f"Public URL: {public_url}")
+    print(f"=== End presigned URL generation ===")
+    
     return url, key, public_url
 
 

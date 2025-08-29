@@ -110,6 +110,14 @@ def build_post_key(post_id: int, media_id: int, file_name: Optional[str], conten
 
 
 def upload_file_to_s3(*, file_path: str, key: str, content_type: Optional[str] = None) -> Tuple[str, int]:
+    """
+    Uploads a local file to S3.
+    If file_path is an HTTP/HTTPS URL (already uploaded), skip re-upload and return it directly.
+    """
+    # If already an URL (we pre-uploaded from the UI), just persist it as-is
+    if file_path.startswith("http://") or file_path.startswith("https://"):
+        return file_path, 0
+
     bucket = os.getenv("S3_BUCKET_NAME") or os.getenv("AWS_S3_BUCKET") or "zpc-app"
     region = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "us-east-1"
 
