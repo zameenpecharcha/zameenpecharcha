@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15.7
+    container_name: zpc-postgres
+    environment:
+      POSTGRES_DB: zameenpecharcha
+      POSTGRES_USER: zpc_admin
+      POSTGRES_PASSWORD: zpc_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./create_tables.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - zpc-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: zpc-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - zpc-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./auth_service
+      dockerfile: Dockerfile
+    container_name: zpc-auth-service
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=zameenpecharcha
+      - DB_USER=zpc_admin
+      - DB_PASSWORD=zpc_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "50051:50051"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zpc-network
+
+  # User Service
+  user-service:
+    build:
+      context: ./user_service
+      dockerfile: Dockerfile
+    container_name: zpc-user-service
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=zameenpecharcha
+      - DB_USER=zpc_admin
+      - DB_PASSWORD=zpc_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "50052:50051"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zpc-network
+
+  # Property Service
+  property-service:
+    build:
+      context: ./property_service
+      dockerfile: Dockerfile
+    container_name: zpc-property-service
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=zameenpecharcha
+      - DB_USER=zpc_admin
+      - DB_PASSWORD=zpc_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "50053:50051"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zpc-network
+
+  # Posts Service
+  posts-service:
+    build:
+      context: ./posts_service
+      dockerfile: Dockerfile
+    container_name: zpc-posts-service
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=zameenpecharcha
+      - DB_USER=zpc_admin
+      - DB_PASSWORD=zpc_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "50054:50051"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - zpc-network
+
+
+
+  # API Gateway (for local development)
+  api-gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: zpc-api-gateway
+    environment:
+      - ENVIRONMENT=development
+      - AUTH_SERVICE_URL=http://auth-service:50051
+      - USER_SERVICE_URL=http://user-service:50051
+      - PROPERTY_SERVICE_URL=http://property-service:50051
+      - POSTS_SERVICE_URL=http://posts-service:50051
+
+    ports:
+      - "8080:8080"
+    depends_on:
+      - auth-service
+      - user-service
+      - property-service
+      - posts-service
+    networks:
+      - zpc-network
+
+volumes:
+  postgres_data:
+
+networks:
+  zpc-network:
+    driver: bridge

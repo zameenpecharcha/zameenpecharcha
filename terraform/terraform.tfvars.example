@@ -1,0 +1,35 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Environment
+environment = "production"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+private_subnets = ["10.0.1.0/24", "10.0.2.0/24"]
+public_subnets = ["10.0.101.0/24", "10.0.102.0/24"]
+
+# Database Configuration
+db_name = "zameenpecharcha"
+db_username = "zpc_admin"
+db_password = "your-secure-password-here"
+db_instance_class = "db.t3.micro"
+
+# Redis Configuration
+redis_node_type = "cache.t3.micro"
+
+# Service Scaling
+auth_service_desired_count = 2
+user_service_desired_count = 2
+property_service_desired_count = 2
+posts_service_desired_count = 2
+
+
+# Container Configuration
+container_port = 50051
+container_cpu = 256
+container_memory = 512
+
+# SSL Certificate (optional)
+# certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/your-cert-id"
