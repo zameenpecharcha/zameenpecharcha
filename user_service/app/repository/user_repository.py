@@ -167,7 +167,7 @@ def get_ratings(user_id):
     finally:
         session.close()
 
-def create_follower(follower_id, following_id, followee_type=None, status='pending'):
+def create_follower(follower_id, following_id, followee_type=None, status='active'):
     session = SessionLocal()
     try:
         result = session.execute(
@@ -188,7 +188,7 @@ def get_followers(user_id):
     try:
         result = session.execute(
             select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id) & (followers.c.status == 'active')
+                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id)
             )
         ).fetchall()
         return [FollowerRow(*row) for row in result]
@@ -200,20 +200,7 @@ def get_following(user_id):
     try:
         result = session.execute(
             select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.follower_id == user_id) & (followers.c.status == 'active')
-            )
-        ).fetchall()
-        return [FollowerRow(*row) for row in result]
-    finally:
-        session.close()
-
-def get_pending_follow_requests(user_id):
-    """Return followers with status 'pending' for a given user (incoming requests)."""
-    session = SessionLocal()
-    try:
-        result = session.execute(
-            select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id) & (followers.c.status == 'pending')
+                (followers.c.followee_type == 'user') & (followers.c.follower_id == user_id)
             )
         ).fetchall()
         return [FollowerRow(*row) for row in result]
@@ -252,61 +239,6 @@ def check_following_status(user_id, following_id):
         return FollowerRow(*result) if result else None
     except Exception as e:
         print(f"Error checking following status: {str(e)}")
-        return None
-    finally:
-        session.close()
-
-def update_follow_status(follower_id, following_id, status):
-    """
-    Update the status of a follow relationship between follower_id and following_id.
-    Status should be one of: 'active' (accepted), 'rejected', 'pending'.
-    """
-    if status not in ('active', 'rejected', 'pending'):
-        return None
-
-    session = SessionLocal()
-    try:
-        # Verify relationship exists
-        existing = session.execute(
-            select(followers).where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-        ).fetchone()
-
-        if not existing:
-            return None
-
-        session.execute(
-            followers.update()
-            .where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-            .values(status=status)
-        )
-        session.commit()
-
-        # Return updated row
-        updated = session.execute(
-            select(followers).where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-        ).fetchone()
-        return FollowerRow(*updated) if updated else None
-    except Exception as e:
-        print(f"Error updating follow status: {str(e)}")
-        session.rollback()
         return None
     finally:
         session.close()

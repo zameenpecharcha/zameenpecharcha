@@ -4,7 +4,6 @@ from datetime import datetime
 import logging
 import typing
 from app.clients.post.post_client import post_service_client
-from app.clients.user.user_client import user_service_client
 
 from app.utils.jwt_utils import get_token
 from strawberry.types import Info
@@ -71,31 +70,6 @@ class PostMedia:
     caption: Optional[str]
     uploadedAt: datetime
 
-    @strawberry.field
-    def signedUrl(self) -> Optional[str]:
-        try:
-            from app.utils.s3_utils import generate_presigned_get_url_from_url
-            import logging
-            logger = logging.getLogger(__name__)
-            
-            logger.debug(f"PostMedia.signedUrl called for mediaUrl: {self.mediaUrl}")
-            
-            if not self.mediaUrl:
-                logger.debug("No mediaUrl provided, returning None")
-                return None
-                
-            url = generate_presigned_get_url_from_url(self.mediaUrl)
-            logger.debug(f"Generated presigned URL: {url}")
-            
-            result = url or self.mediaUrl
-            logger.debug(f"Returning URL: {result}")
-            return result
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error in PostMedia.signedUrl: {str(e)}")
-            return self.mediaUrl
-
 @strawberry.input
 class PostMediaInput:
     mediaType: Optional[str] = None
@@ -127,23 +101,6 @@ class Post:
     media: List[PostMedia]
     likeCount: int
     commentCount: int
-
-    @strawberry.field
-    def userProfilePhotoSignedUrl(self, info: Info) -> Optional[str]:
-        try:
-            token = get_token(info)
-            user = user_service_client.get_user(self.userId, token=token)
-            candidate = getattr(user, 'profile_photo', None)
-            if (not candidate) and getattr(user, 'profile_photo_id', 0):
-                media = user_service_client.get_media(media_id=int(user.profile_photo_id), token=token)
-                candidate = getattr(media, 'media_url', None)
-            if not candidate:
-                return None
-            from app.utils.s3_utils import generate_presigned_get_url_from_url
-            url = generate_presigned_get_url_from_url(candidate)
-            return url or candidate
-        except Exception:
-            return None
 
     @classmethod
     def from_dict(cls, data: dict):
@@ -244,47 +201,7 @@ class Query:
         logger.debug(f"Query.postsByUser called with userId: {userId}, page: {page}, limit: {limit}")
         token = get_token(info)
         result = post_service_client.get_posts_by_user(user_id=userId, page=page, limit=limit, token=token)
-        
-        if not result:
-            logger.error("No result returned")
-            return []
-            
-        posts_data = []
-        for post in result:
-            logger.debug(f"Processing post: {post}")
-            post_dict = {
-                'id': post.id,
-                'userId': post.user_id,
-                'userFirstName': getattr(post, 'user_first_name', ''),
-                'userLastName': getattr(post, 'user_last_name', ''),
-                'userEmail': getattr(post, 'user_email', ''),
-                'userPhone': getattr(post, 'user_phone', ''),
-                'userRole': getattr(post, 'user_role', ''),
-                'title': post.title,
-                'content': post.content,
-                'visibility': post.visibility,
-                'propertyType': getattr(post, 'type', ''),
-                'location': post.location,
-                'latitude': getattr(post, 'latitude', None),
-                'longitude': getattr(post, 'longitude', None),
-                'price': post.price,
-                'status': post.status,
-                'createdAt': datetime.fromtimestamp(post.created_at),
-                'media': [{
-                    'id': media.id,
-                    'mediaType': media.media_type,
-                    'mediaUrl': media.media_url,
-                    'mediaOrder': media.media_order,
-                    'mediaSize': getattr(media, 'media_size', None),
-                    'caption': getattr(media, 'caption', ''),
-                    'uploadedAt': datetime.fromtimestamp(media.uploaded_at) if hasattr(media, 'uploaded_at') else datetime.now()
-                } for media in post.media],
-                'likeCount': post.like_count,
-                'commentCount': post.comment_count
-            }
-            posts_data.append(Post.from_dict(post_dict))
-        
-        return posts_data
+        return [Post.from_dict(post) for post in result] if result else []
 
     @strawberry.field
     def searchPosts(

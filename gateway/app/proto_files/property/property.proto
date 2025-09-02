@@ -94,7 +94,6 @@ service PropertyService {
     rpc DeleteProperty(PropertyRequest) returns (PropertyResponse) {}
     rpc SearchProperties(PropertySearchRequest) returns (PropertyListResponse) {}
     rpc ListProperties(PropertyRequest) returns (PropertyListResponse) {}
-    rpc GetUserProperties(PropertyRequest) returns (PropertyListResponse) {}
     rpc IncrementViewCount(PropertyRequest) returns (PropertyResponse) {}
 
     // Ratings (polymorphic table - here we use rated_type='property')

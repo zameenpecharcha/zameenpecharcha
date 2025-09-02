@@ -60,7 +60,7 @@ def create_property(property_data):
         if 'status' in property_data:
             property_data['status'] = proto_to_db_property_status.get(property_data['status'], 'ACTIVE')
         # Drop fields not present in DDL
-        user_id = property_data.pop('user_id', None)
+        property_data.pop('user_id', None)
         property_data.pop('is_active', None)
         # Accept cover/profile ids if provided
         
@@ -68,21 +68,6 @@ def create_property(property_data):
             properties.insert().returning(properties.c.id).values(**property_data)
         )
         property_id = result.fetchone()[0]
-        
-        # Create entry in user_property table if user_id is provided
-        if user_id:
-            from ..entity.social_entity import user_property
-            from sqlalchemy.sql import func
-            session.execute(
-                user_property.insert().values(
-                    user_id=int(user_id),
-                    property_id=property_id,
-                    role='owner',
-                    is_primary=True,
-                    added_at=func.now()
-                )
-            )
-        
         session.commit()
         return str(property_id)
     except Exception as e:
@@ -146,79 +131,10 @@ def delete_property(property_id):
 
 def get_user_properties(user_id):
     session = SessionLocal()
-    try:
-        # Join user_property table with properties table to get user's properties
-        from ..entity.social_entity import user_property
-        query = properties.select().join(
-            user_property, 
-            properties.c.id == user_property.c.property_id
-        ).where(user_property.c.user_id == int(user_id))
-        user_properties = session.execute(query).fetchall()
-        return user_properties
-    except Exception as e:
-        print(f"Error in get_user_properties: {str(e)}")
-        raise e
-    finally:
-        session.close()
-
-def populate_user_property_for_existing_properties():
-    """Helper function to populate user_property table for existing properties"""
-    session = SessionLocal()
-    try:
-        from ..entity.social_entity import user_property
-        from sqlalchemy.sql import func
-        
-        # First, check what users exist in the users table
-        # We need to import the users table from user_service or check if it exists
-        try:
-            # Try to get existing users - this is a simplified approach
-            # You may need to adjust this based on your actual user table structure
-            existing_users = [1]  # Default to user_id 1 if we can't determine
-            print(f"Using existing users: {existing_users}")
-        except Exception as e:
-            print(f"Could not determine existing users, using default: {str(e)}")
-            existing_users = [1]  # Default to user_id 1
-        
-        # Get all properties that don't have entries in user_property table
-        existing_user_properties = session.execute(
-            user_property.select().with_only_columns(user_property.c.property_id)
-        ).fetchall()
-        existing_property_ids = {row.property_id for row in existing_user_properties}
-        
-        # Get all properties
-        all_properties = session.execute(properties.select()).fetchall()
-        
-        # For each property without a user_property entry, create one
-        # Use only existing user IDs
-        for i, prop in enumerate(all_properties):
-            if prop.id not in existing_property_ids:
-                # Assign to existing user_id (cycle through available users)
-                assigned_user_id = existing_users[i % len(existing_users)]
-                try:
-                    session.execute(
-                        user_property.insert().values(
-                            user_id=assigned_user_id,
-                            property_id=prop.id,
-                            role='owner',
-                            is_primary=True,
-                            added_at=func.now()
-                        )
-                    )
-                    print(f"Assigned property {prop.id} to user {assigned_user_id}")
-                except Exception as insert_error:
-                    print(f"Failed to assign property {prop.id} to user {assigned_user_id}: {str(insert_error)}")
-                    # Continue with other properties instead of failing completely
-                    continue
-        
-        session.commit()
-        print(f"Populated user_property table for existing properties")
-    except Exception as e:
-        session.rollback()
-        print(f"Error populating user_property table: {str(e)}")
-        # Don't raise the error, just log it so the service can start
-        print(f"Service will start without populating user_property table")
-    finally:
-        session.close()
+    query = properties.select().where(properties.c.user_id == int(user_id))
+    user_properties = session.execute(query).fetchall()
+    session.close()
+    return user_properties
 
 def create_property_rating(property_id: int, rated_by_user_id: int, rating_value: int, title: str = None, review: str = None, rating_type: str = None, is_anonymous: bool = False):
     session = SessionLocal()
@@ -263,7 +179,7 @@ def follow_property(user_id: int, property_id: int, status: str = 'active'):
                 follower_id=user_id,
                 following_id=property_id,
                 followee_type='property',
-                status='active',
+                status=status,
             )
         )
         session.commit()
@@ -283,26 +199,6 @@ def get_property_followers(property_id: int):
             )
         ).fetchall()
         return rows
-    finally:
-        session.close()
-
-def get_user_followed_properties(user_id: int):
-    session = SessionLocal()
-    try:
-        # Join followers table with properties table to get properties followed by user
-        query = properties.select().join(
-            followers_table, 
-            properties.c.id == followers_table.c.following_id
-        ).where(
-            (followers_table.c.followee_type == 'property') & 
-            (followers_table.c.follower_id == user_id) &
-            (followers_table.c.status == 'active')
-        )
-        user_followed_properties = session.execute(query).fetchall()
-        return user_followed_properties
-    except Exception as e:
-        print(f"Error in get_user_followed_properties: {str(e)}")
-        raise e
     finally:
         session.close()
 

@@ -14,12 +14,9 @@ service UserService {
   
   // Following system
   rpc FollowUser (FollowUserRequest) returns (FollowUserResponse);
-  rpc UpdateFollowStatus (FollowUserRequest) returns (FollowUserResponse);
-  rpc GetUserFollowers (UserRequest) returns (UserFollowersResponse);
-  rpc GetUserFollowing (UserRequest) returns (UserFollowersResponse);
-  rpc CheckFollowingStatus (CheckFollowingRequest) returns (FollowUserResponse);
-  // Pending follow requests (incoming) for a user
-  rpc GetPendingFollowRequests (UserRequest) returns (UserFollowersResponse);
+  rpc GetUserFollowers (UserRequest) returns (FollowUserResponse);
+  rpc GetUserFollowing (UserRequest) returns (FollowUserResponse);
+  rpc CheckFollowingStatus (FollowUserRequest) returns (FollowUserResponse);
   
   // Media management
   rpc GetMedia (UserRequest) returns (MediaResponse);

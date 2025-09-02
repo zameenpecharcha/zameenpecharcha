@@ -5,10 +5,9 @@ from app.proto_files import user_pb2, user_pb2_grpc
 from app.repository.user_repository import (
     get_user_by_id, create_user, get_user_by_email,
     create_rating, get_ratings,
-    create_follower, get_followers, get_following, get_pending_follow_requests,
+    create_follower, get_followers, get_following,
     check_following_status, create_media, get_media_by_id, update_user_photo,
     get_latest_media_for_user_context, update_user_location,
-    update_follow_status,
 )
 from app.interceptors.auth_interceptor import AuthServerInterceptor
 from app.utils.s3_utils import (
@@ -208,12 +207,11 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                     followed_at=str(existing.followed_at)
                 )
 
-            # Create follow with default 'pending' status if not provided
             follower_row_id = create_follower(
                 follower_id=request.follower_id,
                 following_id=request.following_id,
                 followee_type=request.followee_type if request.followee_type else 'user',
-                status=request.status if request.status else 'pending'
+                status=request.status if request.status else 'active'
             )
 
             # Get the created follower relationship
@@ -232,33 +230,6 @@ class UserService(user_pb2_grpc.UserServiceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Error following user: {str(e)}")
-            return user_pb2.FollowUserResponse()
-
-    def UpdateFollowStatus(self, request, context):
-        try:
-            # Only the target user (being followed) should be able to accept/reject
-            # We expect request.following_id is the target user, request.follower_id is requester
-            updated = update_follow_status(
-                follower_id=request.follower_id,
-                following_id=request.following_id,
-                status=request.status or 'pending',
-            )
-            if not updated:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details("Follow relationship not found or invalid status")
-                return user_pb2.FollowUserResponse()
-
-            return user_pb2.FollowUserResponse(
-                id=updated.id,
-                follower_id=updated.follower_id,
-                following_id=updated.following_id,
-                followee_type=updated.followee_type if updated.followee_type else "user",
-                status=updated.status if updated.status else "",
-                followed_at=str(updated.followed_at) if updated.followed_at else "",
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Error updating follow status: {str(e)}")
             return user_pb2.FollowUserResponse()
 
     def GetUserFollowers(self, request, context):
@@ -313,35 +284,10 @@ class UserService(user_pb2_grpc.UserServiceServicer):
             context.set_details(f"Error getting following: {str(e)}")
             return user_pb2.UserFollowersResponse()
 
-    def GetPendingFollowRequests(self, request, context):
-        try:
-            user = get_user_by_id(request.id)
-            if not user:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details(f"User with ID {request.id} not found")
-                return user_pb2.UserFollowersResponse()
-
-            pending = get_pending_follow_requests(request.id)
-            responses = []
-            for f in pending:
-                responses.append(user_pb2.FollowUserResponse(
-                    id=f.id,
-                    follower_id=f.follower_id,
-                    following_id=f.following_id,
-                    followee_type=f.followee_type if f.followee_type else "user",
-                    status=f.status if f.status else "",
-                    followed_at=str(f.followed_at)
-                ))
-            return user_pb2.UserFollowersResponse(followers=responses)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Error getting pending follow requests: {str(e)}")
-            return user_pb2.UserFollowersResponse()
-
     def CheckFollowingStatus(self, request, context):
         try:
             # First check if both users exist
-            user = get_user_by_id(request.user_id)
+            user = get_user_by_id(request.follower_id)
             following_user = get_user_by_id(request.following_id)
             
             if not user or not following_user:
@@ -350,7 +296,7 @@ class UserService(user_pb2_grpc.UserServiceServicer):
                 return user_pb2.FollowUserResponse()
 
             # Check following status
-            status = check_following_status(request.user_id, request.following_id)
+            status = check_following_status(request.follower_id, request.following_id)
             if not status:
                 # Return empty response with NOT_FOUND status if no following relationship exists
                 context.set_code(grpc.StatusCode.NOT_FOUND)
