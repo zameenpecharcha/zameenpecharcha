@@ -43,7 +43,3 @@ htmlcov/
 # System files
 Thumbs.db
 .DS_Store
-
-user_service/.env
-*.env
-

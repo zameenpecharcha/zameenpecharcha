@@ -64,7 +64,10 @@ def generate_proto():
     property_proto_file = os.path.join(property_proto_dir, "property.proto")
     generate_proto_for_service("property", property_proto_dir, property_proto_file)
 
-    # Comments: not present; skip
+    # Comments service protos
+    comments_proto_dir = os.path.join(current_dir, "app", "proto_files", "comments")
+    comments_proto_file = os.path.join(comments_proto_dir, "comments.proto")
+    generate_proto_for_service("comments", comments_proto_dir, comments_proto_file)
 
 if __name__ == "__main__":
     generate_proto() 

@@ -1,20 +1,20 @@
 from sqlalchemy.orm import sessionmaker
-from app.utils.db_connection import get_db_engine
+from user_service.app.utils.db_connection import get_db_engine
 from sqlalchemy import select, and_
-from sqlalchemy import desc
-from app.entity.user_entity import users, ratings, followers, media
+from user_service.app.entity.user_entity import users, user_ratings, user_followers
 
 SessionLocal = sessionmaker(bind=get_db_engine())
 
 class UserRow:
-    def __init__(self, id, first_name, last_name, email, phone, role, address, 
+    def __init__(self, id, first_name, last_name, email, phone, profile_photo, role, address, 
                  latitude, longitude, bio, password, isactive, email_verified, phone_verified, 
-                 gst_no, cover_photo_id, profile_photo_id, last_login_at, created_at):
+                 last_login_at, created_at):
         self.id = id
         self.first_name = first_name
         self.last_name = last_name
         self.email = email
         self.phone = phone
+        self.profile_photo = profile_photo
         self.role = role
         self.address = address
         self.latitude = latitude
@@ -24,49 +24,28 @@ class UserRow:
         self.isactive = isactive
         self.email_verified = email_verified
         self.phone_verified = phone_verified
-        self.gst_no = gst_no
-        self.cover_photo_id = cover_photo_id
-        self.profile_photo_id = profile_photo_id
         self.last_login_at = last_login_at
         self.created_at = created_at
 
-
-class RatingRow:
-    def __init__(self, id, rated_id, rated_type, rated_by, rating_value, title,
-                 review, rating_type, is_anonymous, created_at, updated_at):
+class UserRatingRow:
+    def __init__(self, id, rated_user_id, rated_by_user_id, rating_value, review, 
+                 rating_type, created_at, updated_at):
         self.id = id
-        self.rated_id = rated_id
-        self.rated_type = rated_type
-        self.rated_by = rated_by
+        self.rated_user_id = rated_user_id
+        self.rated_by_user_id = rated_by_user_id
         self.rating_value = rating_value
-        self.title = title
         self.review = review
         self.rating_type = rating_type
-        self.is_anonymous = is_anonymous
         self.created_at = created_at
         self.updated_at = updated_at
 
-class FollowerRow:
-    def __init__(self, id, follower_id, following_id, followee_type, status, followed_at):
+class UserFollowerRow:
+    def __init__(self, id, user_id, following_id, status, followed_at):
         self.id = id
-        self.follower_id = follower_id
+        self.user_id = user_id
         self.following_id = following_id
-        self.followee_type = followee_type
         self.status = status
         self.followed_at = followed_at
-
-class MediaRow:
-    def __init__(self, id, context_id, context_type, media_type, media_url, 
-                 media_order, media_size, caption, uploaded_at):
-        self.id = id
-        self.context_id = context_id
-        self.context_type = context_type
-        self.media_type = media_type
-        self.media_url = media_url
-        self.media_order = media_order
-        self.media_size = media_size
-        self.caption = caption
-        self.uploaded_at = uploaded_at
 
 def get_user_by_id(id):
     if not isinstance(id, (int, str)):
@@ -92,19 +71,9 @@ def get_user_by_email(email):
         session.close()
 
 def create_user(first_name, last_name, email, phone, password, role=None, address=None, 
-                latitude=None, longitude=None, bio=None, gst_no=None,
-                cover_photo_id=None, profile_photo_id=None):
+                latitude=None, longitude=None, bio=None):
     session = SessionLocal()
     try:
-        # Validate required fields
-        if not email or not password:
-            raise ValueError("Email and password are required")
-
-        # Check if email already exists
-        existing_user = get_user_by_email(email)
-        if existing_user:
-            raise ValueError("Email already registered")
-
         result = session.execute(
             users.insert().returning(users.c.id).values(
                 first_name=first_name,
@@ -116,13 +85,7 @@ def create_user(first_name, last_name, email, phone, password, role=None, addres
                 address=address,
                 latitude=latitude,
                 longitude=longitude,
-                bio=bio,
-                gst_no=gst_no,
-                cover_photo_id=cover_photo_id,
-                profile_photo_id=profile_photo_id,
-                isactive=True,
-                email_verified=False,
-                phone_verified=False
+                bio=bio
             )
         )
         session.commit()
@@ -130,24 +93,16 @@ def create_user(first_name, last_name, email, phone, password, role=None, addres
     finally:
         session.close()
 
-def create_rating(rated_user_id, rated_by_user_id, rating_value, title=None,
-                review=None, rating_type=None, is_anonymous=False):
+def create_user_rating(rated_user_id, rated_by_user_id, rating_value, review=None, rating_type=None):
     session = SessionLocal()
     try:
-        # Validate rating value
-        if not 1 <= rating_value <= 5:
-            raise ValueError("Rating value must be between 1 and 5")
-            
         result = session.execute(
-            ratings.insert().returning(ratings.c.id).values(
-                rated_id=rated_user_id,
-                rated_type='user',
-                rated_by=rated_by_user_id,
+            user_ratings.insert().returning(user_ratings.c.id).values(
+                rated_user_id=rated_user_id,
+                rated_by_user_id=rated_by_user_id,
                 rating_value=rating_value,
-                title=title,
                 review=review,
-                rating_type=rating_type,
-                is_anonymous=is_anonymous
+                rating_type=rating_type
             )
         )
         session.commit()
@@ -155,27 +110,23 @@ def create_rating(rated_user_id, rated_by_user_id, rating_value, title=None,
     finally:
         session.close()
 
-def get_ratings(user_id):
+def get_user_ratings(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(ratings).where(
-                (ratings.c.rated_type == 'user') & (ratings.c.rated_id == user_id)
-            )
+            select(user_ratings).where(user_ratings.c.rated_user_id == user_id)
         ).fetchall()
-        return [RatingRow(*row) for row in result]
+        return [UserRatingRow(*row) for row in result]
     finally:
         session.close()
 
-def create_follower(follower_id, following_id, followee_type=None, status='pending'):
+def create_user_follower(user_id, following_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            followers.insert().returning(followers.c.id).values(
-                follower_id=follower_id,
-                following_id=following_id,
-                followee_type=followee_type or 'user',
-                status=status
+            user_followers.insert().returning(user_followers.c.id).values(
+                user_id=user_id,
+                following_id=following_id
             )
         )
         session.commit()
@@ -183,40 +134,23 @@ def create_follower(follower_id, following_id, followee_type=None, status='pendi
     finally:
         session.close()
 
-def get_followers(user_id):
+def get_user_followers(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id) & (followers.c.status == 'active')
-            )
+            select(user_followers).where(user_followers.c.following_id == user_id)
         ).fetchall()
-        return [FollowerRow(*row) for row in result]
+        return [UserFollowerRow(*row) for row in result]
     finally:
         session.close()
 
-def get_following(user_id):
+def get_user_following(user_id):
     session = SessionLocal()
     try:
         result = session.execute(
-            select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.follower_id == user_id) & (followers.c.status == 'active')
-            )
+            select(user_followers).where(user_followers.c.user_id == user_id)
         ).fetchall()
-        return [FollowerRow(*row) for row in result]
-    finally:
-        session.close()
-
-def get_pending_follow_requests(user_id):
-    """Return followers with status 'pending' for a given user (incoming requests)."""
-    session = SessionLocal()
-    try:
-        result = session.execute(
-            select(followers).where(
-                (followers.c.followee_type == 'user') & (followers.c.following_id == user_id) & (followers.c.status == 'pending')
-            )
-        ).fetchall()
-        return [FollowerRow(*row) for row in result]
+        return [UserFollowerRow(*row) for row in result]
     finally:
         session.close()
 
@@ -240,212 +174,17 @@ def check_following_status(user_id, following_id):
 
         # Check following status
         result = session.execute(
-            select(followers).where(
+            select(user_followers).where(
                 and_(
-                    followers.c.follower_id == user_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
+                    user_followers.c.user_id == user_id,
+                    user_followers.c.following_id == following_id
                 )
             )
         ).fetchone()
         
-        return FollowerRow(*result) if result else None
+        return UserFollowerRow(*result) if result else None
     except Exception as e:
         print(f"Error checking following status: {str(e)}")
         return None
-    finally:
-        session.close()
-
-def update_follow_status(follower_id, following_id, status):
-    """
-    Update the status of a follow relationship between follower_id and following_id.
-    Status should be one of: 'active' (accepted), 'rejected', 'pending'.
-    """
-    if status not in ('active', 'rejected', 'pending'):
-        return None
-
-    session = SessionLocal()
-    try:
-        # Verify relationship exists
-        existing = session.execute(
-            select(followers).where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-        ).fetchone()
-
-        if not existing:
-            return None
-
-        session.execute(
-            followers.update()
-            .where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-            .values(status=status)
-        )
-        session.commit()
-
-        # Return updated row
-        updated = session.execute(
-            select(followers).where(
-                and_(
-                    followers.c.follower_id == follower_id,
-                    followers.c.following_id == following_id,
-                    followers.c.followee_type == 'user'
-                )
-            )
-        ).fetchone()
-        return FollowerRow(*updated) if updated else None
-    except Exception as e:
-        print(f"Error updating follow status: {str(e)}")
-        session.rollback()
-        return None
-    finally:
-        session.close()
-
-def create_media(context_id, context_type, media_type, media_url, media_order=None, 
-                media_size=None, caption=None):
-    session = SessionLocal()
-    try:
-        result = session.execute(
-            media.insert().returning(media.c.id).values(
-                context_id=context_id,
-                context_type=context_type,
-                media_type=media_type,
-                media_url=media_url,
-                media_order=media_order,
-                media_size=media_size,
-                caption=caption
-            )
-        )
-        session.commit()
-        return result.scalar()
-    finally:
-        session.close()
-
-def get_media_by_id(media_id):
-    if not isinstance(media_id, (int, str)):
-        return None
-    try:
-        media_id = int(media_id)
-    except (ValueError, TypeError):
-        return None
-
-    session = SessionLocal()
-    try:
-        result = session.execute(select(media).where(media.c.id == media_id)).fetchone()
-        return MediaRow(*result) if result else None
-    finally:
-        session.close()
-
-def get_latest_media_for_user_context(user_id, context_type):
-    """
-    Return the most recently uploaded media for the given user and context type.
-    """
-    session = SessionLocal()
-    try:
-        result = session.execute(
-            select(media)
-            .where(
-                and_(
-                    media.c.context_id == user_id,
-                    media.c.context_type == context_type,
-                )
-            )
-            .order_by(desc(media.c.uploaded_at))
-            .limit(1)
-        ).fetchone()
-        return MediaRow(*result) if result else None
-    finally:
-        session.close()
-
-def update_user_photo(user_id, photo_id, is_profile_photo=True):
-    """
-    Update user's profile or cover photo ID
-    Args:
-        user_id: ID of the user
-        photo_id: ID of the media
-        is_profile_photo: True for profile photo, False for cover photo
-    """
-    if not isinstance(user_id, (int, str)) or not isinstance(photo_id, (int, str)):
-        return False
-    try:
-        user_id = int(user_id)
-        photo_id = int(photo_id)
-    except (ValueError, TypeError):
-        return False
-
-    session = SessionLocal()
-    try:
-        # Verify user exists
-        user = session.execute(select(users).where(users.c.id == user_id)).fetchone()
-        if not user:
-            return False
-
-        # Verify media exists
-        media_item = session.execute(select(media).where(media.c.id == photo_id)).fetchone()
-        if not media_item:
-            return False
-
-        # Update the appropriate photo ID
-        if is_profile_photo:
-            session.execute(
-                users.update()
-                .where(users.c.id == user_id)
-                .values(profile_photo_id=photo_id)
-            )
-        else:
-            session.execute(
-                users.update()
-                .where(users.c.id == user_id)
-                .values(cover_photo_id=photo_id)
-            )
-        
-        session.commit()
-        return True
-    except Exception as e:
-        print(f"Error updating user photo: {str(e)}")
-        session.rollback()
-        return False
-    finally:
-        session.close()
-
-def update_user_location(user_id, latitude, longitude):
-    """
-    Update user's latitude and longitude.
-    """
-    if not isinstance(user_id, (int, str)):
-        return False
-    try:
-        user_id = int(user_id)
-    except (ValueError, TypeError):
-        return False
-
-    session = SessionLocal()
-    try:
-        # Verify user exists
-        user = session.execute(select(users).where(users.c.id == user_id)).fetchone()
-        if not user:
-            return False
-
-        session.execute(
-            users.update()
-            .where(users.c.id == user_id)
-            .values(latitude=latitude, longitude=longitude)
-        )
-        session.commit()
-        return True
-    except Exception as e:
-        print(f"Error updating user location: {str(e)}")
-        session.rollback()
-        return False
     finally:
         session.close()

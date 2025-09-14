@@ -9,7 +9,7 @@ from app.clients.grpc_base_client import GRPCBaseClient
 
 class PostsServiceClient(GRPCBaseClient):
     def __init__(self):
-        super().__init__(post_pb2_grpc.PostsServiceStub, target='localhost:50053')
+        super().__init__(post_pb2_grpc.PostsServiceStub, target='localhost:50052')
 
     def get_comments(self, post_id: int, page: int = 1, limit: int = 10,token=None):
         try:
@@ -28,7 +28,7 @@ class PostsServiceClient(GRPCBaseClient):
                      status: str = None, page: int = 1, limit: int = 10,token=None):
         try:
             request = post_pb2.SearchPostsRequest(
-                type=property_type or "",
+                property_type=property_type or "",
                 location=location or "",
                 min_price=min_price or 0.0,
                 max_price=max_price or 0.0,
@@ -43,20 +43,25 @@ class PostsServiceClient(GRPCBaseClient):
 
     def create_post(self, user_id: int, title: str, content: str,
                     visibility: str, property_type: str, location: str,
-                    price: float, status: str,
-                    latitude: float = None, longitude: float = None,
-                    media: list = None, token=None) -> dict:
+                    map_location: str, price: float, status: str,
+                    media: list = None,token=None) -> dict:
         try:
             media_list = []
             if media:
                 for m in media:
+                    try:
+                        media_data = base64.b64decode(m.mediaData)
+                    except Exception as e:
+                        return {
+                            'success': False,
+                            'message': f'Invalid media data format: {str(e)}'
+                        }
+
                     media_upload = post_pb2.PostMediaUpload(
-                        media_type=getattr(m, 'mediaType', None) or '',
-                        media_order=getattr(m, 'mediaOrder', None) or 1,
-                        caption=getattr(m, 'caption', None) or '',
-                        file_name=getattr(m, 'fileName', None) or '',
-                        content_type=getattr(m, 'contentType', None) or '',
-                        file_path=getattr(m, 'filePath', None) or ''
+                        media_type=m.mediaType,
+                        media_data=media_data,
+                        media_order=m.mediaOrder,
+                        caption=m.caption
                     )
                     media_list.append(media_upload)
 
@@ -65,10 +70,9 @@ class PostsServiceClient(GRPCBaseClient):
                 title=title,
                 content=content,
                 visibility=visibility,
-                type=property_type,
+                property_type=property_type,
                 location=location,
-                latitude=latitude or 0.0,
-                longitude=longitude or 0.0,
+                map_location=map_location,
                 price=price,
                 status=status,
                 media=media_list
@@ -95,12 +99,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.type,
+                    'propertyType': response.post.property_type,
                     'location': response.post.location,
-                     # mapLocation deprecated; keep for backward mapping if present
-                    # mapLocation removed
-                    'latitude': getattr(response.post, 'latitude', 0.0),
-                    'longitude': getattr(response.post, 'longitude', 0.0),
+                    'mapLocation': response.post.map_location,
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -135,16 +136,11 @@ class PostsServiceClient(GRPCBaseClient):
             # Filter out None values
             update_data = {k: v for k, v in kwargs.items() if v is not None}
 
-            # Convert camelCase to snake_case for fields and map GraphQL propertyType to gRPC 'type'
+            # Convert camelCase to snake_case for property_type and map_location
             if 'propertyType' in update_data:
-                update_data['type'] = update_data.pop('propertyType')
-            # mapLocation removed; ignore if present
+                update_data['property_type'] = update_data.pop('propertyType')
             if 'mapLocation' in update_data:
-                update_data.pop('mapLocation')
-            if 'latitude' in update_data:
-                update_data['latitude'] = update_data['latitude']
-            if 'longitude' in update_data:
-                update_data['longitude'] = update_data['longitude']
+                update_data['map_location'] = update_data.pop('mapLocation')
 
             request = post_pb2.PostUpdateRequest(
                 post_id=post_id,
@@ -172,11 +168,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.type,
+                    'propertyType': response.post.property_type,
                     'location': response.post.location,
-                    # mapLocation removed
-                    'latitude': getattr(response.post, 'latitude', 0.0),
-                    'longitude': getattr(response.post, 'longitude', 0.0),
+                    'mapLocation': response.post.map_location,
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -264,9 +258,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.type,
+                    'propertyType': response.post.property_type,
                     'location': response.post.location,
-                    # mapLocation removed
+                    'mapLocation': response.post.map_location,
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -317,9 +311,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.type,
+                    'propertyType': response.post.property_type,
                     'location': response.post.location,
-                    # mapLocation removed
+                    'mapLocation': response.post.map_location,
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -344,7 +338,7 @@ class PostsServiceClient(GRPCBaseClient):
 
     def delete_post_media(self, media_id: int,token=None) -> dict:
         try:
-            request = post_pb2.MediaIdRequest(media_id=media_id)
+            request = post_pb2.PostRequest(post_id=media_id)
             response = self._call(self.stub.DeletePostMedia, request,token=token)
 
             return {
@@ -361,13 +355,19 @@ class PostsServiceClient(GRPCBaseClient):
         try:
             media_list = []
             for m in media:
+                try:
+                    media_data = base64.b64decode(m.mediaData)
+                except Exception as e:
+                    return {
+                        'success': False,
+                        'message': f'Invalid media data format: {str(e)}'
+                    }
+
                 media_upload = post_pb2.PostMediaUpload(
-                    media_type=getattr(m, 'mediaType', None) or 'image',
-                    media_order=getattr(m, 'mediaOrder', None) or 1,
-                    caption=getattr(m, 'caption', None) or '',
-                    file_name=getattr(m, 'fileName', None) or '',
-                    content_type=getattr(m, 'contentType', None) or '',
-                    file_path=getattr(m, 'filePath', None) or ''
+                    media_type=m.mediaType,
+                    media_data=media_data,
+                    media_order=m.mediaOrder,
+                    caption=m.caption
                 )
                 media_list.append(media_upload)
 
@@ -397,9 +397,9 @@ class PostsServiceClient(GRPCBaseClient):
                     'title': response.post.title,
                     'content': response.post.content,
                     'visibility': response.post.visibility,
-                    'propertyType': response.post.type,
+                    'propertyType': response.post.property_type,
                     'location': response.post.location,
-                    # mapLocation removed
+                    'mapLocation': response.post.map_location,
                     'price': response.post.price,
                     'status': response.post.status,
                     'createdAt': datetime.fromtimestamp(response.post.created_at),
@@ -477,26 +477,25 @@ class PostsServiceClient(GRPCBaseClient):
             response = self._call(self.stub.UpdateComment, request,token=token)
 
             # Convert the gRPC response to a dictionary
-            if response and response.comment:
-                c = response.comment
+            if response:
                 comment_dict = {
-                    'id': c.id,
-                    'postId': c.post_id,
-                    'userId': c.user_id,
-                    'comment': c.comment,
-                    'parentCommentId': c.parent_comment_id if c.parent_comment_id != 0 else None,
-                    'status': c.status,
-                    'addedAt': datetime.fromtimestamp(c.added_at),
-                    'commentedAt': datetime.fromtimestamp(c.commented_at),
-                    'replies': [],
-                    'likeCount': c.like_count
+                    'id': response.id,
+                    'postId': response.post_id,
+                    'userId': response.user_id,
+                    'comment': response.comment,
+                    'parentCommentId': response.parent_comment_id if response.parent_comment_id != 0 else None,
+                    'status': response.status,
+                    'addedAt': datetime.fromtimestamp(response.added_at),
+                    'commentedAt': datetime.fromtimestamp(response.commented_at),
+                    'replies': [],  # Replies will be fetched separately if needed
+                    'likeCount': response.like_count
                 }
             else:
                 comment_dict = None
 
             return {
-                'success': response.success if response else False,
-                'message': response.message if response else 'Failed to update comment',
+                'success': True,
+                'message': 'Comment updated successfully',
                 'comment': comment_dict
             }
         except grpc.RpcError as e:
@@ -508,7 +507,7 @@ class PostsServiceClient(GRPCBaseClient):
 
     def delete_comment(self, comment_id: int,token=None) -> dict:
         try:
-            request = post_pb2.CommentRequest(comment_id=comment_id)
+            request = post_pb2.PostRequest(post_id=comment_id)  # Using PostRequest for comment_id
             response = self._call(self.stub.DeleteComment, request,token=token)
             return {
                 'success': True,

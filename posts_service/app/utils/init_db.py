@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, text
 import os
 from dotenv import load_dotenv
 import logging
-from ..entity.post_entity import Base, Post
+from ..entity.post_entity import Base, Post, post_likes
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

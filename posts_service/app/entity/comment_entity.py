@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey, Boolean
+from sqlalchemy import Column, BigInteger, String, TIMESTAMP, ForeignKey
 from sqlalchemy.orm import relationship, backref
 from ..utils.db_connection import Base
 from datetime import datetime
@@ -12,10 +12,8 @@ class Comment(Base):
     parent_comment_id = Column(BigInteger, ForeignKey('comments.id', ondelete='CASCADE'), nullable=True)  # NULL for top-level comments
     comment = Column(String(1000))
     user_id = Column(BigInteger, ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
-    status = Column(String(50), default='active')
-    is_anonymous = Column(Boolean, default=False)
+    status = Column(String(20), default='active')
     added_at = Column(TIMESTAMP, default=datetime.utcnow)
-    edited_at = Column(TIMESTAMP, default=datetime.utcnow)
     commented_at = Column(TIMESTAMP, default=datetime.utcnow)
 
     # Relationships

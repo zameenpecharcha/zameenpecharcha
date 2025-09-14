@@ -1,6 +1,7 @@
 import grpc
-from ..utils.log_utils import log_msg
-from ..utils.jwt_utils import verify_jwt_token
+from app.utils.log_utils import log_msg
+
+from app.utils.jwt_utils import verify_jwt_token
 
 
 class AuthServerInterceptor(grpc.ServerInterceptor):

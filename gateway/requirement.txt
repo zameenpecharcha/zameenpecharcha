@@ -5,4 +5,3 @@ python-dotenv
 grpcio
 protobuf
 grpcio-tools
-httpx

@@ -28,8 +28,7 @@ def create_user_info(user):
         last_name=user.last_name,
         email=user.email,
         phone=user.phone if user.phone else "",
-        profile_photo_id=user.profile_photo_id if user.profile_photo_id else 0,
-        cover_photo_id=user.cover_photo_id if user.cover_photo_id else 0,
+        profile_photo=user.profile_photo if user.profile_photo else "",
         role=user.role if user.role else "",
         address=user.address if user.address else "",
         latitude=user.latitude if user.latitude else 0.0,
@@ -309,11 +308,14 @@ class AuthService(auth_pb2_grpc.AuthServiceServicer):
             else:  # LOGIN
                 message = "OTP verified successfully"
 
-            # Only generate token for LOGIN type
-            token = ""
-            if request.type == auth_pb2.LOGIN:
-                access_token, refresh_token = generate_tokens(user)
-                token = access_token
+            # Generate token with user information
+            token_data = {
+                "user_id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "exp": datetime.utcnow() + timedelta(hours=1)
+            }
+            token = jwt.encode(token_data, SECRET_KEY, algorithm="HS256")
 
             log_msg("info", message, user_id=request.email, correlation_id=correlation_id)
             return auth_pb2.VerifyOTPResponse(

@@ -1,10 +1,9 @@
 from typing import List, Optional, Tuple
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, select, and_, update
+from sqlalchemy import desc, func
 from datetime import datetime
-from sqlalchemy.exc import SQLAlchemyError, IntegrityError
-from ..entity.post_entity import Post, PostLike, CommentLike
-from ..entity.media_entity import media as MediaTable
+from sqlalchemy.exc import SQLAlchemyError
+from ..entity.post_entity import Post, PostMedia, PostLike, CommentLike
 from ..entity.comment_entity import Comment
 from ..entity.user_entity import User
 import sqlalchemy.orm
@@ -15,32 +14,24 @@ class PostRepository:
 
     # Post Operations
     def create_post(self, user_id: int, title: str, content: str, visibility: str = None,
-                   type: str = None, location: str = None, map_location: str = None,
-                   price: float = None, status: str = 'active', is_anonymous: bool = False,
-                   latitude: float = None, longitude: float = None,
-                   commit: bool = True) -> Post:
+                   property_type: str = None, location: str = None, map_location: str = None,
+                   price: float = None, status: str = 'active') -> Post:
         try:
             post = Post(
                 user_id=user_id,
                 title=title,
                 content=content,
                 visibility=visibility,
-                type=type,
+                property_type=property_type,
                 location=location,
-                latitude=latitude,
-                longitude=longitude,
+                map_location=map_location,
                 price=price,
                 status=status,
-                is_anonymous=is_anonymous,
                 created_at=datetime.utcnow()
             )
             self.db.add(post)
-            if commit:
-                self.db.commit()
-                self.db.refresh(post)
-            else:
-                # Ensure PK is generated without committing
-                self.db.flush()
+            self.db.commit()
+            self.db.refresh(post)
             return post
         except SQLAlchemyError as e:
             self.db.rollback()
@@ -55,10 +46,9 @@ class PostRepository:
             raise Exception(f"Database error while fetching post: {str(e)}")
 
     def update_post(self, post_id: int, title: str = None, content: str = None,
-                   visibility: str = None, type: str = None,
+                   visibility: str = None, property_type: str = None,
                    location: str = None, map_location: str = None,
-                   price: float = None, status: str = None, is_anonymous: bool = None,
-                   latitude: float = None, longitude: float = None) -> Optional[Post]:
+                   price: float = None, status: str = None) -> Optional[Post]:
         try:
             post = self.get_post(post_id)
             if post:
@@ -68,21 +58,16 @@ class PostRepository:
                     post.content = content
                 if visibility is not None:
                     post.visibility = visibility
-                if type is not None:
-                    post.type = type
+                if property_type is not None:
+                    post.property_type = property_type
                 if location is not None:
                     post.location = location
-                # No map_location anymore
-                if latitude is not None:
-                    post.latitude = latitude
-                if longitude is not None:
-                    post.longitude = longitude
+                if map_location is not None:
+                    post.map_location = map_location
                 if price is not None:
                     post.price = price
                 if status is not None:
                     post.status = status
-                if is_anonymous is not None:
-                    post.is_anonymous = is_anonymous
                 self.db.commit()
                 self.db.refresh(post)
             return post
@@ -104,15 +89,14 @@ class PostRepository:
 
     def get_posts_by_user(self, user_id: int, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
         try:
-            # Join with User table to get user information, similar to search_posts
-            query = self.db.query(Post).join(User, Post.user_id == User.id).filter(Post.user_id == user_id)
+            query = self.db.query(Post).filter(Post.user_id == user_id)
             total = query.count()
             posts = query.order_by(desc(Post.created_at)).offset((page - 1) * limit).limit(limit).all()
             return posts, total
         except SQLAlchemyError as e:
             raise Exception(f"Database error while fetching user posts: {str(e)}")
 
-    def search_posts(self, type: str = None, location: str = None,
+    def search_posts(self, property_type: str = None, location: str = None,
                     min_price: float = None, max_price: float = None,
                     status: str = None, page: int = 1, limit: int = 10) -> Tuple[List[Post], int]:
         try:
@@ -121,9 +105,9 @@ class PostRepository:
             query = self.db.query(Post).join(User, Post.user_id == User.id)
             
             # Only apply filters if they are explicitly provided
-            if type and type.strip():
-                print(f"Filtering by type: {type}")
-                query = query.filter(Post.type == type)
+            if property_type and property_type.strip():
+                print(f"Filtering by property_type: {property_type}")
+                query = query.filter(Post.property_type == property_type)
             if location and location.strip():
                 print(f"Filtering by location: {location}")
                 query = query.filter(Post.location.ilike(f"%{location}%"))
@@ -170,12 +154,10 @@ class PostRepository:
 
     # Media Operations
     def add_post_media(self, post_id: int, media_type: str, media_url: str,
-                      media_order: int, media_size: int = 0, caption: str = None,
-                      commit: bool = True) -> int:
+                      media_order: int, media_size: int = 0, caption: str = None) -> PostMedia:
         try:
-            insert_stmt = MediaTable.insert().returning(MediaTable.c.id).values(
-                context_id=post_id,
-                context_type='post',
+            media = PostMedia(
+                post_id=post_id,
                 media_type=media_type,
                 media_url=media_url,
                 media_order=media_order,
@@ -183,50 +165,21 @@ class PostRepository:
                 caption=caption,
                 uploaded_at=datetime.utcnow()
             )
-            result = self.db.execute(insert_stmt)
-            if commit:
-                self.db.commit()
-            return result.scalar()
+            self.db.add(media)
+            self.db.commit()
+            self.db.refresh(media)
+            return media
         except SQLAlchemyError as e:
             self.db.rollback()
             raise Exception(f"Database error while adding media: {str(e)}")
 
     def delete_post_media(self, media_id: int) -> bool:
-        try:
-            delete_stmt = MediaTable.delete().where(MediaTable.c.id == media_id)
-            result = self.db.execute(delete_stmt)
+        media = self.db.query(PostMedia).filter(PostMedia.id == media_id).first()
+        if media:
+            self.db.delete(media)
             self.db.commit()
-            return result.rowcount > 0
-        except SQLAlchemyError:
-            self.db.rollback()
-            return False
-
-    def update_media_url_size(self, media_id: int, media_url: str, media_size: int, commit: bool = True) -> bool:
-        try:
-            upd = (
-                update(MediaTable)
-                .where(MediaTable.c.id == media_id)
-                .values(media_url=media_url, media_size=media_size)
-            )
-            result = self.db.execute(upd)
-            if commit:
-                self.db.commit()
-            return result.rowcount > 0
-        except SQLAlchemyError:
-            self.db.rollback()
-            return False
-
-    def get_post_media(self, post_id: int):
-        try:
-            stmt = (
-                select(MediaTable)
-                .where(and_(MediaTable.c.context_id == post_id, MediaTable.c.context_type == 'post'))
-                .order_by(MediaTable.c.media_order)
-            )
-            result = self.db.execute(stmt).fetchall()
-            return result
-        except SQLAlchemyError as e:
-            raise Exception(f"Database error while fetching media: {str(e)}")
+            return True
+        return False
 
     # Like Operations
     def like_post(self, post_id: int, user_id: int, reaction_type: str = 'like') -> Optional[Post]:
@@ -245,16 +198,13 @@ class PostRepository:
             if not existing_like:
                 try:
                     like = PostLike(
-                        post_id=post_id,
+                        post_id=post_id,  # Make sure we're using the correct post_id
                         user_id=user_id,
                         reaction_type=reaction_type,
                         liked_at=datetime.utcnow()
                     )
                     self.db.add(like)
                     self.db.commit()
-                except IntegrityError:
-                    # Unique index collision (duplicate like): treat as idempotent success
-                    self.db.rollback()
                 except SQLAlchemyError as e:
                     self.db.rollback()
                     raise Exception(f"Database error while adding like: {str(e)}")
@@ -450,9 +400,6 @@ class PostRepository:
                     )
                     self.db.add(like)
                     self.db.commit()
-                except IntegrityError:
-                    # Duplicate like: idempotent success
-                    self.db.rollback()
                 except SQLAlchemyError as e:
                     self.db.rollback()
                     raise Exception(f"Database error while adding like: {str(e)}")
