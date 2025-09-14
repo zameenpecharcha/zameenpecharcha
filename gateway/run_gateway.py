@@ -5,6 +5,7 @@ from app.schema.auth_schema import Query as AuthQuery, Mutation as AuthMutation
 from app.schema.user_schema import Query as UserQuery, Mutation as UserMutation
 from app.schema.posts_schema import Query as PostsQuery, Mutation as PostsMutation
 from app.middleware.auth_middleware import AuthMiddleware
+from app.api.chat_api import chat_router
 from strawberry.fastapi import GraphQLRouter
 
 import logging
@@ -32,6 +33,7 @@ graphql_app = GraphQLRouter(
     path="/graphql"
 )
 app.include_router(graphql_app, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
 
 # Health check
 @app.get("/health")
